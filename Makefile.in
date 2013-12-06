@@ -1,0 +1,62 @@
+all: 
+	@make -C src grew
+
+include config/Makefile
+
+conf : config/configure.in
+	cd config && rm -rf ac_lib_checking.*
+	cd config && wget https://gforge.inria.fr/scm/viewvc.php/*checkout*/ac_lib_checking/ac_lib_checking.m4?root=semagramme --no-check-certificate || true
+	cd config && mv ac_lib_checking.m4?root=semagramme ac_lib_checking.m4 || true
+	cd config && aclocal
+	cd config && autoconf -o ../configure configure.in
+	rm -rf config.status config.log autom4te.cache config/autom4te.cache
+
+
+conf2 : config/configure.in
+	cd config && aclocal
+	cd config && autoconf -o ../configure configure.in
+	rm -rf config.status config.log autom4te.cache config/autom4te.cache
+
+clean: cleanup
+	@make -C config cleanup
+	@make -C src clean
+
+install:
+	mkdir -p $(DESTDIR)$(INSTALL_DIR)
+	mkdir -p $(DESTDIR)$(DATA_DIR)
+ifeq (@DEV@,yes) 
+	cp src/grew $(DESTDIR)$(INSTALL_DIR)/grew_dev
+else
+	cp src/grew $(DESTDIR)$(INSTALL_DIR)
+endif
+	cp src/grew.glade $(DESTDIR)$(DATA_DIR)
+
+purge_makefile:
+	@make -C src purge
+	@make -C config purge
+	rm -rf Makefile
+
+################################################################################
+################## PACKAGING ###################################################
+################################################################################
+
+
+targz: clean conf purge_makefile
+	rm -rf grew-$(VERSION)
+	mkdir -p grew-$(VERSION)
+	cp -r config grew-$(VERSION)/
+	cp configure grew-$(VERSION)/
+	cp Makefile.in grew-$(VERSION)/
+	cp -r src grew-$(VERSION)/
+	cd grew-$(VERSION)/ && find . -name .svn -print0 | xargs -0 rm -rf
+	cd grew-$(VERSION)/ && find . -name autom4te.cache -print0 | xargs -0 rm -rf
+	tar -czvf packaging/grew-$(VERSION).tar.gz grew-$(VERSION)
+	rm -rf grew-$(VERSION)
+
+
+portfile: targz
+	cd packaging && sh create_portfile.sh $(VERSION)
+
+
+pack_deb: targz
+	sh packaging/make_deb.sh $(VERSION) $(INSTALL_DIR) $(DATA_DIR) $(DOC_DIR)

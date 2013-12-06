@@ -1,0 +1,100 @@
+VERSION = 0.20
+
+INSTALL_DIR = @prefix@@bindir@
+DATA_DIR = @prefix@@datarootdir@/grew/
+DOC_DIR = @docdir@grew/
+
+BYTE_FLAGS = -g -dtypes
+OPT_FLAGS =
+
+OCAMLC = @OCAMLC@
+OCAMLOPT = @OCAMLOPT@
+OCAMLLIB = @OCAMLLIB@
+OCAMLFIND = @OCAMLFIND@
+
+ANSITERMINAL_DIR = @ANSITERMINAL_INCLUDE@
+ANSITERMINAL_BYTE = $(ANSITERMINAL_DIR) ANSITerminal.cma
+ANSITERMINAL_OPT = $(ANSITERMINAL_DIR) ANSITerminal.cmxa
+
+LOG_DIR = @LOG_INCLUDE@
+LOG_BYTE = $(LOG_DIR) log.cma
+LOG_OPT = $(LOG_DIR) log.cmxa
+
+ITEXT_DIR = @ITEXT_INCLUDE@
+ITEXT_BYTE = $(ITEXT_DIR) itext.cma
+ITEXT_OPT = $(ITEXT_DIR) itext.cmxa
+
+LABLGTK_DIR = @LABLGTK_INCLUDE@
+LABLGTK_BYTE = $(LABLGTK_DIR) lablgtk.cma lablglade.cma
+LABLGTK_OPT = $(LABLGTK_DIR) lablgtk.cmxa lablglade.cmxa
+
+LABLWEBKIT_DIR = @LABLWEBKIT_INCLUDE@
+LABLWEBKIT_BYTE = $(LABLWEBKIT_DIR) lablwebkit.cma
+LABLWEBKIT_OPT = $(LABLWEBKIT_DIR) lablwebkit.cmxa
+
+XMLLIGHT_DIR = @XMLLIGHT_INCLUDE@
+XMLLIGHT_BYTE = $(XMLLIGHT_DIR) xml-light.cma
+XMLLIGHT_OPT = $(XMLLIGHT_DIR) xml-light.cmxa
+
+CAIRO_DIR = @CAIRO_INCLUDE@
+CAIRO_BYTE = $(CAIRO_DIR) cairo2.cma
+CAIRO_OPT =  $(CAIRO_DIR) cairo2.cmxa
+
+DEP2PICT_DIR = @DEP2PICT_INCLUDE@
+DEP2PICT_BYTE = $(DEP2PICT_DIR) dep2pict.cma
+DEP2PICT_OPT =  $(DEP2PICT_DIR) dep2pict.cmxa
+
+LIBGREW_DIR = @LIBGREW_INCLUDE@
+LIBGREW_BYTE = $(LIBGREW_DIR) libgrew.cma
+LIBGREW_OPT = $(LIBGREW_DIR) libgrew.cmxa
+
+CLUSTER_DIR = @CLUSTER_INCLUDE@
+CLUSTER_BYTE = $(CLUSTER_DIR) cluster.cma
+CLUSTER_OPT = $(CLUSTER_DIR) cluster.cmxa
+
+DEBUG = @DEBUG@
+WARNING = @WARNING@
+MESSAGE = @MESSAGE@
+INFO = @INFO@
+
+infos:
+	@echo ""
+	@echo "version              -> " $(VERSION)
+	@echo ""
+	@echo "prefix               -> " @prefix@
+	@echo "exec install dir     -> " $(INSTALL_DIR)
+	@echo "data install dir     -> " $(DATA_DIR)
+	@echo "doc install dir      -> " $(DOC_DIR)
+	@echo ""
+	@echo "OCAMLC               -> " $(OCAMLC)
+	@echo "OCAMLOPT             -> " $(OCAMLOPT)
+	@echo "OCAMLLIB             -> " $(OCAMLLIB)
+	@echo "OCAMLFIND            -> " $(OCAMLFIND)
+	@echo "byte compil flags    -> " $(BYTE_FLAGS)
+	@echo "native compil flags  -> " $(OPT_FLAGS)
+	@echo ""
+	@echo "LABLGTK2             -> " $(LABLGTK_OPT)
+	@echo "LABLWEBKIT           -> " $(LABLWEBKIT_OPT)
+	@echo "XMLLIGHT             -> " $(XMLLIGHT_OPT)
+	@echo "DEP2PICT             -> " $(DEP2PICT_OPT)
+	@echo "CAIRO                -> " $(CAIRO_OPT)
+	@echo "LIBGREW              -> " $(LIBGREW_OPT)
+	@echo "CLUSTER              -> " $(CLUSTER_OPT)
+	@echo "LOG                  -> " $(LOG_OPT)
+	@echo "ANSITERMINAL         -> " $(ANSITERMINAL_OPT)
+	@echo "ITEXT                -> " $(ITEXT_OPT)
+	@echo ""
+	@echo "DEBUG                -> " $(DEBUG)
+	@echo "WARNING              -> " $(WARNING)
+	@echo "MESSAGE              -> " $(MESSAGE)
+	@echo "INFO                 -> " $(INFO)
+	@echo ""
+	@echo "BUILD GUI            -> " @BUILD_GUI@
+	@echo "BUILD CLUSTER        -> " @BUILD_CLUSTER@
+	@echo "USE DEP2PICT         -> " @USE_DEP2PICT@
+
+cleanup: 
+	rm -rf *.cmo *.out *.cmi *.cmxa *.a *.cmx *~ *.o *.cmx  *.cma test *.svg *.status *.h *.log autom4te.cache config/autom4te.cache
+
+purge:
+	rm -rf Makefile
