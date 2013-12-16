@@ -1,3 +1,13 @@
+(***********************************************************************)
+(*    Grew - a Graph Rewriting tool dedicated to NLP applications      *)
+(*                                                                     *)
+(*    Copyright 2011-2013 Inria, Université de Lorraine                *)
+(*                                                                     *)
+(*    Webpage: http://grew.loria.fr                                    *)
+(*    License: CeCILL (see LICENSE folder or "http://www.cecill.info") *)
+(*    Authors: see AUTHORS file                                        *)
+(***********************************************************************)
+
 open Printf
 
 open Libgrew
@@ -401,6 +411,10 @@ let annot () =
   let sentences = ref [] in
   let len = Array.length data in
 
+  let title = match !Grew_args.title with
+    | Some s -> s
+    | None -> sprintf "Annotation task in file \"%s\" on data \"%s\"" !Grew_args.grs (Filename.basename !Grew_args.input_data) in
+
   try
     let bn_rh_list =
       Array.to_list
@@ -414,7 +428,7 @@ let annot () =
            ) data
         ) in
     Counter.finish ();
-    Libgrew.write_annot static_dir annot_dir bn_rh_list
+    Libgrew.write_annot ~title static_dir annot_dir bn_rh_list
 
   with
     | Libgrew.Bug (msg,_) ->
