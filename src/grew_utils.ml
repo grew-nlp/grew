@@ -46,11 +46,17 @@ module Grew_utils = struct
     ignore (Sys.command(sprintf "dot -Tsvg -o %s %s " svg_file_name temp_file_name));
     svg_file_name
 
-  let pdf_file_from_dot dot output_file =
+  let save_pdf_dot dot output_file =
     let temp_file_name,out_ch = Filename.open_temp_file ~mode:[Open_rdonly;Open_wronly;Open_text] "grew_" ".dot" in
     fprintf out_ch "%s" dot;
     close_out out_ch;
     ignore (Sys.command(sprintf "dot -Tpdf -o %s %s " output_file temp_file_name))
+
+  let save_svg_dot dot output_file =
+    let temp_file_name,out_ch = Filename.open_temp_file ~mode:[Open_rdonly;Open_wronly;Open_text] "grew_" ".dot" in
+    fprintf out_ch "%s" dot;
+    close_out out_ch;
+    ignore (Sys.command(sprintf "dot -Tsvg -o %s %s " output_file temp_file_name))
 
 IFDEF DEP2PICT THEN
   let svg_file_from_dep dep =

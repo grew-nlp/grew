@@ -31,7 +31,7 @@ module Grew_config = struct
     mutable main_feat:string;
   }
 
-  let last_config = {
+  let default_config = {
     last_gr_file = "";
     last_grs_file = "";
     last_doc_zoom = 100;
@@ -45,6 +45,8 @@ module Grew_config = struct
     last_module_position = 400;
     main_feat = "phon";
   }
+
+  let current_config = ref default_config
 
   let read_config_file config_file =
     let config = ref {
@@ -90,7 +92,8 @@ module Grew_config = struct
       close_in in_ch;
       !config
 
-  let rec save_config config =
+  let rec save_config () =
+    let config = !current_config in
     let home = Sys.getenv "HOME" in
     let dirname = Filename.concat home ".grew" in
     (* le rep existe *)
@@ -124,9 +127,8 @@ module Grew_config = struct
     else (* sinon le repertoire n'existe pas, on le crée et on recommence *)
       begin
         ignore(Sys.command("mkdir -p "^dirname));
-        save_config config
+        save_config ()
       end
-
 
   let rec read_config () =
     try
@@ -151,20 +153,19 @@ module Grew_config = struct
                   try Unix.access dirname [Unix.W_OK]
                   with Unix.Unix_error (_,_,_) -> Log.warning "Can't write in config filder, you will not be able to save your config!"
                 );
-                config
+                current_config := config
               end
             else
               begin
                 (* on enregistre une config par defaut et on l'utilise *)
                 Log.warning "The config file is missing, will create an empty config file in config folder and use a last config!";
-                save_config last_config;
-                last_config
+                current_config := default_config; save_config ();
               end
           with
             (* on ne peut pas le lire, on utilise la config par defaut *)
             | Unix.Unix_error (_,_,_) ->
               Log.fwarning "Can't read the config dir (%s). Will use a last config!" dirname;
-              last_config
+              current_config := default_config
         end
       else
         begin
@@ -175,7 +176,7 @@ module Grew_config = struct
     with
       | Not_found ->
         Log.warning "No HOME variable in your environment: configuration file disabled";
-        last_config
+        current_config := default_config
 
   let print_config config =
     Printf.printf "LAST_GR_FILE=%s\n%!" config.last_gr_file;

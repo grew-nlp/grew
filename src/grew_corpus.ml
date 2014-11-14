@@ -306,6 +306,12 @@ let init () =
 
 let det () =
   try
+    begin
+      match !Grew_args.input_data with
+        | "" -> Log.message "No input data specified: use -i option"; exit 1
+        | _ -> ()
+    end;
+
     match (!Grew_args.output_dir, !Grew_args.output_file) with
       | (None, None) -> Log.message "No output specified: use -o or -f option"; exit 1
       | (Some _, Some _) -> Log.message "Ambiguous output: you cannot use -o and -f options together"; exit 1
@@ -358,6 +364,9 @@ let det () =
       exit 2
     | Libgrew.Parsing_err msg ->
       printf "\n====== Error: Libgrew.Parsing_err ======\n%s\n===================================\n" msg;
+      exit 2
+    | exc -> 
+      printf "\n====== Bug: Uncaught exception, please report ======\n%s\n===================================\n" (Printexc.to_string exc);
       exit 2
 
 (* -------------------------------------------------------------------------------- *)

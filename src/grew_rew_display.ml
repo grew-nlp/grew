@@ -8,6 +8,7 @@
 (*    Authors: see AUTHORS file                                        *)
 (***********************************************************************)
 
+open Printf
 open Grew_utils
 open Log
 open Dep2pict
@@ -80,7 +81,15 @@ module Grew_rew_display = struct
 
   let to_pdf_dotfile_graph ?deco ?main_feat graph_id output_file =
     let dot = to_dotstring_graph ?deco ?main_feat graph_id in
-    Grew_utils.pdf_file_from_dot dot output_file
+    Grew_utils.save_pdf_dot dot output_file
+
+  let to_svg_depfile_graph ?deco ?main_feat graph_id output_file =
+    let dep = to_depstring_graph ?deco ?main_feat graph_id in
+    ignore(Dep2pict.fromDepStringToSvgFile dep output_file)
+
+  let to_svg_dotfile_graph ?deco ?main_feat graph_id output_file =
+    let dot = to_dotstring_graph ?deco ?main_feat graph_id in
+    Grew_utils.save_svg_dot dot output_file
 
   (* create 2 temp file: 1 svg (via Grew_utils.svg_file_from_dot) and 1 html *)
   let svg_dot_temp_file ?main_feat ?deco ?(botop=(false,false)) graph =
@@ -93,8 +102,10 @@ module Grew_rew_display = struct
     close_out out_ch;
     temp_file_name
 
-  let get_dot_graph_with_background ?main_feat ?(botop=(false,false)) graph_id =
-    svg_dot_temp_file ?main_feat ~botop (fst (List.assoc graph_id !graph_map))
+
+  let get_dot_graph_with_background ?main_feat ?deco ?(botop=(false,false)) graph_id =
+    svg_dot_temp_file ?main_feat ?deco ~botop (fst (List.assoc graph_id !graph_map))
+
 
   let get_dot_graph_with_background2 ?main_feat ?deco ?(botop=(false,false)) graph_id =
     svg_dot_temp_file ?main_feat ?deco ~botop (fst (List.assoc graph_id !graph_map2))
@@ -288,7 +299,7 @@ module Grew_rew_display = struct
     try
       while true do
 	let line = input_line in_ch in
-	
+
 	match !graph_line_counter with
 	  | 0 -> (* matching de la premiere ligne pour un graphe (<!-- GXX -->) *)
 	    if (Str.string_match init line 0)
@@ -310,7 +321,7 @@ module Grew_rew_display = struct
 	        incr graph_line_counter;
 	        output_string out_ch (line^"\n");
 	      (* Log.fdebug "[Grew_rew_display]--> Graph found : %s" !graph_id_internal *)
-	      end 
+	      end
             else if (Str.string_match edge_comment_match line 0)
             then
               begin
@@ -321,11 +332,11 @@ module Grew_rew_display = struct
 	        output_string out_ch (line^"\n");
 	      end
             else if (Str.string_match svg_match line 0)
-            then 
+            then
               begin
 	        graph_line_counter := 99;
 	        output_string out_ch (line^"\n");
-	      end 
+	      end
             else if (Str.string_match module_match line 0)
             then
               begin
@@ -464,7 +475,7 @@ module Grew_rew_display = struct
 				      !x1 !y1);
 	      incr edge_counter;
 	    ) else (
-	      output_string out_ch (line^"\n");				
+	      output_string out_ch (line^"\n");
 	    );
 	    graph_line_counter := 0;
 	  | 99 ->
@@ -484,7 +495,7 @@ module Grew_rew_display = struct
 			 }
 		       }
 		     }
-			
+
 		       function remove_back_from_current_bottom() {
 			   if (document.getElementById('polygon_'+current_bottom+'_back')) {
 			     document.getElementById('polygon_'+current_bottom+'_back').setAttribute('fill-opacity','0');
@@ -504,7 +515,7 @@ module Grew_rew_display = struct
 				 }
 			       }
 			     }
-				
+
 			       function add_back_from_current_bottom() {
 				   if (document.getElementById('polygon_'+current_bottom+'_back')) {
 				     document.getElementById('polygon_'+current_bottom+'_back').setAttribute('fill-opacity','1');
@@ -520,7 +531,7 @@ module Grew_rew_display = struct
 					 document.getElementById(current_edge_two).setAttribute('stroke','orange')
 					   document.getElementById(current_top_graph).setAttribute('stroke','orange')
 					   document.getElementById(current_bottom_graph).setAttribute('stroke','orange')
-					
+
 					   document.getElementById(current_edge_two).setAttribute('stroke-opacity','0');
 					 document.getElementById(current_top_graph).setAttribute('stroke','black')
 					   document.getElementById(current_bottom_graph).setAttribute('stroke','black')
@@ -547,7 +558,7 @@ module Grew_rew_display = struct
 	    output_string out_ch (ecmascript^"\n");
 	    graph_line_counter := 0;
 	  | 59 ->
-	    if (Str.string_match module_text_match line 0) then (					
+	    if (Str.string_match module_text_match line 0) then (
 	      Printf.fprintf out_ch "<text text-anchor=\"middle\" x=\"%s\" y=\"%s\" font-family=\"%s\"
 		font-size=\"%s\"
 		font-variant=\"small-caps\">%s</text>\n"
@@ -563,7 +574,7 @@ module Grew_rew_display = struct
     with End_of_file ->
       close_in in_ch;
       close_out out_ch
-	
+
   let current_selected_mod = ref ""
 
   let get_big_step_for gr =
@@ -584,28 +595,28 @@ module Grew_rew_display = struct
       | Some bs ->
 	let graph_counter = ref 0 in
         (*				let graph_counter_prefix = Str.global_replace (Str.regexp "G") "" first_graph_name in*)
-	
+
 	(* Log.fdebug "[Grew_rew_display] Father : %s | Son : %s" first_graph_name gr; *)
 	let first_rule = bs.Libgrew.first in
 	let steps = bs.Libgrew.small_step in
 	(* Log.fdebug "[Grew_rew_display] First rule name : %s" first_rule.Libgrew.rule_name; *)
-	
+
 	let dot = ref "digraph G {" in
 	let add str = dot := !dot^"\n"^str in
-	
+
         add "    node [shape=box, fontname=Arial];";
 	add "    ranksep=0.1;";
 	add "    nodesep=0.1";
-	
+
 	graph_map2 := [("G0.2",(first_graph,("",None)))];
-	
+
 	add (Printf.sprintf "    G%d [style=filled, fillcolor=\"%s\", label=G%d]" !graph_counter top_color !graph_counter);
 	add (Printf.sprintf "    node_mod_%d0 [fontcolor=transparent, color=transparent]" !graph_counter);
 	add (Printf.sprintf "    node_mod_%d1 [label=\"%s\", color=transparent]" !graph_counter (fix_rule_name first_rule.Libgrew.rule_name));
 	add (Printf.sprintf "    node_mod_%d0 -> node_mod_%d1 [fontcolor=transparent, color=transparent]" !graph_counter !graph_counter);
 	add (Printf.sprintf "    {rank=same;node_mod_%d0; G%d}" !graph_counter !graph_counter);
 	incr graph_counter;
-	
+
 	let rec compute rule graphs = match graphs with
 	  | [] ->
 	    add (Printf.sprintf "    G%d [style=filled, fillcolor=\"%s\", label=G%d]" !graph_counter bottom_color !graph_counter);
@@ -635,9 +646,9 @@ module Grew_rew_display = struct
 	    compute r t
 	in
 	compute first_rule steps;
-	
+
 	add "}";
-	
+
 	let svg_file = (Grew_utils.svg_file_from_dot !dot) in
 	transform svg_file (svg_file^".trans.svg") ~show_bottom:false ("G"^(string_of_int !graph_counter)) ;
 	let in_ch = open_in (svg_file^".trans.svg") in
@@ -658,20 +669,20 @@ module Grew_rew_display = struct
     match rule with
       | Some rule ->
 	let up = rule.Libgrew.up and down = rule.Libgrew.down in
-	
+
 	current_bottom_deco := Some down;
 	current_top_deco := Some up;
-	
+
 	let svg_file_top =
 	  if top_dot
-          then get_dot_graph_with_background2 ~deco:up ~botop:(false,true) gr_parent_name
+    then get_dot_graph_with_background2 ?main_feat ~deco:up ~botop:(false,true) gr_parent_name
 	  else get_dep_graph_with_background2 ?main_feat ~deco:up ~botop:(false,true) gr_parent_name in
 
 	let svg_file_bottom =
 	  if bottom_dot
-          then get_dot_graph_with_background2 ~deco:down ~botop:(true,false) graph
+          then get_dot_graph_with_background2 ?main_feat ~deco:down ~botop:(true,false) graph
 	  else get_dep_graph_with_background2 ?main_feat ~deco:down ~botop:(true,false) graph in
-	
+
 	let doc = Printf.sprintf "%s_%s.html" !current_selected_mod rule.Libgrew.rule_name in
 	(svg_file_top,svg_file_bottom,gr_parent_name,doc)
     | None -> failwith "get_rule_for"
