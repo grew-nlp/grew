@@ -5,13 +5,13 @@ include ../config/Makefile
 ifeq (@USE_DEP2PICT@,yes)
 D2P_OPT = bigarray.cmxa $(CAIRO_OPT) $(DEP2PICT_OPT)
 else
-D2P_OPT = 
+D2P_OPT =
 endif
 
 ifeq (@BUILD_GUI@,yes)
 GTK_OPT = $(LABLGTK_OPT) $(LABLWEBKIT_OPT)
 else
-GTK_OPT = 
+GTK_OPT =
 endif
 
 grew:
@@ -34,18 +34,18 @@ grew_gtk: grew_glade.cmx grew_main.cmx
 	$(OCAMLOPT) -o grew unix.cmxa -I +threads threads.cmxa str.cmxa $(GTK_OPT) \
 	$(ANSITERMINAL_OPT) $(LOG_OPT) $(XMLLIGHT_OPT) $(D2P_OPT) $(LIBGREW_OPT) $(CLUSTER_OPT) \
 	grew_config.cmx grew_args.cmx grew_utils.cmx grew_rew_display.cmx grew_glade.cmx grew_gtk.cmx grew_corpus.cmx grew_cluster.cmx grew_main.cmx
-	rm -rf ../grew	
+	rm -rf ../grew
 	rm -rf ../grew.glade
-	ln -s  `pwd`/grew ../grew 
+	ln -s  `pwd`/grew ../grew
 	ln -s  `pwd`/grew.glade ../grew.glade
 
 grew_gtk_nocluster: grew_glade.cmx grew_main_nocluster.cmx
 	$(OCAMLOPT) -o grew unix.cmxa -I +threads threads.cmxa str.cmxa $(GTK_OPT) \
 	$(ANSITERMINAL_OPT) $(LOG_OPT) $(XMLLIGHT_OPT) $(D2P_OPT) $(LIBGREW_OPT) \
 	grew_config.cmx grew_args.cmx grew_utils.cmx grew_rew_display.cmx grew_glade.cmx grew_gtk.cmx grew_corpus.cmx grew_main.cmx
-	rm -rf ../grew	
+	rm -rf ../grew
 	rm -rf ../grew.glade
-	ln -s  `pwd`/grew ../grew 
+	ln -s  `pwd`/grew ../grew
 	ln -s  `pwd`/grew.glade ../grew.glade
 
 grew_nogtk: grew_main_nogtk.cmx
@@ -93,9 +93,9 @@ grew_rew_display.cmx: grew_rew_display.ml grew_utils.cmx
 
 grew_utils.cmx: grew_utils.ml grew_args.cmx
 ifeq (@USE_DEP2PICT@,yes)
-	$(OCAMLOPT) -c -pp 'camlp4o pa_macro.cmo -DDEP2PICT' unix.cmxa str.cmxa $(ANSITERMINAL_OPT) $(LOG_OPT) $(D2P_OPT) grew_utils.ml
+	$(OCAMLOPT) -c -pp 'camlp4o pa_macro.cmo -DDEP2PICT' unix.cmxa str.cmxa $(ANSITERMINAL_OPT) $(LOG_OPT) $(D2P_OPT) $(LIBGREW_OPT) grew_utils.ml
 else
-	$(OCAMLOPT) -c -pp 'camlp4o pa_macro.cmo' unix.cmxa str.cmxa $(ANSITERMINAL_OPT) $(LOG_OPT) $(D2P_OPT) grew_utils.ml
+	$(OCAMLOPT) -c -pp 'camlp4o pa_macro.cmo' unix.cmxa str.cmxa $(ANSITERMINAL_OPT) $(LOG_OPT) $(D2P_OPT) $(LIBGREW_OPT) grew_utils.ml
 endif
 
 

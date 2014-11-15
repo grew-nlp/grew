@@ -81,7 +81,7 @@ module Grew_rew_display = struct
 
   let to_pdf_dotfile_graph ?deco ?main_feat graph_id output_file =
     let dot = to_dotstring_graph ?deco ?main_feat graph_id in
-    Grew_utils.save_pdf_dot dot output_file
+    Pdf.dot_to_file dot output_file
 
   let to_svg_depfile_graph ?deco ?main_feat graph_id output_file =
     let dep = to_depstring_graph ?deco ?main_feat graph_id in
@@ -89,13 +89,13 @@ module Grew_rew_display = struct
 
   let to_svg_dotfile_graph ?deco ?main_feat graph_id output_file =
     let dot = to_dotstring_graph ?deco ?main_feat graph_id in
-    Grew_utils.save_svg_dot dot output_file
+    Svg.dot_to_file dot output_file
 
-  (* create 2 temp file: 1 svg (via Grew_utils.svg_file_from_dot) and 1 html *)
+  (* create 2 temp file: 1 svg (via Svg.dot_to_tmp) and 1 html *)
   let svg_dot_temp_file ?main_feat ?deco ?(botop=(false,false)) graph =
     let dot = Libgrew.to_dot_graph ?deco ?main_feat graph in
     let dot = Str.replace_first (Str.regexp "digraph G {") ("digraph G {\n    bgcolor=\"transparent\";\n") dot in
-    let svg_file = Grew_utils.svg_file_from_dot dot in
+    let svg_file = Svg.dot_to_tmp dot in
     let temp_file_name,out_ch = Filename.open_temp_file ~mode:[Open_rdonly;Open_wronly;Open_text] "grew_" ".html" in
     let color = if (fst botop && snd botop) then middle_color_light else if (snd botop) then top_color_light else if (fst botop) then bottom_color_light else "white" in
     Printf.fprintf out_ch "<body style=\"background:%s;\"><img src=\"%s\"/></body>" color svg_file;
@@ -110,10 +110,10 @@ module Grew_rew_display = struct
   let get_dot_graph_with_background2 ?main_feat ?deco ?(botop=(false,false)) graph_id =
     svg_dot_temp_file ?main_feat ?deco ~botop (fst (List.assoc graph_id !graph_map2))
 
-  (* create 2 temp file: 1 svg (via Grew_utils.svg_file_from_dep) and 1 html *)
+  (* create 2 temp file: 1 svg (via Svg.dep_to_tmp) and 1 html *)
   let svg_dep_temp_file ?filter ?main_feat ?deco ?(botop=(false,false)) graph =
     let dep = Libgrew.to_dep_graph ?filter ?deco ?main_feat graph in
-    let svg_file = Grew_utils.svg_file_from_dep dep in
+    let svg_file = Svg.dep_to_tmp dep in
     let temp_file_name,out_ch = Filename.open_temp_file ~mode:[Open_rdonly;Open_wronly;Open_text] "grew_" ".html" in
     let color =
       if (fst botop && snd botop)
@@ -256,7 +256,7 @@ module Grew_rew_display = struct
     (* Printf.printf "==================================\n%s\n==============================\n" (Buffer.contents buff); *)
     (
       (match !first_leaf with No -> "" | Leaf x -> x | Dead_lock x -> x),
-      Grew_utils.svg_file_from_dot (Buffer.contents buff)
+      Svg.dot_to_tmp (Buffer.contents buff)
     )
 
   let init = Str.regexp "<g id=\"\\(.*\\)\" class=\"\\(.*\\)\" transform=\"\\(.*\\)\">"
@@ -649,7 +649,7 @@ module Grew_rew_display = struct
 
 	add "}";
 
-	let svg_file = (Grew_utils.svg_file_from_dot !dot) in
+	let svg_file = (Svg.dot_to_tmp !dot) in
 	transform svg_file (svg_file^".trans.svg") ~show_bottom:false ("G"^(string_of_int !graph_counter)) ;
 	let in_ch = open_in (svg_file^".trans.svg") in
 	let out_ch = open_out svg_file in

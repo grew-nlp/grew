@@ -96,18 +96,15 @@ module Resources = struct
         current_grs := Some grs
 
   (* -------------------------------------------------------------------------------- *)
-
   (* must be called after a grs is loaded *)
   let load_gr () =
     match !current_gr_file with
-      | None ->
-        Log.message "No gr file defined"
+      | None -> Log.message "No gr file defined"
       | Some file ->
         Log.fmessage "Loading gr file: '%s'" file;
         current_gr := Some (Libgrew.load_graph file)
 
   (* -------------------------------------------------------------------------------- *)
-
   exception Cannot_rewrite of string
   let rewrite seq =
     match (!current_grs, !current_gr) with
@@ -411,7 +408,7 @@ let init () =
         grew_window#grs_label#set_label
           (match !Resources.current_grs_file with None -> "No Grs loaded" | Some f -> Filename.basename f);
 
-        (match Grew_utils.list_index !Grew_args.seq !seq_list with
+        (match List_.index !Grew_args.seq !seq_list with
           | None -> ()
           | Some i -> !seq_combo#set_active i);
 
