@@ -564,80 +564,72 @@ let init () =
   let _ = grs_webkit#connect#script_alert
     ~callback:
     (fun _ msg ->
-      let splitted = Str.split (Str.regexp "::") msg in
-      begin
-        match (List.nth splitted 0) with
-          | "showOnBottom" ->
-            let graph = List.nth splitted 1 in
-            let svg_file =
-              if grew_window#btn_gr_bottom_dot#active
-              then (Grew_rew_display.get_dot_graph_with_background
-                      ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(true,false) graph)
-              else (Grew_rew_display.get_dep_graph_with_background ~filter:(get_current_filter ())
-                      ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(true,false) graph) in
-            graph_bottom_webkit#load_uri ("file://"^svg_file);
-            Grew_rew_display.current_bottom_graph := graph;
-            module_webkit#load_html_string empty_html "";
-            grs_webkit#execute_script
-              "if (get_edge_flag()) { remove_back_from_current_top(); hide_current_edge(); current_edge_two='qsd';current_top_graph='';current_bottom_graph=''; alert('removeTop'); }";
-            grs_webkit#execute_script "set_edge_flag(false)";
-            grew_window#btn_show_module#set_active false;
-            grew_window#vpane_right#set_position 30;
-            true
-          | "showOnTop" ->
-            let graph = List.nth splitted 1 in
-            let svg_file =
-              if grew_window#btn_gr_top_dot#active
-              then (Grew_rew_display.get_dot_graph_with_background
-                      ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(false,true) graph)
-              else (Grew_rew_display.get_dep_graph_with_background ~filter:(get_current_filter ())
-                      ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(false,true) graph) in
-            graph_top_webkit#load_uri ("file://"^svg_file);
-            Grew_rew_display.current_top_graph := graph;
-            module_webkit#load_html_string empty_html "";
-            grs_webkit#execute_script "if (get_edge_flag()) { remove_back_from_current_bottom(); hide_current_edge(); current_edge_two='qsd';current_top_graph='';current_bottom_graph=''; alert('removeBottom'); }";
-            grs_webkit#execute_script "set_edge_flag(false)";
-            grew_window#btn_show_module#set_active false;
-            grew_window#vpane_right#set_position 30;
-            true
-          | "showOnBottom2" ->
-            let graph = List.nth splitted 1 in
-            let svg_file =
-              if grew_window#btn_gr_bottom_dot#active
-              then (Grew_rew_display.get_dot_graph_with_background
-                      ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(true,false) graph)
-              else (Grew_rew_display.get_dep_graph_with_background ~filter:(get_current_filter ())
-                      ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(true,false) graph) in
-            graph_bottom_webkit#load_uri ("file://"^svg_file);
-            Grew_rew_display.current_bottom_graph := graph;
-            true
-          | "showOnTop2" ->
-            let graph = List.nth splitted 1 in
-            let svg_file = if grew_window#btn_gr_top_dot#active
-              then (Grew_rew_display.get_dot_graph_with_background
-                      ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(false,true) graph)
-              else (Grew_rew_display.get_dep_graph_with_background ~filter:(get_current_filter ())
-                      ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(false,true) graph) in
-            graph_top_webkit#load_uri ("file://"^svg_file);
-            Grew_rew_display.current_top_graph := graph;
-            true
-          | "showModuleFromGraph" ->
-            if (grew_window#vpane_right#position <= 30)
-            then (grew_window#vpane_right#set_position 250);
-            let graph = List.nth splitted 1 in
-            let svg_file = Grew_rew_display.get_big_step_for graph in
-            module_webkit#load_uri ("file://"^svg_file);
-            grs_webkit#execute_script "set_edge_flag(true)";
-            grew_window#btn_show_module#set_active true;
-            true
-          | "removeTop" ->
-            graph_top_webkit#load_html_string empty_html "";
-            true
-          | "removeBottom" ->
-            graph_bottom_webkit#load_html_string empty_html "";
-            true
-          | _ -> false
-      end;
+      match Str.split (Str.regexp "::") msg with
+       | ["showOnBottom"; graph] ->
+          let svg_file =
+            if grew_window#btn_gr_bottom_dot#active
+            then (Grew_rew_display.get_dot_graph_with_background
+                   ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(true,false) graph)
+            else (Grew_rew_display.get_dep_graph_with_background ~filter:(get_current_filter ())
+                   ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(true,false) graph) in
+          graph_bottom_webkit#load_uri ("file://"^svg_file);
+          Grew_rew_display.current_bottom_graph := graph;
+          module_webkit#load_html_string empty_html "";
+          grs_webkit#execute_script
+           "if (get_edge_flag()) { remove_back_from_current_top(); hide_current_edge(); current_edge_two='qsd';current_top_graph='';current_bottom_graph=''; alert('removeTop'); }";
+          grs_webkit#execute_script "set_edge_flag(false)";
+          grew_window#btn_show_module#set_active false;
+          grew_window#vpane_right#set_position 30;
+          true
+        | ["showOnTop"; graph] ->
+          let svg_file =
+            if grew_window#btn_gr_top_dot#active
+            then (Grew_rew_display.get_dot_graph_with_background
+                    ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(false,true) graph)
+            else (Grew_rew_display.get_dep_graph_with_background ~filter:(get_current_filter ())
+                    ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(false,true) graph) in
+          graph_top_webkit#load_uri ("file://"^svg_file);
+          Grew_rew_display.current_top_graph := graph;
+          module_webkit#load_html_string empty_html "";
+          grs_webkit#execute_script "if (get_edge_flag()) { remove_back_from_current_bottom(); hide_current_edge(); current_edge_two='qsd';current_top_graph='';current_bottom_graph=''; alert('removeBottom'); }";
+          grs_webkit#execute_script "set_edge_flag(false)";
+          grew_window#btn_show_module#set_active false;
+          grew_window#vpane_right#set_position 30;
+          true
+        | ["showOnBottom2"; graph] ->
+          let svg_file =
+            if grew_window#btn_gr_bottom_dot#active
+            then (Grew_rew_display.get_dot_graph_with_background
+                    ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(true,false) graph)
+            else (Grew_rew_display.get_dep_graph_with_background ~filter:(get_current_filter ())
+                    ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(true,false) graph) in
+          graph_bottom_webkit#load_uri ("file://"^svg_file);
+          Grew_rew_display.current_bottom_graph := graph;
+          true
+        | ["showOnTop2"; graph] ->
+          let svg_file = if grew_window#btn_gr_top_dot#active
+            then (Grew_rew_display.get_dot_graph_with_background
+                    ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(false,true) graph)
+            else (Grew_rew_display.get_dep_graph_with_background ~filter:(get_current_filter ())
+                    ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(false,true) graph) in
+          graph_top_webkit#load_uri ("file://"^svg_file);
+          Grew_rew_display.current_top_graph := graph;
+          true
+        | ["showModuleFromGraph"; graph] ->
+          if (grew_window#vpane_right#position <= 30)
+          then (grew_window#vpane_right#set_position 250);
+          let svg_file = Grew_rew_display.get_big_step_for graph in
+          module_webkit#load_uri ("file://"^svg_file);
+          grs_webkit#execute_script "set_edge_flag(true)";
+          grew_window#btn_show_module#set_active true;
+          true
+        | ["removeTop"] ->
+          graph_top_webkit#load_html_string empty_html "";
+          true
+        | ["removeBottom"] ->
+          graph_bottom_webkit#load_html_string empty_html "";
+          true
+        | _ -> false
     ) in
 
   let click_marker1 = ref false
@@ -645,13 +637,13 @@ let init () =
 
   let _ = module_webkit#connect#script_alert
     ~callback:(fun _ msg ->
-      let splitted = Str.split (Str.regexp "::") msg in
-      begin match (List.nth splitted 0) with
-        | "showOnBottom" | "showOnBottom2" ->
-          if (not !click_marker1)
-          then
+      match Str.split (Str.regexp "::") msg with
+        | ["showOnBottom"; graph]
+        | ["showOnBottom2"; graph] ->
+          if !click_marker1
+          then click_marker1 := false
+          else
             begin
-              let graph = List.nth splitted 1 in
               let svg_file =
                 if grew_window#btn_gr_bottom_dot#active
                 then (Grew_rew_display.get_dot_graph_with_background2
@@ -661,14 +653,14 @@ let init () =
               graph_bottom_webkit#load_uri ("file://"^svg_file);
               Grew_rew_display.current_bottom_graph := (graph^".2");
               grs_webkit#execute_script "remove_back_from_current_bottom()";
-            end
-          else (click_marker1 := false);
+            end;
           true
-        | "showOnTop" | "showOnTop2" ->
-          if (not !click_marker2)
-          then
+        | ["showOnTop"; graph]
+        | ["showOnTop2"; graph] ->
+          if !click_marker2
+          then click_marker2 := false
+          else
             begin
-              let graph = List.nth splitted 1 in
               let svg_file =
                 if grew_window#btn_gr_top_dot#active
                 then (Grew_rew_display.get_dot_graph_with_background2
@@ -678,11 +670,9 @@ let init () =
               graph_top_webkit#load_uri ("file://"^svg_file);
               Grew_rew_display.current_top_graph := (graph^".2");
               grs_webkit#execute_script "remove_back_from_current_top()";
-            end
-          else (click_marker2 := false;);
+            end;
           true
-        | "showModuleFromGraph" ->
-          let graph = List.nth splitted 1 in
+        | ["showModuleFromGraph"; graph] ->
           let top_dot = grew_window#btn_gr_top_dot#active
           and bottom_dot = grew_window#btn_gr_bottom_dot#active in
           let (svg_file_top,svg_file_bottom,graph_top,doc_file) =
@@ -702,7 +692,6 @@ let init () =
           click_marker2 := true;
           true
         | _ -> false
-      end;
     ) in
 
   (* -------------------------------------------------------------------------------- *)
@@ -842,192 +831,7 @@ let init () =
   let _ = grew_window#btn_leave_fullscreen#connect#clicked
     ~callback: (fun () -> grew_window#toplevel#unfullscreen (); fullscreen := false) in
 
-  (* -------------------------------------------------------------------------------- *)
-  (** Save / Show *)
-  let _ = grew_window#btn_close_source_view_top#connect#clicked
-    ~callback:
-    (fun () ->
-      grew_window#btn_close_source_view_top#misc#hide ();
-      grew_window#source_view_top_scroll#misc#hide ();
-    ) in
-
-  let _ = grew_window#btn_close_source_view_bottom#connect#clicked
-    ~callback:
-    (fun () ->
-      grew_window#btn_close_source_view_bottom#misc#hide ();
-      grew_window#source_view_bottom_scroll#misc#hide ();
-    ) in
-
-  let _ = grew_window#graph_top_show_gr#connect#clicked
-    ~callback:
-    (fun () ->
-      grew_window#save_top_graph_box#misc#hide ();
-      grew_window#btn_close_source_view_top#misc#show ();
-      grew_window#source_view_top_scroll#misc#show ();
-      grew_window#source_view_top#buffer#set_text
-        (Grew_rew_display.to_grstring_graph !Grew_rew_display.current_top_graph);
-    ) in
-
-  let _ = grew_window#graph_top_show_conll#connect#clicked
-    ~callback:
-    (fun () ->
-      grew_window#save_top_graph_box#misc#hide ();
-      grew_window#btn_close_source_view_top#misc#show ();
-      grew_window#source_view_top_scroll#misc#show ();
-      grew_window#source_view_top#buffer#set_text
-        (Grew_rew_display.to_conll_graph !Grew_rew_display.current_top_graph);
-    ) in
-
-  let _ = grew_window#graph_top_show_dep#connect#clicked
-    ~callback:
-    (fun () ->
-      grew_window#save_top_graph_box#misc#hide ();
-      grew_window#btn_close_source_view_top#misc#show ();
-      grew_window#source_view_top_scroll#misc#show ();
-      grew_window#source_view_top#buffer#set_text
-        (Grew_rew_display.to_depstring_graph
-           ?deco:(!Grew_rew_display.current_top_deco)
-           ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) !Grew_rew_display.current_top_graph)
-    ) in
-
-  let _ = grew_window#graph_top_show_dot#connect#clicked
-    ~callback:
-    (fun () ->
-      grew_window#btn_close_source_view_top#misc#show ();
-      grew_window#source_view_top_scroll#misc#show ();
-      grew_window#source_view_top#buffer#set_text
-        (Grew_rew_display.to_dotstring_graph ?deco:(!Grew_rew_display.current_top_deco) ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) !Grew_rew_display.current_top_graph);
-    ) in
-
-  let _ = grew_window#graph_bottom_show_gr#connect#clicked
-    ~callback:
-    (fun () ->
-      grew_window#save_bottom_graph_box#misc#hide ();
-      grew_window#btn_close_source_view_bottom#misc#show ();
-      grew_window#source_view_bottom_scroll#misc#show ();
-      grew_window#source_view_bottom#buffer#set_text
-        (Grew_rew_display.to_grstring_graph !Grew_rew_display.current_bottom_graph);
-    ) in
-
-  let _ = grew_window#graph_bottom_show_conll#connect#clicked
-    ~callback:
-    (fun () ->
-      grew_window#save_bottom_graph_box#misc#hide ();
-      grew_window#btn_close_source_view_bottom#misc#show ();
-      grew_window#source_view_bottom_scroll#misc#show ();
-      grew_window#source_view_bottom#buffer#set_text
-        (Grew_rew_display.to_conll_graph !Grew_rew_display.current_bottom_graph);
-    ) in
-
-  let _ = grew_window#graph_bottom_show_dep#connect#clicked
-    ~callback:
-    (fun () ->
-      grew_window#btn_close_source_view_bottom#misc#show ();
-      grew_window#source_view_bottom_scroll#misc#show ();
-      grew_window#source_view_bottom#buffer#set_text
-        (Grew_rew_display.to_depstring_graph
-           ?deco:(!Grew_rew_display.current_bottom_deco)
-           ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) !Grew_rew_display.current_bottom_graph
-        );
-    ) in
-
-  let _ = grew_window#graph_bottom_show_dot#connect#clicked
-    ~callback:(fun () ->
-      grew_window#btn_close_source_view_bottom#misc#show ();
-      grew_window#source_view_bottom_scroll#misc#show ();
-      grew_window#source_view_bottom#buffer#set_text
-        (Grew_rew_display.to_dotstring_graph
-           ?deco:(!Grew_rew_display.current_bottom_deco)
-           ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) !Grew_rew_display.current_bottom_graph
-        );
-    ) in
-
-  let save_type = ref Png in
-
-  let show_save_top_box () =
-    grew_window#save_top_graph_box#misc#show ();
-    grew_window#btn_close_source_view_top#misc#hide ();
-    grew_window#source_view_top_scroll#misc#hide () in
-
-  let set_top_type typ () = save_type := typ; show_save_top_box () in
-
-  let _ = grew_window#graph_top_save_as_png#connect#clicked ~callback:(set_top_type Png) in
-  let _ = grew_window#graph_top_save_as_pdf_dep#connect#clicked ~callback:(set_top_type Pdf_dep) in
-  let _ = grew_window#graph_top_save_as_pdf_dot#connect#clicked ~callback:(set_top_type Pdf_dot) in
-  let _ = grew_window#graph_top_save_as_gr#connect#clicked ~callback:(set_top_type Gr) in
-  let _ = grew_window#graph_top_save_as_conll#connect#clicked ~callback:(set_top_type Conll) in
-  let _ = grew_window#graph_top_save_as_dep#connect#clicked ~callback:(set_top_type Dep) in
-  let _ = grew_window#graph_top_save_as_dot#connect#clicked ~callback:(set_top_type Dot) in
-
-  let filechooser_top = GFile.chooser_widget ~packing:grew_window#save_top_graph_box2#add ~action:`SAVE () in
-
-  let _ = grew_window#graph_top_save_ok#connect#clicked
-    ~callback:
-    (fun () ->
-      match filechooser_top#filename with
-        | None -> grew_window#save_top_graph_box#misc#hide ();
-        | Some f when Sys.file_exists f && Sys.is_directory f -> ignore (filechooser_top#set_current_folder f)
-        | Some f ->
-          let deco = !Grew_rew_display.current_top_deco in
-          let main_feat = !Grew_config.current_config.Grew_config.main_feat in
-          begin
-            match !save_type with
-              | Png -> Grew_rew_display.to_pngfile_graph ?deco ~main_feat !Grew_rew_display.current_top_graph f
-              | Pdf_dep -> Grew_rew_display.to_pdf_depfile_graph ?deco ~main_feat !Grew_rew_display.current_top_graph f
-              | Pdf_dot -> Grew_rew_display.to_pdf_dotfile_graph ?deco ~main_feat !Grew_rew_display.current_top_graph f
-              | Dep -> Grew_rew_display.to_depfile_graph ?deco ~main_feat !Grew_rew_display.current_top_graph f
-              | Dot -> Grew_rew_display.to_dotfile_graph ?deco ~main_feat !Grew_rew_display.current_top_graph f
-              | Gr -> Grew_rew_display.to_grfile_graph !Grew_rew_display.current_top_graph f
-              | Conll -> Grew_rew_display.save_conll_graph !Grew_rew_display.current_top_graph f
-          end;
-          grew_window#save_top_graph_box#misc#hide ();
-    ) in
-
-  let _ = grew_window#graph_top_save_cancel#connect#clicked ~callback:(fun () -> grew_window#save_top_graph_box#misc#hide ()) in
-
-  let show_save_bottom_box () =
-    grew_window#save_bottom_graph_box#misc#show ();
-    grew_window#btn_close_source_view_bottom#misc#hide ();
-    grew_window#source_view_bottom_scroll#misc#hide () in
-
-  let set_bottom_type typ () = save_type := typ; show_save_bottom_box () in
-
-  let _ = grew_window#graph_bottom_save_as_png#connect#clicked ~callback:(set_bottom_type Png) in
-  let _ = grew_window#graph_bottom_save_as_pdf_dep#connect#clicked ~callback:(set_bottom_type Pdf_dep) in
-  let _ = grew_window#graph_bottom_save_as_pdf_dot#connect#clicked ~callback:(set_bottom_type Pdf_dot) in
-  let _ = grew_window#graph_bottom_save_as_gr#connect#clicked ~callback:(set_bottom_type Gr) in
-  let _ = grew_window#graph_bottom_save_as_conll#connect#clicked ~callback:(set_bottom_type Conll) in
-  let _ = grew_window#graph_bottom_save_as_dep#connect#clicked ~callback:(set_bottom_type Dep) in
-  let _ = grew_window#graph_bottom_save_as_dot#connect#clicked ~callback:(set_bottom_type Dot) in
-
-  let filechooser_bottom =
-    GFile.chooser_widget ~packing:grew_window#save_bottom_graph_box2#add ~action:`SAVE () in
-
-  let _ = grew_window#graph_bottom_save_ok#connect#clicked
-    ~callback:
-    (fun () ->
-      match filechooser_bottom#filename with
-        | None -> grew_window#save_bottom_graph_box#misc#hide ();
-        | Some f when (Sys.file_exists f && Sys.is_directory f) -> ignore (filechooser_bottom#set_current_folder f)
-        | Some f ->
-          let deco = !Grew_rew_display.current_bottom_deco in
-          let main_feat = !Grew_config.current_config.Grew_config.main_feat in
-          begin
-            match !save_type with
-              | Png -> Grew_rew_display.to_pngfile_graph ?deco ~main_feat !Grew_rew_display.current_bottom_graph f
-              | Pdf_dep -> Grew_rew_display.to_pdf_depfile_graph ?deco ~main_feat !Grew_rew_display.current_bottom_graph f
-              | Pdf_dot -> Grew_rew_display.to_pdf_dotfile_graph ?deco ~main_feat !Grew_rew_display.current_bottom_graph f
-              | Dep -> Grew_rew_display.to_depfile_graph ?deco ~main_feat !Grew_rew_display.current_bottom_graph f
-              | Dot -> Grew_rew_display.to_dotfile_graph ?deco ~main_feat !Grew_rew_display.current_bottom_graph f
-              | Gr -> Grew_rew_display.to_grfile_graph !Grew_rew_display.current_bottom_graph f
-              | Conll -> Grew_rew_display.save_conll_graph !Grew_rew_display.current_bottom_graph f
-          end;
-          grew_window#save_bottom_graph_box#misc#hide ();
-    ) in
-
-  let _ = grew_window#graph_bottom_save_cancel#connect#clicked
-    ~callback:(fun () -> grew_window#save_bottom_graph_box#misc#hide ()) in
-
+(*  *)
   (* ==================== Grs file choosing ==================== *)
   (* 1: the file given with the "-grs" option, if it is a valid path *)
   (* 2: the last grs file used with grew, if it is a valid path *)

@@ -371,6 +371,30 @@
               </packing>
             </child>
             <child>
+              <widget class="GtkToggleButton" id="synchronize">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="has_tooltip">True</property>
+                <property name="tooltip" translatable="yes">Synchronise</property>
+                <property name="relief">none</property>
+                <child>
+                  <widget class="GtkImage" id="image10">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="tooltip" translatable="yes">Synchronise</property>
+                    <property name="stock">gtk-network</property>
+                  </widget>
+                </child>
+              </widget>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="pack_type">end</property>
+                <property name="position">12</property>
+              </packing>
+            </child>
+            <child>
               <widget class="GtkButton" id="btn_preferences">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
@@ -390,6 +414,9 @@
                 <property name="pack_type">end</property>
                 <property name="position">12</property>
               </packing>
+            </child>
+            <child>
+              <placeholder/>
             </child>
             <child>
               <widget class="GtkButton" id="btn_leave_fullscreen">
@@ -1006,17 +1033,15 @@
                       </packing>
                     </child>
                     <child>
-                      <widget class="GtkVPaned" id="vpaned1">
+                      <widget class="GtkVPaned" id="vpaned">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="position">350</property>
                         <property name="position_set">True</property>
                         <child>
-                          <widget class="GtkTable" id="table3">
+                          <widget class="GtkHBox" id="hbox13">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="n_rows">2</property>
-                            <property name="n_columns">2</property>
                             <child>
                               <widget class="GtkVBox" id="vbox3">
                                 <property name="visible">True</property>
@@ -1038,7 +1063,7 @@
                                   <widget class="GtkVScale" id="graph_top_zoom">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
-                                    <property name="adjustment">100 30 310 1 10 10</property>
+                                    <property name="adjustment">30 30 310 1 10 10</property>
                                     <property name="inverted">True</property>
                                     <property name="round_digits">0</property>
                                     <property name="digits">0</property>
@@ -1093,393 +1118,26 @@
                                 </child>
                               </widget>
                               <packing>
-                                <property name="top_attach">1</property>
-                                <property name="bottom_attach">2</property>
-                                <property name="x_options"/>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkViewport" id="viewport11">
+                              <widget class="GtkScrolledWindow" id="graph_view_top">
                                 <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="resize_mode">queue</property>
-                                <property name="shadow_type">none</property>
+                                <property name="can_focus">True</property>
+                                <property name="hscrollbar_policy">automatic</property>
+                                <property name="vscrollbar_policy">automatic</property>
+                                <property name="shadow_type">in</property>
                                 <child>
                                   <placeholder/>
                                 </child>
                               </widget>
                               <packing>
-                                <property name="x_options"/>
-                                <property name="y_options"/>
-                              </packing>
-                            </child>
-                            <child>
-                              <widget class="GtkHBox" id="hbox13">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <child>
-                                  <widget class="GtkLabel" id="label18">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">False</property>
-                                    <property name="label" translatable="yes">Save as  </property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">0</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="graph_top_save_as_gr">
-                                    <property name="label" translatable="yes">GR</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">1</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="graph_top_save_as_conll">
-                                    <property name="label" translatable="yes">CONLL</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">2</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="graph_top_save_as_png">
-                                    <property name="label" translatable="yes">PNG</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">3</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="graph_top_save_as_pdf_dep">
-                                    <property name="label" translatable="yes">PDF(dep)</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">4</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="graph_top_save_as_pdf_dot">
-                                    <property name="label" translatable="yes">PDF(dot)</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">5</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="graph_top_save_as_dep">
-                                    <property name="label" translatable="yes">DEP</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">6</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="graph_top_save_as_dot">
-                                    <property name="label" translatable="yes">DOT</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">7</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkVSeparator" id="vseparator3">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">False</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">8</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkLabel" id="label19">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">False</property>
-                                    <property name="label" translatable="yes">  Show  </property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">9</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="graph_top_show_gr">
-                                    <property name="label" translatable="yes">GR</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">10</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="graph_top_show_conll">
-                                    <property name="label" translatable="yes">CONLL</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">11</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="graph_top_show_dep">
-                                    <property name="label" translatable="yes">DEP</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">12</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="graph_top_show_dot">
-                                    <property name="label" translatable="yes">DOT</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">13</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <placeholder/>
-                                </child>
-                                <child>
-                                  <widget class="GtkViewport" id="viewport13">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">False</property>
-                                    <property name="resize_mode">queue</property>
-                                    <property name="shadow_type">none</property>
-                                    <child>
-                                      <placeholder/>
-                                    </child>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">True</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">15</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="btn_close_source_view_top">
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                    <child>
-                                      <widget class="GtkImage" id="image8">
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">False</property>
-                                        <property name="stock">gtk-close</property>
-                                      </widget>
-                                    </child>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">16</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <placeholder/>
-                                </child>
-                              </widget>
-                              <packing>
-                                <property name="left_attach">1</property>
-                                <property name="right_attach">2</property>
-                                <property name="y_options"/>
-                              </packing>
-                            </child>
-                            <child>
-                              <widget class="GtkHBox" id="hbox15">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <child>
-                                  <widget class="GtkScrolledWindow" id="graph_view_top">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="hscrollbar_policy">automatic</property>
-                                    <property name="vscrollbar_policy">automatic</property>
-                                    <property name="shadow_type">in</property>
-                                    <signal name="button_press_event" handler="on_graph_view_top_button_press_event" after="yes" swapped="no"/>
-                                    <child>
-                                      <placeholder/>
-                                    </child>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">True</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">0</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkScrolledWindow" id="source_view_top_scroll">
-                                    <property name="can_focus">True</property>
-                                    <property name="hscrollbar_policy">automatic</property>
-                                    <property name="vscrollbar_policy">automatic</property>
-                                    <property name="shadow_type">in</property>
-                                    <child>
-                                      <widget class="GtkTextView" id="source_view_top">
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">True</property>
-                                      </widget>
-                                    </child>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">True</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">1</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkVBox" id="save_top_graph_box">
-                                    <property name="can_focus">False</property>
-                                    <child>
-                                      <widget class="GtkHBox" id="save_top_graph_box2">
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">False</property>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                      </widget>
-                                      <packing>
-                                        <property name="expand">True</property>
-                                        <property name="fill">True</property>
-                                        <property name="position">0</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <widget class="GtkHBox" id="hbox17">
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">False</property>
-                                        <child>
-                                          <widget class="GtkViewport" id="viewport15">
-                                            <property name="visible">True</property>
-                                            <property name="can_focus">False</property>
-                                            <property name="resize_mode">queue</property>
-                                            <property name="shadow_type">none</property>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                          </widget>
-                                          <packing>
-                                            <property name="expand">True</property>
-                                            <property name="fill">True</property>
-                                            <property name="position">0</property>
-                                          </packing>
-                                        </child>
-                                        <child>
-                                          <widget class="GtkButton" id="graph_top_save_cancel">
-                                            <property name="label">gtk-cancel</property>
-                                            <property name="visible">True</property>
-                                            <property name="can_focus">True</property>
-                                            <property name="receives_default">True</property>
-                                            <property name="use_stock">True</property>
-                                          </widget>
-                                          <packing>
-                                            <property name="expand">False</property>
-                                            <property name="fill">False</property>
-                                            <property name="position">1</property>
-                                          </packing>
-                                        </child>
-                                        <child>
-                                          <widget class="GtkButton" id="graph_top_save_ok">
-                                            <property name="label">gtk-ok</property>
-                                            <property name="visible">True</property>
-                                            <property name="can_focus">True</property>
-                                            <property name="receives_default">True</property>
-                                            <property name="use_stock">True</property>
-                                          </widget>
-                                          <packing>
-                                            <property name="expand">False</property>
-                                            <property name="fill">False</property>
-                                            <property name="position">2</property>
-                                          </packing>
-                                        </child>
-                                      </widget>
-                                      <packing>
-                                        <property name="expand">False</property>
-                                        <property name="fill">True</property>
-                                        <property name="position">1</property>
-                                      </packing>
-                                    </child>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">True</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">2</property>
-                                  </packing>
-                                </child>
-                              </widget>
-                              <packing>
-                                <property name="left_attach">1</property>
-                                <property name="right_attach">2</property>
-                                <property name="top_attach">1</property>
-                                <property name="bottom_attach">2</property>
+                                <property name="expand">True</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
                               </packing>
                             </child>
                           </widget>
@@ -1489,11 +1147,9 @@
                           </packing>
                         </child>
                         <child>
-                          <widget class="GtkTable" id="table2">
+                          <widget class="GtkHBox" id="hbox23">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="n_rows">2</property>
-                            <property name="n_columns">2</property>
                             <child>
                               <widget class="GtkVBox" id="vbox9">
                                 <property name="visible">True</property>
@@ -1570,401 +1226,26 @@
                                 </child>
                               </widget>
                               <packing>
-                                <property name="top_attach">1</property>
-                                <property name="bottom_attach">2</property>
-                                <property name="x_options"/>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkViewport" id="viewport12">
+                              <widget class="GtkScrolledWindow" id="graph_view_bottom">
                                 <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="resize_mode">queue</property>
-                                <property name="shadow_type">none</property>
+                                <property name="can_focus">True</property>
+                                <property name="hscrollbar_policy">automatic</property>
+                                <property name="vscrollbar_policy">automatic</property>
+                                <property name="shadow_type">in</property>
                                 <child>
-                                  <widget class="GtkToggleButton" id="synchronize">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="has_tooltip">True</property>
-                                    <property name="tooltip" translatable="yes">Synchronise</property>
-                                    <property name="relief">none</property>
-                                    <child>
-                                      <widget class="GtkImage" id="image10">
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">False</property>
-                                        <property name="tooltip" translatable="yes">Synchronise</property>
-                                        <property name="stock">gtk-network</property>
-                                      </widget>
-                                    </child>
-                                  </widget>
+                                  <placeholder/>
                                 </child>
                               </widget>
                               <packing>
-                                <property name="x_options"/>
-                                <property name="y_options"/>
-                              </packing>
-                            </child>
-                            <child>
-                              <widget class="GtkHBox" id="hbox14">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <child>
-                                  <widget class="GtkLabel" id="label16">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">False</property>
-                                    <property name="label" translatable="yes">Save as  </property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">0</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="graph_bottom_save_as_gr">
-                                    <property name="label" translatable="yes">GR</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">1</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="graph_bottom_save_as_conll">
-                                    <property name="label" translatable="yes">CONLL</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">2</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="graph_bottom_save_as_png">
-                                    <property name="label" translatable="yes">PNG</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">3</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="graph_bottom_save_as_pdf_dep">
-                                    <property name="label" translatable="yes">PDF(dep)</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">4</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="graph_bottom_save_as_pdf_dot">
-                                    <property name="label" translatable="yes">PDF(dot)</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">5</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="graph_bottom_save_as_dep">
-                                    <property name="label" translatable="yes">DEP</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">6</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="graph_bottom_save_as_dot">
-                                    <property name="label" translatable="yes">DOT</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">7</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkVSeparator" id="vseparator2">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">False</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">8</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkLabel" id="label17">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">False</property>
-                                    <property name="label" translatable="yes">  Show  </property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">9</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="graph_bottom_show_gr">
-                                    <property name="label" translatable="yes">GR</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">10</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="graph_bottom_show_conll">
-                                    <property name="label" translatable="yes">CONLL</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">11</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="graph_bottom_show_dep">
-                                    <property name="label" translatable="yes">DEP</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">12</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="graph_bottom_show_dot">
-                                    <property name="label" translatable="yes">DOT</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">13</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkViewport" id="viewport14">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">False</property>
-                                    <property name="resize_mode">queue</property>
-                                    <property name="shadow_type">none</property>
-                                    <child>
-                                      <placeholder/>
-                                    </child>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">True</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">14</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="btn_close_source_view_bottom">
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="relief">none</property>
-                                    <child>
-                                      <widget class="GtkImage" id="image9">
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">False</property>
-                                        <property name="stock">gtk-close</property>
-                                      </widget>
-                                    </child>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">15</property>
-                                  </packing>
-                                </child>
-                              </widget>
-                              <packing>
-                                <property name="left_attach">1</property>
-                                <property name="right_attach">2</property>
-                                <property name="y_options"/>
-                              </packing>
-                            </child>
-                            <child>
-                              <widget class="GtkHBox" id="hbox16">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <child>
-                                  <widget class="GtkScrolledWindow" id="graph_view_bottom">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="hscrollbar_policy">automatic</property>
-                                    <property name="vscrollbar_policy">automatic</property>
-                                    <property name="shadow_type">in</property>
-                                    <child>
-                                      <placeholder/>
-                                    </child>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">True</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">0</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkScrolledWindow" id="source_view_bottom_scroll">
-                                    <property name="can_focus">True</property>
-                                    <property name="hscrollbar_policy">automatic</property>
-                                    <property name="vscrollbar_policy">automatic</property>
-                                    <property name="shadow_type">in</property>
-                                    <child>
-                                      <widget class="GtkTextView" id="source_view_bottom">
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">True</property>
-                                      </widget>
-                                    </child>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">True</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">1</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkVBox" id="save_bottom_graph_box">
-                                    <property name="can_focus">False</property>
-                                    <child>
-                                      <widget class="GtkHBox" id="save_bottom_graph_box2">
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">False</property>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                      </widget>
-                                      <packing>
-                                        <property name="expand">True</property>
-                                        <property name="fill">True</property>
-                                        <property name="position">0</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <widget class="GtkHBox" id="hbox18">
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">False</property>
-                                        <child>
-                                          <widget class="GtkViewport" id="viewport16">
-                                            <property name="visible">True</property>
-                                            <property name="can_focus">False</property>
-                                            <property name="resize_mode">queue</property>
-                                            <property name="shadow_type">none</property>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                          </widget>
-                                          <packing>
-                                            <property name="expand">True</property>
-                                            <property name="fill">True</property>
-                                            <property name="position">0</property>
-                                          </packing>
-                                        </child>
-                                        <child>
-                                          <widget class="GtkButton" id="graph_bottom_save_cancel">
-                                            <property name="label">gtk-cancel</property>
-                                            <property name="visible">True</property>
-                                            <property name="can_focus">True</property>
-                                            <property name="receives_default">True</property>
-                                            <property name="use_stock">True</property>
-                                          </widget>
-                                          <packing>
-                                            <property name="expand">False</property>
-                                            <property name="fill">False</property>
-                                            <property name="position">1</property>
-                                          </packing>
-                                        </child>
-                                        <child>
-                                          <widget class="GtkButton" id="graph_bottom_save_ok">
-                                            <property name="label">gtk-ok</property>
-                                            <property name="visible">True</property>
-                                            <property name="can_focus">True</property>
-                                            <property name="receives_default">True</property>
-                                            <property name="use_stock">True</property>
-                                          </widget>
-                                          <packing>
-                                            <property name="expand">False</property>
-                                            <property name="fill">False</property>
-                                            <property name="position">2</property>
-                                          </packing>
-                                        </child>
-                                      </widget>
-                                      <packing>
-                                        <property name="expand">False</property>
-                                        <property name="fill">True</property>
-                                        <property name="position">1</property>
-                                      </packing>
-                                    </child>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">True</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">2</property>
-                                  </packing>
-                                </child>
-                              </widget>
-                              <packing>
-                                <property name="left_attach">1</property>
-                                <property name="right_attach">2</property>
-                                <property name="top_attach">1</property>
-                                <property name="bottom_attach">2</property>
+                                <property name="expand">True</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
                               </packing>
                             </child>
                           </widget>
