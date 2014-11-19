@@ -109,6 +109,10 @@ module Resources = struct
   let rewrite seq =
     match (!current_grs, !current_gr) with
       | (Some grs, Some gr) -> Libgrew.display gr grs seq
+(*         let t = Timer.create () in
+        let res = Libgrew.display gr grs seq in
+        printf "====> %f\n%!" (Timer.get t);
+        res *)
       | (None, _) -> raise (Cannot_rewrite "No grs file loaded")
       | (_, None) -> raise (Cannot_rewrite "No graph file loaded")
 end (* module Resources *)

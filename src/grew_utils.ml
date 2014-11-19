@@ -232,3 +232,38 @@ module Corpus = struct
 
 
 end (* module Corpus *)
+
+(* ==================================================================================================== *)
+module Int =
+  struct
+    type t = int
+    let compare = Pervasives.compare
+  end
+
+module Int_set = Set.Make (Int)
+module Int_map = Map.Make (Int)
+
+(* ==================================================================================================== *)
+module Timer = struct
+  type t = int
+
+  let cpt = ref 0
+
+  let table = ref Int_map.empty
+
+  let create () =
+    incr cpt;
+    let current_time = Unix.times () in
+    table := Int_map.add !cpt current_time.Unix.tms_utime !table;
+    !cpt
+
+  let see timer =
+    let current_time = Unix.times () in
+    current_time.Unix.tms_utime -. (Int_map.find timer !table)
+
+  let get timer =
+    let current_time = Unix.times () in
+    let diff = current_time.Unix.tms_utime -. (Int_map.find timer !table) in
+    table := Int_map.remove !cpt !table;
+    diff
+end
