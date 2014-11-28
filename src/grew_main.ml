@@ -8,25 +8,23 @@
 (*    Authors: see AUTHORS file                                        *)
 (***********************************************************************)
 
-open Libgrew
 open Log
-
 
 open Grew_args
 IFDEF BUILD_GUI THEN
 open Grew_gtk
 ENDIF
 
-let _ = 
+let _ =
   Printexc.record_backtrace true;
   Log.set_active_levels [(*`DEBUG;*)`MESSAGE;`WARNING];
   Log.set_write_to_log_file false;
-  
+
   (* ignore(open_in "/tmp/tmp.svg"); *)
-  
+
   (* parsing command line args *)
   Grew_args.parse ();
-  
+
   match !Grew_args.mode with
   | Grew_args.Gui ->
       IFDEF BUILD_GUI THEN
@@ -39,6 +37,7 @@ let _ =
   | Grew_args.Index -> Grew_corpus.make_index ()
   | Grew_args.Filter -> Grew_corpus.multi_conll ()
   | Grew_args.Annot -> Grew_corpus.annot ()
+  | Grew_args.Grep -> Grew_corpus.grep ()
   | Grew_args.Cluster ->
       IFDEF BUILD_CLUSTER THEN
 	Grew_cluster.init ()

@@ -8,13 +8,11 @@
 (*    Authors: see AUTHORS file                                        *)
 (***********************************************************************)
 
-open Log
-
 open Printf
+open Log
 
 open Cluster
 
-open Libgrew
 open Grew_utils
 open Grew_args
 

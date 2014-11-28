@@ -1,4 +1,4 @@
-VERSION = 0.20.1
+VERSION = 0.21
 
 INSTALL_DIR = @prefix@@bindir@
 DATA_DIR = @prefix@@datarootdir@/grew/
@@ -93,7 +93,7 @@ infos:
 	@echo "BUILD CLUSTER        -> " @BUILD_CLUSTER@
 	@echo "USE DEP2PICT         -> " @USE_DEP2PICT@
 
-cleanup: 
+cleanup:
 	rm -rf *.cmo *.out *.cmi *.cmxa *.a *.cmx *~ *.o *.cmx  *.cma test *.svg *.status *.h *.log autom4te.cache config/autom4te.cache
 
 purge:

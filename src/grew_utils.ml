@@ -11,8 +11,6 @@
 open Printf
 open Log
 
-open Libgrew
-
 open Grew_args
 
 (* ================================================================================ *)
@@ -81,13 +79,6 @@ module List_ = struct
     in loop 0
 
 end (* module List_ *)
-
-(* ================================================================================ *)
-module Loc = struct
-  let to_string = function
-    | None -> ""
-    | Some (file,line) -> sprintf "\nfile : %s\nline : %d" file line
-end (* module Loc *)
 
 (* ================================================================================ *)
 module Html = struct

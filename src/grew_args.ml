@@ -10,16 +10,14 @@
 
 open Arg
 open Log
-open Libgrew
-
 
 module Grew_args = struct
 
-  type mode = Gui | Corpus | Cluster | Filter | Index | Det | Annot
-  let mode = ref Gui 
+  type mode = Gui | Corpus | Cluster | Filter | Index | Det | Annot | Grep
+  let mode = ref Gui
 
-  type html_mode = 
-    | No         (* only stat file is produced *) 
+  type html_mode =
+    | No         (* only stat file is produced *)
     | Html       (* html an png files are produced only when rewriting history is not empty *)
     | Full_html  (* html an png files are always produced *)
 
@@ -30,7 +28,7 @@ module Grew_args = struct
 
   let grs = ref ""
   let gr = ref ""
-  let gui_doc = ref false  
+  let gui_doc = ref false
 
   let input_data = ref ""
   let output_dir = ref None
@@ -59,7 +57,7 @@ module Grew_args = struct
   let oar_walltime = ref "1:0:0"
   let oar_graph_by_node = ref 10
 
-  let usage = 
+  let usage =
     "grew has 4 running modes:\n"^
     "  * GUI MODE: a Gtk interface (this is the default mode)\n"^
     "  * CORPUS MODE: runs rewriting on all graphs of a directory\n"^
@@ -74,8 +72,9 @@ module Grew_args = struct
     "-cluster", Unit (fun () -> mode := Cluster),         "                    enable cluster mode";
     "-filter", Unit (fun () -> mode := Filter),         "                    enable filter mode";
     "-annot", Unit (fun () -> mode := Annot),         "                    enable annot mode";
+    "-grep", Unit (fun () -> mode := Grep),         "                     enable grep mode";
     "-make_index", Unit (fun () -> mode := Index),  "                 just rebuild index.html in <output_dir> from the set of stat files in <input_dir>\n\nOptions for all modes";
-    
+
     "-grs", String (fun s -> grs := absolute s),          "<grs_file>              chose the grs file to load";
     "-seq", String (fun s -> seq := s),                   "<seq>                   set the module sequence to use";
     "-timeout", Float (fun f -> timeout := Some f; Libgrew.set_timeout (Some f)),                   "<float>             set a timeout on rewriting";
@@ -100,7 +99,7 @@ module Grew_args = struct
     "-out_conll",  Unit (fun () -> out_conll := true),         "                  generate conll output files for each rewriting normal form of the corpus";
     "-no_init", Unit (fun () -> no_init := true), "                    do not display initial graph (requires html of full_html)\n\nOptions for cluster modes";
     "-q", Unit (fun () -> quiet := true), "                          do not print progression percent (for jenkins scripts)";
-    
+
     (* options for cluster mode *)
     "-nodes", Int (fun f -> oar_nodes := f),              "<num>                 set the number of nodes to reserve on the cluster (default is 2)";
     "-walltime", String (fun s -> oar_walltime := s),     "<time>             set the reservation time on the cluster (default is \"1:0:0\")";
@@ -116,7 +115,7 @@ module Grew_args = struct
 
   ]
 
-  let parse () = 
+  let parse () =
     Arg.parse args (fun s -> Printf.printf "%s" s) usage;
 IFDEF DEP2PICT THEN
   ()

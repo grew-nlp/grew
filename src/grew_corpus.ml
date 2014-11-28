@@ -11,33 +11,28 @@
 open Printf
 open Log
 
-open Libgrew
-
 open Grew_utils
 open Grew_args
 
 (* -------------------------------------------------------------------------------- *)
+
+let fail kind msg loc_opt =
+  let loc_string = match loc_opt with
+  | None -> ""
+  | Some loc -> Libgrew.string_of_loc loc in
+    printf "\n====== Error: %s ======\n%s %s\n===================================\n" kind msg loc_string;
+    exit 2
+
 let handle fct () =
   try fct ()
   with
-    | Libgrew.Bug (msg,_) ->
-      printf "\n====== Error: Libgrew.Bug ======\n%s\n===================================\n" msg;
-      exit 2
-    | Libgrew.File_dont_exists file ->
-      printf "\n====== Error: Libgrew.File_dont_exists ======\n%s\n===================================\n" file;
-      exit 2
-    | Libgrew.Build (msg,loc) ->
-      printf "\n======= Error: Libgrew.Build =======\n%s %s\n====================================\n" msg (Loc.to_string loc);
-      exit 2
-    | Libgrew.Run (msg,loc) ->
-      printf "\n====== Error: Libgrew.run ======\n%s %s\n================================\n" msg (Loc.to_string loc);
-      exit 2
-    | Libgrew.Parsing_err msg ->
-      printf "\n====== Error: Libgrew.Parsing_err ======\n%s\n===================================\n" msg;
-      exit 2
-    | exc ->
-      printf "\n====== Bug: Uncaught exception, please report ======\n%s\n===================================\n" (Printexc.to_string exc);
-      exit 2
+
+    | Libgrew.File_dont_exists file ->      fail "IO" (sprintf "File not found: \"%s\"" file) None
+    | Libgrew.Bug (msg,loc_opt) ->          fail "Bug" msg loc_opt
+    | Libgrew.Build (msg,loc_opt) ->        fail "Build" msg loc_opt
+    | Libgrew.Run (msg,loc_opt) ->          fail "Run" msg loc_opt
+    | Libgrew.Parsing_err (msg,loc_opt) ->  fail "Parse" msg loc_opt
+    | exc ->                                fail "Uncaught exception, please report" (Printexc.to_string exc) None
 
 (* -------------------------------------------------------------------------------- *)
 let init () =
@@ -121,11 +116,16 @@ let init () =
                 rh
                 output_base
         with
-        | Libgrew.Bug (msg,_) -> Html.write_error ~header ~html ~init:gr output_base msg
+
         | Libgrew.File_dont_exists file -> Html.write_error ~header ~html ~init:gr output_base (sprintf "The file %s doesn't exist!" file)
-        | Libgrew.Build (msg,loc)
-        | Libgrew.Run (msg,loc) -> Html.write_error ~header ~html ~init:gr output_base (sprintf "%s%s" msg (Loc.to_string loc))
-        | Libgrew.Parsing_err msg -> Html.write_error ~header ~html output_base msg
+        | Libgrew.Bug (msg,loc_opt)
+        | Libgrew.Build (msg,loc_opt)
+        | Libgrew.Run (msg,loc_opt)
+        | Libgrew.Parsing_err (msg,loc_opt) ->
+          match loc_opt with
+          | None -> Html.write_error ~header ~html ~init:gr output_base msg
+          | Some loc -> Html.write_error ~header ~html ~init:gr output_base (sprintf "%s %s" msg (Libgrew.string_of_loc loc))
+
       ) graph_array;
     Counter.finish ();
 
@@ -214,6 +214,76 @@ let det () =
           ) graph_list;
         Counter.finish ()
       ) ()
+
+(* -------------------------------------------------------------------------------- *)
+  let dump_error kind msg loc_opt =
+    let loc_string = match loc_opt with
+    | None -> ""
+    | Some loc -> Libgrew.string_of_loc loc in
+      printf "ERR: %s [%s] at %s\n" kind msg loc_string
+
+  let grep () =
+    handle (fun () ->
+    if !Grew_args.input_data = ""
+    then (Log.message "No input data specified: use -i option"; exit 1);
+
+    (* TODO: init features and labels: load a grs file *)
+    let grs = Libgrew.load_grs !Grew_args.grs in
+
+    (* get the list of graphs to explore *)
+    let graph_array = Array.map
+      (fun (name, instance) -> (name, Libgrew.graph_of_instance instance))
+      (Array.of_list (Corpus.get_graphs !Grew_args.input_data)) in
+    let len = Array.length graph_array in
+    printf "MSG:%d graphs loaded from '%s'\n%!" len !Grew_args.input_data;
+
+    let patt = ref None in
+    let index = ref 0 in
+
+    let () = Unix.set_nonblock Unix.stdin in
+    while true do
+      begin
+        match !patt with
+          | None -> let _ = Unix.select [] [] [] 0.1 in ()
+          | Some pattern ->
+            let (name, graph) = graph_array.(!index) in
+            let matchings = Libgrew.match_in_graph pattern graph in
+            List.iter
+              (fun matching ->
+                let deco = Libgrew.match_deco pattern matching in
+                let dep = Libgrew.to_dep_graph ~deco graph in
+                let svg_file = Svg.dep_to_tmp dep in
+                printf "MSG: found pattern in graph [%s] --> %s\n%!" name svg_file;
+              ) matchings;
+            incr index;
+            if !index = len
+            then (printf "MSG: Finish\n%!"; patt := None; index := 0)
+      end;
+
+      let next_command =
+        try Some (read_line ())
+        with _ -> None in
+
+      begin
+        match (!patt, next_command) with
+        | (_, None) -> ()
+        | (None, Some file) ->
+          if Sys.file_exists file
+          then
+            (try patt := Some (Libgrew.load_pattern file)
+            with
+              | Libgrew.File_dont_exists file ->      dump_error "IO" (sprintf "File not found: \"%s\"" file) None
+              | Libgrew.Bug (msg,loc_opt) ->          dump_error "Bug" msg loc_opt
+              | Libgrew.Build (msg,loc_opt) ->        dump_error "Build" msg loc_opt
+              | Libgrew.Run (msg,loc_opt) ->          dump_error "Run" msg loc_opt
+              | Libgrew.Parsing_err (msg,loc_opt) ->  dump_error "Parse" msg loc_opt
+              | exc ->                                dump_error "Uncaught exception, please report" (Printexc.to_string exc) None)
+          else printf "ERR: File \"%s\" not found\n" file
+        | (Some _, Some "STOP") -> (printf "MSG: Abort\n%!"; patt := None; index := 0)
+        | _ -> printf "MSG: Cannot handle parallel commands\n"
+      end
+    done
+  ) ()
 
 (* -------------------------------------------------------------------------------- *)
 let make_index () =

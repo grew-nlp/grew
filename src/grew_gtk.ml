@@ -10,7 +10,6 @@
 
 open Printf
 
-open Libgrew
 open GMain
 open Log
 
@@ -306,7 +305,7 @@ let init () =
   let show_error msg =
     grew_window#err_view_scroll#misc#show ();
     let (error_file,out_ch) = Filename.open_temp_file ~mode:[Open_rdonly;Open_wronly;Open_text] "grew_" ".html" in
-    Printf.fprintf out_ch
+    fprintf out_ch
       "<html><body><font color=red fontname=Arial>%s</font></body></html>"
       (Str.global_replace (Str.regexp "\n") "<br/>\n" msg);
     close_out out_ch;
@@ -315,21 +314,16 @@ let init () =
   let error_handling fct () =
     try fct ()
     with
-      | Libgrew.Parsing_err msg -> show_error msg
-      | Libgrew.File_dont_exists file -> show_error (Printf.sprintf "The file %s doesn't exist!" file)
-      | Libgrew.Build (msg,loc) ->
-        begin match loc with
-          | None -> show_error msg
-          | Some (file,line) -> show_error (Printf.sprintf "%s\nfile: %s\nline: %d" msg file line)
-        end
-      | Libgrew.Run (msg,loc) ->
-        begin match loc with
-          | None -> show_error msg
-          | Some (file,line) -> show_error (Printf.sprintf "%s\nfile: %s\nline: %d" msg file line)
-        end
+
+      | Libgrew.File_dont_exists file -> show_error (sprintf "The file %s doesn't exist!" file)
+      | Libgrew.Parsing_err (msg,None) -> show_error msg
+      | Libgrew.Parsing_err (msg,Some loc) -> show_error (sprintf "%s %s" (Libgrew.string_of_loc loc) msg)
+      | Libgrew.Build (msg,None) -> show_error msg
+      | Libgrew.Build (msg,Some loc) -> show_error (sprintf "%s %s" (Libgrew.string_of_loc loc) msg)
+      | Libgrew.Run (msg,None) -> show_error msg
+      | Libgrew.Run (msg,Some loc) -> show_error (sprintf "%s %s" (Libgrew.string_of_loc loc) msg)
       | Libgrew.Bug (msg,_) -> show_error msg
-      | exc -> show_error (Printexc.to_string exc)
-  in
+      | exc -> show_error (Printexc.to_string exc) in
 
   (** CALLBACKS *)
 
@@ -548,19 +542,15 @@ let init () =
           grs_webkit#execute_script("alert('showOnTop2::G0')");
           grs_webkit#execute_script("alert('showOnBottom2::"^(!fl)^"')");
         with
+
           | Resources.Cannot_rewrite msg -> show_error msg
-          | Libgrew.Parsing_err msg -> show_error msg
-          | Libgrew.File_dont_exists file -> show_error (Printf.sprintf "The file %s doesn't exist!" file)
-          | Libgrew.Build (msg,loc) ->
-            begin match loc with
-              | None -> show_error msg
-              | Some (file,line) -> show_error (Printf.sprintf "%s\nfile: %s\nline: %d" msg file line)
-            end
-          | Libgrew.Run (msg,loc) ->
-            begin match loc with
-              | None -> show_error msg
-              | Some (file,line) -> show_error (Printf.sprintf "%s\nfile: %s\nline: %d" msg file line)
-            end
+          | Libgrew.File_dont_exists file -> show_error (sprintf "The file %s doesn't exist!" file)
+          | Libgrew.Parsing_err (msg,None) -> show_error msg
+          | Libgrew.Parsing_err (msg,Some loc) -> show_error (sprintf "%s %s" (Libgrew.string_of_loc loc) msg)
+          | Libgrew.Build (msg,None) -> show_error msg
+          | Libgrew.Build (msg,Some loc) -> show_error (sprintf "%s %s" (Libgrew.string_of_loc loc) msg)
+          | Libgrew.Run (msg,None) -> show_error msg
+          | Libgrew.Run (msg,Some loc) -> show_error (sprintf "%s %s" (Libgrew.string_of_loc loc) msg)
           | Libgrew.Bug (msg,_) -> show_error msg
       ) in
 
