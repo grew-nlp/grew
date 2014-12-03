@@ -19,25 +19,16 @@ open Grew_utils
 open Grew_args
 open Grew_config
 
-let warning_dialog
-    ?(message_type=`WARNING)
-    ?(icon_name="ERROR")
-    ?(buttons=GWindow.Buttons.ok)
-    ?(message="")
-    ?(callback=(fun e -> ())) () =
-  let dlg = GWindow.message_dialog
-    ~message_type
-    ~modal:true
-    ~urgency_hint:true
-    ~type_hint:`NORMAL
-    ~buttons
-    ~icon_name
-    ~show:true
-    ~message
-    () in
-  let _ = dlg#connect#response ~callback:(fun e -> callback e; dlg#destroy ()) in
-  dlg#show ();
-  dlg
+type msg =
+ | Error of string
+ | Warning of string
+ | Info of string
+
+let messages = ref []
+
+let error fmt = Printf.ksprintf (fun x -> messages := Error (Printf.sprintf "%s\n" x) :: !messages) fmt
+let warning fmt = Printf.ksprintf (fun x -> messages := Warning (Printf.sprintf "%s\n" x) :: !messages) fmt
+let info fmt = Printf.ksprintf (fun x -> messages := Info (Printf.sprintf "%s\n" x) :: !messages) fmt
 
 (* ==================================================================================================== *)
 (* code taken from lablgtk2 examples *)
@@ -182,8 +173,56 @@ type save = Png | Pdf_dep | Pdf_dot | Dep | Dot | Gr | Conll
 type side = Top | Bottom
 
 let string_of_side = function Top -> "top" | Bottom -> "bottom"
+
+let start_grs () =
+  match (!Grew_args.grs, !Grew_config.current_config.Grew_config.last_grs_file) with
+    (* load the file given on the command line *)
+    | (arg,_) when Sys.file_exists arg -> Resources.current_grs_file := Some arg
+
+    (* No file on command line --> load the config file *)
+    | ("",conf) when Sys.file_exists conf ->
+      warning "No grs file on command line,\nThe last used grs file \"%s\" will be used" (Filename.basename conf);
+      Resources.current_grs_file := Some conf
+
+    (* command line file not found --> load the config file *)
+    | (arg,conf) when Sys.file_exists conf ->
+      warning "The grs \"%s\" cannot be found,\nThe last used grs file \"%s\" will be used instead" (Filename.basename arg) (Filename.basename conf);
+      Resources.current_grs_file := Some conf
+
+    | ("","") ->
+      warning "No grs loaded:\n - no grs file on command line,\n - no grs file in config"
+    | ("",conf) ->
+      warning "No grs loaded:\n - no grs file on command line,\n - the last used grs file \"%s\" cannot be found" (Filename.basename conf)
+
+    | (arg,conf) ->
+      warning "No grs loaded:\n - neither the grs \"%s\"\n - nor he last used grs file \"%s\" can be found" (Filename.basename arg) (Filename.basename conf)
+
+let start_gr () =
+  match (!Grew_args.gr, !Grew_config.current_config.Grew_config.last_gr_file) with
+    (* load the file given on the command line *)
+    | (arg,_) when Sys.file_exists arg -> Resources.current_gr_file := Some arg
+
+    (* No file on command line --> load the config file *)
+    | ("",conf) when Sys.file_exists conf ->
+      info "No graph file on command line,\nThe last used gr file \"%s\" will be used"  (Filename.basename conf);
+      Resources.current_gr_file := Some conf
+
+    (* command line file not found --> load the config file *)
+    | (arg,conf) when Sys.file_exists conf ->
+      warning "The gr \"%s\" cannot be found,\nThe last used gr file \"%s\" will be used instead" (Filename.basename arg)  (Filename.basename conf);
+      Resources.current_gr_file := Some conf
+
+    | ("","") ->
+      warning "No gr loaded:\n - no gr file on command line,\n - no gr file in config"
+    | ("",conf) ->
+      warning "No gr loaded:\n - no gr file on command line,\n - the last used gr file \"%s\" cannot be found"  (Filename.basename conf)
+    | (arg,conf) ->
+      warning "No gr loaded:\n - neither the gr \"%s\"\n - nor he last used gr file \"%s\" can be found" (Filename.basename arg)  (Filename.basename conf)
+
 (* ==================================================================================================== *)
 let init () =
+  let _ = GMain.Main.init () in
+  let grew_window = new grew_window () in
 
   let doc_dir = ref None in
 
@@ -192,34 +231,17 @@ let init () =
   (match !Grew_args.main_feat with
     | None -> ()
     | Some s -> !Grew_config.current_config.Grew_config.main_feat <- s);
-
   let empty_html = "<html><body><font color=red fontname=Arial>Nothing to display</font></body></html>" in
 
-  let _ = GMain.Main.init () in
-  let grew_window = new grew_window () in
-
   let _ = grew_window#btn_preferences#connect#clicked ~callback: (fun _ -> display_config_window ()) in (* XXX *)
-
-  (*   let _ = GMenu.tearoff_item ~packing:grew_window#feature_menu#add () in
-       let feature_item = GMenu.check_menu_item ~label:"filter" ~packing:grew_window#feature_menu#add () in
-       let _ = feature_item#connect#toggled ~callback:(fun () -> filter_features := feature_item#active) in
-       let _ = GMenu.separator_item ~packing:grew_window#feature_menu#add () in
-  *)
 
   (** WEBKITS CREATIONS *)
   let doc_webkit = GWebView.web_view ~packing:grew_window#doc_view#add () in
   let grs_webkit = GWebView.web_view ~packing:grew_window#grs_view#add () in
   let module_webkit = GWebView.web_view ~packing:grew_window#module_view#add () in
   let error_webkit = GWebView.web_view ~packing:grew_window#err_view_scroll#add () in
-
-  (* [graph_*_webkit] are put inside an event_box to handle right_click for contextual menu *)
-  let top_event_box = GBin.event_box ~packing:grew_window#graph_view_top#add () in
-  let _ = top_event_box#event#add [`BUTTON_PRESS] in
-  let graph_top_webkit = GWebView.web_view ~packing:top_event_box#add () in
-
-  let bottom_event_box = GBin.event_box ~packing:grew_window#graph_view_bottom#add () in
-  let _ = bottom_event_box#event#add [`BUTTON_PRESS] in
-  let graph_bottom_webkit = GWebView.web_view ~packing:bottom_event_box#add () in
+  let graph_top_webkit = GWebView.web_view ~packing:grew_window#graph_view_top#add () in
+  let graph_bottom_webkit = GWebView.web_view ~packing:grew_window#graph_view_bottom#add () in
 
   doc_webkit#set_full_content_zoom true;
   grs_webkit#set_full_content_zoom true;
@@ -262,6 +284,25 @@ let init () =
   grew_window#graph_bottom_zoom#adjustment#set_value (float_of_int !Grew_config.current_config.Grew_config.last_bottom_graph_zoom);
   grew_window#module_zoom#adjustment#set_value (float_of_int !Grew_config.current_config.Grew_config.last_rule_zoom);
 
+  let refresh_error () =
+    match !messages with
+    | [] -> grew_window#err_view_scroll#misc#hide ();
+    | l ->
+      let html = String.concat "<br/>\n"
+        (List.map (function
+          | Error s -> sprintf "<html><body><font color=red fontname=Arial>ERROR: %s</font></body></html>" s
+          | Warning s -> sprintf "<html><body><font color=orange fontname=Arial>WARNING: %s</font></body></html>" s
+          | Info s -> sprintf "<html><body><font color=blue fontname=Arial>INFO: %s</font></body></html>" s
+          ) l
+        ) in
+    error_webkit#load_html_string html "";
+    grew_window#err_view_scroll#misc#show () in
+
+  let show_error msg =
+    messages := [];
+    error "%s" msg;
+    refresh_error () in
+
   let refresh_doc_webkit () =
     match !doc_dir with
       | Some dir ->
@@ -302,19 +343,9 @@ let init () =
     grew_window#vpaned_left#set_position 30;
     grew_window#btn_show_grs#set_active false in
 
-  let show_error msg =
-    grew_window#err_view_scroll#misc#show ();
-    let (error_file,out_ch) = Filename.open_temp_file ~mode:[Open_rdonly;Open_wronly;Open_text] "grew_" ".html" in
-    fprintf out_ch
-      "<html><body><font color=red fontname=Arial>%s</font></body></html>"
-      (Str.global_replace (Str.regexp "\n") "<br/>\n" msg);
-    close_out out_ch;
-    error_webkit#load_uri ("file://"^error_file) in
-
   let error_handling fct () =
     try fct ()
     with
-
       | Libgrew.File_dont_exists file -> show_error (sprintf "The file %s doesn't exist!" file)
       | Libgrew.Parsing_err (msg,None) -> show_error msg
       | Libgrew.Parsing_err (msg,Some loc) -> show_error (sprintf "%s %s" (Libgrew.string_of_loc loc) msg)
@@ -825,29 +856,6 @@ let init () =
   let _ = grew_window#btn_leave_fullscreen#connect#clicked
     ~callback: (fun () -> grew_window#toplevel#unfullscreen (); fullscreen := false) in
 
-(*  *)
-  (* ==================== Grs file choosing ==================== *)
-  (* 1: the file given with the "-grs" option, if it is a valid path *)
-  (* 2: the last grs file used with grew, if it is a valid path *)
-  (* 3: else, message and no file chosen *)
-  if !Grew_args.grs <> "" && Sys.file_exists !Grew_args.grs
-  then Resources.current_grs_file := Some !Grew_args.grs
-  else
-    if !Grew_config.current_config.Grew_config.last_grs_file <> "" && Sys.file_exists !Grew_config.current_config.Grew_config.last_grs_file
-    then Resources.current_grs_file := Some !Grew_config.current_config.Grew_config.last_grs_file
-    else ignore (warning_dialog ~message: (sprintf "==> No grs loaded:\nno grs file on command line, no grs file in config") ());
-
-  (* ==================== Gr file choosing ==================== *)
-  (* 1: the file given with the "-gr" option, if it is a valid path *)
-  (* 2: the last gr file used with grew, if it is a valid path *)
-  (* 3: else, message and no file chosen *)
-  if !Grew_args.gr <> "" && Sys.file_exists !Grew_args.gr
-  then Resources.current_gr_file := Some !Grew_args.gr
-  else
-    if !Grew_config.current_config.Grew_config.last_gr_file <> "" && Sys.file_exists !Grew_config.current_config.Grew_config.last_gr_file
-    then Resources.current_gr_file := Some !Grew_config.current_config.Grew_config.last_gr_file
-    else ignore (warning_dialog ~message: (sprintf "==> No gr loaded:\nno gr file on command line, no gr file in config") ());
-
   (* ==================== (un)set dot/dep buttons ==================== *)
   grew_window#btn_gr_bottom_dep#set_active !Grew_config.current_config.Grew_config.last_is_dep_bottom_graph;
   grew_window#btn_gr_bottom_dot#set_active (not !Grew_config.current_config.Grew_config.last_is_dep_bottom_graph);
@@ -858,31 +866,30 @@ let init () =
   let cpt = ref 0 in
   let _ = GMain.Timeout.add ~ms:50 ~callback:(fun () -> cpt := 0; true) in
 
-  let _ = grew_window#graph_view_bottom#hadjustment#connect#value_changed
+  let _ = grew_window#graph_bottom#hadjustment#connect#value_changed
     ~callback:
     (fun () ->
       if (!cpt<1 && grew_window#synchronize#active)
       then
         begin
-          let percent = ((grew_window#graph_view_bottom#hadjustment#value +. (grew_window#graph_view_bottom#hadjustment#page_size /. 2.)) /. grew_window#graph_view_bottom#hadjustment#upper) in
-          let value = percent *. grew_window#graph_view_top#hadjustment#upper -. (grew_window#graph_view_top#hadjustment#page_size /. 2.) in
+          let percent = ((grew_window#graph_bottom#hadjustment#value +. (grew_window#graph_bottom#hadjustment#page_size /. 2.)) /. grew_window#graph_bottom#hadjustment#upper) in
+          let value = percent *. grew_window#graph_top#hadjustment#upper -. (grew_window#graph_top#hadjustment#page_size /. 2.) in
           incr cpt;
-          grew_window#graph_view_top#hadjustment#set_value value;
+          grew_window#graph_top#hadjustment#set_value value;
         end
     ) in
 
-  let _ = grew_window#graph_view_top#hadjustment#connect#value_changed
+  let _ = grew_window#graph_top#hadjustment#connect#value_changed
     ~callback:
     (fun () ->
       if (!cpt<1 && grew_window#synchronize#active)
       then
-        (let percent = ((grew_window#graph_view_top#hadjustment#value +. (grew_window#graph_view_top#hadjustment#page_size /. 2.)) /. grew_window#graph_view_top#hadjustment#upper) in
-         let value = percent *. grew_window#graph_view_bottom#hadjustment#upper -. (grew_window#graph_view_bottom#hadjustment#page_size /. 2.) in
+        (let percent = ((grew_window#graph_top#hadjustment#value +. (grew_window#graph_top#hadjustment#page_size /. 2.)) /. grew_window#graph_top#hadjustment#upper) in
+         let value = percent *. grew_window#graph_bottom#hadjustment#upper -. (grew_window#graph_bottom#hadjustment#page_size /. 2.) in
          incr cpt;
-         grew_window#graph_view_bottom#hadjustment#set_value value;
+         grew_window#graph_bottom#hadjustment#set_value value;
         )
     ) in
-
 
   (* ==================== Contextual menu to export ==================== *)
 
@@ -964,8 +971,12 @@ let init () =
       true (* we handled this *)
     end in
 
-  let _ = top_event_box#event#connect#button_press ~callback: (contextual_menu Top) in
-  let _ = bottom_event_box#event#connect#button_press ~callback: (contextual_menu Bottom) in
+  (* Listen to right click in graph view *)
+  let _ = grew_window#graph_view_top#event#add [`BUTTON_PRESS] in
+  let _ = grew_window#graph_view_top#event#connect#button_press ~callback: (contextual_menu Top) in
+  let _ = grew_window#graph_view_bottom#event#add [`BUTTON_PRESS] in
+  let _ = grew_window#graph_view_bottom#event#connect#button_press ~callback: (contextual_menu Bottom) in
+
 
 
 
@@ -984,8 +995,6 @@ let init () =
       Grew_config.save_config ()
     );
 
-  (* startup load of grs files (which implies loading of the gr file) *)
-  error_handling load_grs ();
 
   (* force doc building in required on the commande line *)
   if !Grew_args.gui_doc then build_doc ();
@@ -993,4 +1002,9 @@ let init () =
   (* Really start the gui *)
   grew_window#check_widgets ();
   grew_window#toplevel#show ();
+
+  (* startup load of grs files (which implies loading of the gr file) *)
+  start_grs (); start_gr (); error_handling load_grs ();
+  refresh_error ();
+
   GMain.Main.main ()
