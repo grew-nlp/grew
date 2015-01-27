@@ -150,7 +150,7 @@ end (* module Svg *)
 module Corpus = struct
   (** [load_conll file] load a corpus. It retuns an array of couples: (id: string, graph:Instance.t).
       The identifier is the one described by the sentid feature of the first line of the conll desc;
-      If no setinf is found, the identifier is the name of the file with a 5 digits number for the position in the file. *)
+      If no sentid is found, the identifier is the name of the file with a 5 digits number for the position in the file. *)
   let load_conll file =
     let base = Filename.chop_extension (Filename.basename file) in
     let in_ch = open_in file in
@@ -198,6 +198,7 @@ module Corpus = struct
 
     with End_of_file ->
       save_one ();
+      close_in in_ch;
       List.rev !res
 
 
