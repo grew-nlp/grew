@@ -13,7 +13,7 @@ open Log
 
 module Grew_args = struct
 
-  type mode = Gui | Corpus | Cluster | Filter | Index | Det | Annot | Grep
+  type mode = Gui | Corpus | Cluster | Filter | Index | Det | Full | Annot | Grep
   let mode = ref Gui
 
   type html_mode =
@@ -69,6 +69,7 @@ module Grew_args = struct
   let args = [
     "-corpus", Unit (fun () -> mode := Corpus),      "                     enable corpus mode";
     "-det", Unit (fun () -> mode := Det),         "                        enable det mode: rewrite a corpus with a deterministric grs";
+    "-full", Unit (fun () -> mode := Full),         "                        enable full mode: rewrite a corpus (conll output)";
     "-cluster", Unit (fun () -> mode := Cluster),         "                    enable cluster mode";
     "-filter", Unit (fun () -> mode := Filter),         "                    enable filter mode";
     "-annot", Unit (fun () -> mode := Annot),         "                    enable annot mode";

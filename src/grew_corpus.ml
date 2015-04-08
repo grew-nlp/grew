@@ -216,6 +216,49 @@ let det () =
       ) ()
 
 (* -------------------------------------------------------------------------------- *)
+let full () =
+  handle (fun () ->
+    if !Grew_args.input_data = ""
+    then (Log.message "No input data specified: use -i option"; exit 1);
+
+    match (!Grew_args.output_dir, !Grew_args.output_file) with
+      | (None, None) -> Log.message "No output specified: use -o or -f option"; exit 1
+      | (Some _, Some _) -> Log.message "Ambiguous output: you cannot use -o and -f options together"; exit 1
+      | (None, Some output_file) -> multi_conll ~keep_empty_rh:true ()
+      | (Some output_dir, None) ->
+        if not (!Grew_args.out_gr || !Grew_args.out_conll)
+        then (Log.message "No output format specified: use -out_gr or -out_conll option"; exit 1);
+
+        (* remove previous file or dir <output_dir> *)
+        if Sys.file_exists output_dir
+        then
+          if Sys.is_directory output_dir
+          then ignore (Sys.command("rm -rf " ^ output_dir))
+          else Unix.unlink output_dir;
+
+        (* create a fresh <output_dir> *)
+        Unix.mkdir output_dir 0o777;
+
+        (* load grs file *)
+        let grs = Libgrew.load_grs !Grew_args.grs in
+
+        (* get the list of graphs to rewrite *)
+        let graph_list = Corpus.get_graphs !Grew_args.input_data in
+        let len = List.length graph_list in
+
+        List_.iteri
+          (fun index (base_name, gr) ->
+            Counter.print index len base_name;
+            let output_base = Filename.concat output_dir base_name in
+            let rh = Libgrew.rewrite ~gr ~grs ~seq:!Grew_args.seq in
+            if !Grew_args.out_gr then failwith "Not yet";
+            if !Grew_args.out_conll then Libgrew.save_full_conll output_base rh
+          ) graph_list;
+        Counter.finish ()
+      ) ()
+
+
+(* -------------------------------------------------------------------------------- *)
   let dump_error kind msg loc_opt =
     let loc_string = match loc_opt with
     | None -> ""

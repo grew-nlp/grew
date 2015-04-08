@@ -34,6 +34,7 @@ let _ =
       ENDIF
   | Grew_args.Corpus -> Grew_corpus.init ()
   | Grew_args.Det -> Grew_corpus.det ()
+  | Grew_args.Full -> Grew_corpus.full ()
   | Grew_args.Index -> Grew_corpus.make_index ()
   | Grew_args.Filter -> Grew_corpus.multi_conll ()
   | Grew_args.Annot -> Grew_corpus.annot ()
