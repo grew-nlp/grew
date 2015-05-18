@@ -1,4 +1,4 @@
-VERSION = 0.22.0
+VERSION = 0.23.0
 
 INSTALL_DIR = @prefix@@bindir@
 DATA_DIR = @prefix@@datarootdir@/grew/
@@ -27,6 +27,10 @@ ITEXT_OPT = $(ITEXT_DIR) itext.cmxa
 LABLGTK_DIR = @LABLGTK_INCLUDE@
 LABLGTK_BYTE = $(LABLGTK_DIR) lablgtk.cma lablglade.cma
 LABLGTK_OPT = $(LABLGTK_DIR) lablgtk.cmxa lablglade.cmxa
+
+CAMOMILE_DIR = @CAMOMILE_INCLUDE@
+CAMOMILE_BYTE = $(CAMOMILE_DIR) camomile.cma
+CAMOMILE_OPT = $(CAMOMILE_DIR) camomile.cmxa
 
 LABLWEBKIT_DIR = @LABLWEBKIT_INCLUDE@
 LABLWEBKIT_BYTE = $(LABLWEBKIT_DIR) lablwebkit.cma
@@ -82,6 +86,7 @@ infos:
 	@echo "CLUSTER              -> " $(CLUSTER_OPT)
 	@echo "LOG                  -> " $(LOG_OPT)
 	@echo "ANSITERMINAL         -> " $(ANSITERMINAL_OPT)
+	@echo "CAMOMILE             -> " $(CAMOMILE_OPT)
 	@echo "ITEXT                -> " $(ITEXT_OPT)
 	@echo ""
 	@echo "DEBUG                -> " $(DEBUG)

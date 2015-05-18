@@ -3,18 +3,18 @@ all:
 
 include config/Makefile
 
-conf : config/configure.in
+conf : config/configure.ac
 	cd config && rm -rf ac_lib_checking.*
 	cd config && wget https://gforge.inria.fr/scm/viewvc.php/*checkout*/ac_lib_checking/ac_lib_checking.m4?root=semagramme --no-check-certificate || true
 	cd config && mv ac_lib_checking.m4?root=semagramme ac_lib_checking.m4 || true
 	cd config && aclocal
-	cd config && autoconf -o ../configure configure.in
+	cd config && autoconf -o ../configure configure.ac
 	rm -rf config.status config.log autom4te.cache config/autom4te.cache
 
 
-conf2 : config/configure.in
+conf2 : config/configure.ac
 	cd config && aclocal
-	cd config && autoconf -o ../configure configure.in
+	cd config && autoconf -o ../configure configure.ac
 	rm -rf config.status config.log autom4te.cache config/autom4te.cache
 
 clean: cleanup

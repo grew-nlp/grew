@@ -109,18 +109,21 @@ if test "$config" = yes ; then
         else
 
         	AC_LIB_CHECKING(Cairo,cairo2,cairo2,cairo2,Cairo,"",false,true)
-                AC_SUBST(CAIRO_INCLUDE,$LIB_INCLUDE)
+            AC_SUBST(CAIRO_INCLUDE,$LIB_INCLUDE)
 	
-                AC_LIB_CHECKING(Dep2pict,dep2pict,dep2pict,dep2pict,Dep2pict,"",false,true)
+            AC_LIB_CHECKING(Dep2pict,dep2pict,dep2pict,dep2pict,Dep2pict,"",false,true)
 	        AC_SUBST(DEP2PICT_INCLUDE,$LIB_INCLUDE)
 
-                if test "$CAIRO_INCLUDE" = "no" ;
+		    AC_LIB_CHECKING(Camomile,camomile,camomile,camomile,"CamomileLibraryDefault","bigarray.cma",true)
+		    AC_SUBST(CAMOMILE_INCLUDE,$LIB_INCLUDE)
+
+            if test "$CAIRO_INCLUDE" = "no" ;
+            then AC_SUBST(USE_DEP2PICT,no)
+            else
+                if test "$DEP2PICT_INCLUDE" = "no";
                 then AC_SUBST(USE_DEP2PICT,no)
-                else
-                        if test "$DEP2PICT_INCLUDE" = "no";
-                        then AC_SUBST(USE_DEP2PICT,no)
-                        else AC_SUBST(USE_DEP2PICT,yes)
-                        fi
+                else AC_SUBST(USE_DEP2PICT,yes)
+                fi
 	        fi
         fi
 	AC_SUBST(USE_DEP2PICT)

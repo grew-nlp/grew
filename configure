@@ -599,6 +599,7 @@ CLUSTER_INCLUDE
 LABLWEBKIT_INCLUDE
 LABLGTK_INCLUDE
 BUILD_GUI
+CAMOMILE_INCLUDE
 DEP2PICT_INCLUDE
 CAIRO_INCLUDE
 USE_DEP2PICT
@@ -2627,10 +2628,10 @@ $as_echo "The $NAME library is missing." >&6; }
 	rm c_check_$STD_FOLDER.cmo >& /dev/null
 	rm c_check_$STD_FOLDER.cmi >& /dev/null
 
-                CAIRO_INCLUDE=$LIB_INCLUDE
+            CAIRO_INCLUDE=$LIB_INCLUDE
 
 
-                MACRO="A"
+            MACRO="A"
 	MACRO=$MACRO"C_LIB_CHECKING"
 
 
@@ -2763,16 +2764,149 @@ $as_echo "The $NAME library is missing." >&6; }
 	        DEP2PICT_INCLUDE=$LIB_INCLUDE
 
 
-                if test "$CAIRO_INCLUDE" = "no" ;
+		    MACRO="A"
+	MACRO=$MACRO"C_LIB_CHECKING"
+
+
+	NAME=Camomile
+	STD_FOLDER=camomile
+	OFIND_NAME=camomile
+	LIB_FILE=camomile
+	MOD="CamomileLibraryDefault"
+	OPTIONS="bigarray.cma"
+	NO_OPTIONAL=true
+	FULL_PATH=
+
+	OCAMLLIB_DIR=`ocamlc -where`
+
+	# test au cas ou un argument obligatoire est manquant
+	if test "$NAME" = "" || test "$STD_FOLDER" = "" || test "$OFIND_NAME" = "" || test "$LIB_FILE" = ""  || test "$MOD" = "" ; then
+		echo ""
+		echo "Can't check a library"
+		echo "Missing argument in $MACRO($NAME,$STD_FOLDER,$OFIND_NAME,$LIB_FILE,$MOD,$OPTIONS,$NO_OPTIONAL)"
+		echo ""
+		exit 1
+	fi
+
+	# affichage du nom de la librairie a checker (avec details sur l'optionalité)
+	if test "$NO_OPTIONAL" = true; then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for requested library : $NAME" >&5
+$as_echo_n "checking for requested library : $NAME... " >&6; }
+	else
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for optional library  : $NAME" >&5
+$as_echo_n "checking for optional library  : $NAME... " >&6; }
+	fi
+
+	# si le fichier ml de test existe
+	if test -f c_check_$STD_FOLDER.ml ; then
+		# si on peut le supprimer
+		if test -w c_check_$STD_FOLDER.ml ; then
+			# on le supprimer
+			rm c_check_$STD_FOLDER.ml >& /dev/null
+		# sinon on arrete et on balance un message d'erreur (ie on a pas les droits sur le fichier
+		else
+			{ { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "Cannot remove c_check_camomile.ml. Please change its right with chmod 666 c_check_camomile.ml
+See \`config.log' for more details" "$LINENO" 5; }
+		fi
+	fi
+
+	# on prepare le fichier ml de test
+	echo "open $MOD;;" > c_check_$STD_FOLDER.ml
+
+	# si on arrive à l'executer avec la librairie dans le rep de lib de caml
+	if (ocamlc -c $OPTIONS c_check_$STD_FOLDER.ml >& /dev/null) ; then
+		# pas besoin d'include
+		LIB_INCLUDE=""
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: Found in ocaml lib directory" >&5
+$as_echo "Found in ocaml lib directory" >&6; }
+
+	# sinon on essaie avec un repertoire dedié à la lib (-I +xxx yyy.cma)
+	elif (ocamlc -c $OPTIONS -I +$STD_FOLDER $LIB_FILE.cma c_check_$STD_FOLDER.ml >& /dev/null) ; then
+		# si ca marche, on s'arrete et on precise le include
+		if test "$FULL_PATH" = "true" ; then
+			LIB_INCLUDE="-I $OCAMLLIB_DIR/$STD_FOLDER"
+		else
+			LIB_INCLUDE="-I +$STD_FOLDER"
+		fi
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: Found in $STD_FOLDER directory => $LIB_INCLUDE" >&5
+$as_echo "Found in $STD_FOLDER directory => $LIB_INCLUDE" >&6; }
+
+	# sinon, on essaie avec ocamlfind
+	else
+
+		# si on n'a pas ocamlfind , on s'arrete (dans le cas d'une lib oblig.) ou
+		# on lance un warning (dans le cas d'une lib optionelle)
+		if test "ocamlfind" = no ; then
+			if test "$NO_OPTIONAL" = "true"; then
+	  			as_fn_error $? "The $NAME library is missing." "$LINENO" 5
+	  			LIB_INCLUDE="no"
+	  		else
+	  			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: The $NAME library is missing." >&5
+$as_echo "The $NAME library is missing." >&6; }
+	  			LIB_INCLUDE="no"
+	  		fi
+
+	  	# sinon, ocamlfind est présent
+		else
+			# on regarde déjà si la lib est installée avec ocamlfind
+			if ocamlfind query $OFIND_NAME > /dev/null 2>&1 ; then
+				# si c'est le cas, on recupere le repertoire d'installation et le include correspondant
+			    LIB_INCLUDE=`ocamlfind query $OFIND_NAME`
+			    LIB_INCLUDE="-I $LIB_INCLUDE"
+
+			    # on teste maintenant si on peut exectuer le fichier ml de test
+			    if (ocamlc -c $OPTIONS $LIB_INCLUDE $LIB_FILE.cma c_check_$STD_FOLDER.ml >& /dev/null) ; then
+			    	# on y arrive, on dit qu'on a trouvé la lib avec ocamlfind
+					{ $as_echo "$as_me:${as_lineno-$LINENO}: result: Found with ocamlfind => $LIB_INCLUDE" >&5
+$as_echo "Found with ocamlfind => $LIB_INCLUDE" >&6; }
+				# si on y arrive pas
+			    else
+			    	# suivant l'optionalité de la lib: un warning ou une erreur
+			    	if test "$NO_OPTIONAL" = "true"; then
+			  			as_fn_error $? "The $NAME library is missing." "$LINENO" 5
+			  			LIB_INCLUDE="no"
+			  		else
+			  			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: The $NAME library is missing." >&5
+$as_echo "The $NAME library is missing." >&6; }
+			  			LIB_INCLUDE="no"
+			  		fi
+				fi
+
+			# si la lib n'est pas installée avec ocamlfind
+			else
+		    	# suivant l'optionalité de la lib: un warning ou une erreur
+				if test "$NO_OPTIONAL" = "true"; then
+		  			as_fn_error $? "The $NAME library is missing." "$LINENO" 5
+		  			LIB_INCLUDE="no"
+		  		else
+		  			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: The $NAME library is missing." >&5
+$as_echo "The $NAME library is missing." >&6; }
+		  			LIB_INCLUDE="no"
+		  		fi
+			fi
+		fi
+	fi
+
+	# suppression du fichier ml de test
+	rm c_check_$STD_FOLDER.ml >& /dev/null
+	rm c_check_$STD_FOLDER.cmo >& /dev/null
+	rm c_check_$STD_FOLDER.cmi >& /dev/null
+
+		    CAMOMILE_INCLUDE=$LIB_INCLUDE
+
+
+            if test "$CAIRO_INCLUDE" = "no" ;
+            then USE_DEP2PICT=no
+
+            else
+                if test "$DEP2PICT_INCLUDE" = "no";
                 then USE_DEP2PICT=no
 
-                else
-                        if test "$DEP2PICT_INCLUDE" = "no";
-                        then USE_DEP2PICT=no
+                else USE_DEP2PICT=yes
 
-                        else USE_DEP2PICT=yes
-
-                        fi
+                fi
 	        fi
         fi
 

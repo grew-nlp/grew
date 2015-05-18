@@ -3,7 +3,7 @@ include ../config/Makefile
 .PHONY: grew
 
 ifeq (@USE_DEP2PICT@,yes)
-D2P_OPT = bigarray.cmxa $(CAIRO_OPT) $(DEP2PICT_OPT)
+D2P_OPT = bigarray.cmxa $(CAIRO_OPT) $(CAMOMILE_OPT) $(DEP2PICT_OPT)
 else
 D2P_OPT =
 endif
