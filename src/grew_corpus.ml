@@ -252,7 +252,7 @@ let full () =
             let output_base = Filename.concat output_dir base_name in
             let rh = Libgrew.rewrite ~gr ~grs ~seq:!Grew_args.seq in
             if !Grew_args.out_gr then failwith "Not yet";
-            if !Grew_args.out_conll then Libgrew.save_full_conll output_base rh
+            if !Grew_args.out_conll then ignore (Libgrew.save_full_conll output_base rh)
           ) graph_list;
         Counter.finish ()
       ) ()

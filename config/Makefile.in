@@ -1,4 +1,4 @@
-VERSION = 0.23.0
+VERSION = 0.23.1
 
 INSTALL_DIR = @prefix@@bindir@
 DATA_DIR = @prefix@@datarootdir@/grew/
