@@ -34,29 +34,5 @@ endif
 purge_makefile:
 	@make -C src purge
 	@make -C config purge
+	rm -f config/ac_lib_checking.m4
 	rm -rf Makefile
-
-################################################################################
-################## PACKAGING ###################################################
-################################################################################
-
-
-targz: clean conf purge_makefile
-	rm -rf grew-$(VERSION)
-	mkdir -p grew-$(VERSION)
-	cp -r config grew-$(VERSION)/
-	cp configure grew-$(VERSION)/
-	cp Makefile.in grew-$(VERSION)/
-	cp -r src grew-$(VERSION)/
-	cd grew-$(VERSION)/ && find . -name .svn -print0 | xargs -0 rm -rf
-	cd grew-$(VERSION)/ && find . -name autom4te.cache -print0 | xargs -0 rm -rf
-	tar -czvf packaging/grew-$(VERSION).tar.gz grew-$(VERSION)
-	rm -rf grew-$(VERSION)
-
-
-portfile: targz
-	cd packaging && sh create_portfile.sh $(VERSION)
-
-
-pack_deb: targz
-	sh packaging/make_deb.sh $(VERSION) $(INSTALL_DIR) $(DATA_DIR) $(DOC_DIR)
