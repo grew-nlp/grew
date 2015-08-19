@@ -78,6 +78,7 @@ module Resources = struct
 
   (* -------------------------------------------------------------------------------- *)
   let load_grs () =
+    current_grs :=  None;
     match !current_grs_file with
       | None -> Log.message "No grs file defined"
       | Some grs_file ->
@@ -88,6 +89,7 @@ module Resources = struct
   (* -------------------------------------------------------------------------------- *)
   (* must be called after a grs is loaded *)
   let load_gr () =
+    current_gr := None;
     match !current_gr_file with
       | None -> Log.message "No gr file defined"
       | Some file ->
@@ -371,15 +373,15 @@ let init () =
       | None -> ()
       | _ ->
         reset();
-        Resources.load_gr ();
-        (match !Resources.current_gr_file with
-          | Some f -> grew_window#graph_label#set_label (Filename.basename f)
-          | None -> ()
-        );
+        error_handling Resources.load_gr ();
+
+        grew_window#graph_label#set_label
+          (match !Resources.current_gr_file with None -> "No graph loaded" | Some f -> Filename.basename f);
 
         match !Resources.current_gr with
-          | None -> ()
+          | None -> grew_window#btn_run#misc#set_sensitive false
           | Some instance ->
+            let _ = grew_window#btn_run#misc#set_sensitive true in
             let graph = Libgrew.graph_of_instance instance in
             Grew_rew_display.graph_map := [("init", (graph, ("", "", None)))];
             Grew_rew_display.current_top_graph := "init";
@@ -393,6 +395,7 @@ let init () =
             grew_window#err_view_scroll#misc#hide ();
             graph_top_webkit#load_uri ("file://"^svg_file) in
   (* end: load_gr *)
+
   (* -------------------------------------------------------------------------------- *)
   let gr_or_conll_filter = GFile.filter ~name:"Graph *.(gr|conll)" ~patterns:["*.gr"; "*.conll"] () in
 
@@ -407,42 +410,47 @@ let init () =
   (* click on the gr refresh button *)
   let _ = grew_window#btn_refresh_gr#connect#clicked ~callback: (fun () -> error_handling load_gr ()) in
 
+
+  (* always keep the name of the last sequence used in [Grew_args.seq]. Used to stay on the same sequence when GRS is reloaded. *)
+  let _ = !seq_combo#connect#changed
+    ~callback:
+      (fun () ->
+        try Grew_args.seq := List.nth !seq_list (!seq_combo#active)
+        with Invalid_argument("List.nth") -> ()
+      ) in
+
   (* -------------------------------------------------------------------------------- *)
   let load_grs () =
     reset ();
-    Resources.load_grs ();
+    error_handling Resources.load_grs ();
     match !Resources.current_grs with
-      | None ->
-          let _ = grew_window#btn_run#misc#set_sensitive false in
-          show_error "No grs file loaded"
+      | None -> grew_window#btn_run#misc#set_sensitive false
       | Some grs ->
-        let _ = grew_window#btn_run#misc#set_sensitive true in
-        seq_list := Libgrew.get_sequence_names grs;
+        (* remove sequence list in viewport *)
         List.iter
           (fun c -> grew_window#seq_list_viewport#remove c)
           grew_window#seq_list_viewport#children;
 
-        let (a,_) = GEdit.combo_box_text ~strings:(!seq_list) ~packing:grew_window#seq_list_viewport#add () in
-        seq_combo := a;
-        !seq_combo#set_active 0;
+        (* update global var [seq_list] *)
+        seq_list := Libgrew.get_sequence_names grs;
 
-        (* next line: avoid to lose your seq choice when reloading grs file *)
-        let _ = !seq_combo#connect#changed
-          ~callback:
-            (fun () ->
-              try Grew_args.seq := List.nth !seq_list (!seq_combo#active)
-              with Invalid_argument("List.nth") -> ()
-            ) in
-
-        grew_window#grs_label#set_label
-          (match !Resources.current_grs_file with None -> "No Grs loaded" | Some f -> Filename.basename f);
-
-        (match List_.index !Grew_args.seq !seq_list with
-          | None -> ()
-          | Some i -> !seq_combo#set_active i);
+        (* update viewport and sequence focus *)
+        begin
+          match !seq_list with
+          | [] -> grew_window#btn_run#misc#set_sensitive false
+          | _  ->
+            grew_window#btn_run#misc#set_sensitive true;
+            let (a,_) = GEdit.combo_box_text ~strings:(!seq_list) ~packing:grew_window#seq_list_viewport#add () in
+            seq_combo := a;
+            !seq_combo#set_active 0;
+            grew_window#grs_label#set_label
+              (match !Resources.current_grs_file with None -> "No Grs loaded" | Some f -> Filename.basename f);
+            match List_.index !Grew_args.seq !seq_list with
+              | None -> ()
+              | Some i -> !seq_combo#set_active i
+        end;
 
         update_features ();
-
         doc_dir := None;
         refresh_doc_webkit ();
 

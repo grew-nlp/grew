@@ -17,6 +17,13 @@ open Grew_args
 module StringMap = Map.Make (String)
 
 (* ================================================================================ *)
+module String_ = struct
+  let contains sub str =
+    try let _ = Str.search_forward (Str.regexp_string sub) str 0 in true
+    with Not_found -> false
+end
+
+(* ================================================================================ *)
 module Array_ = struct
   (* dichotomic search in a sorted array *)
   let dicho_find elt array =
@@ -53,6 +60,19 @@ module File = struct
       do res := (input_line in_ch) :: !res
       done; assert false
     with End_of_file -> close_in in_ch; List.rev !res
+
+  exception Found of int
+  let get_suffix file_name =
+  let len = String.length file_name in
+    try
+      for i = len-1 downto 0 do
+        if file_name.[i] = '.'
+        then raise (Found i)
+      done;
+      None
+    with
+    | Found i -> Some (String.sub file_name i (len-i))
+
 end (* module File *)
 
 (* ================================================================================ *)
@@ -76,6 +96,22 @@ module List_ = struct
     let rec loop i = function
       | [] -> []
       | h::t -> let head = fct i h in head :: (loop (i+1) t)
+    in loop 0
+
+  let rec opt_map fct = function
+    | [] -> []
+    | h::t -> 
+  match (fct h) with
+  | Some x -> x::(opt_map fct t)
+  | None -> opt_map fct t
+
+  let opt_mapi fct = 
+    let rec loop i = function 
+      | [] -> []
+      | h::t -> 
+    match fct i h with
+    | Some x -> x::(loop (i+1) t)
+    | None -> loop (i+1) t
     in loop 0
 
 end (* module List_ *)
@@ -148,6 +184,9 @@ end (* module Svg *)
 
 (* ================================================================================ *)
 module Corpus = struct
+
+  exception Fail of string
+
   (** [load_conll file] load a corpus. It retuns an array of couples: (id: string, graph:Instance.t).
       The identifier is the one described by the sentid feature of the first line of the conll desc;
       If no sentid is found, the identifier is the name of the file with a 5 digits number for the position in the file. *)
@@ -192,7 +231,7 @@ module Corpus = struct
                 end;
                 incr cpt;
                 last :=  (!line_num, line) :: !last
-              | _ -> Printf.printf "Illegal Conll line >>>%s<<<<\n%!" line; exit 3
+              | _ -> raise (Fail (sprintf "[file %s, line %d] Illegal Conll line >>>%s<<<<\n%!" file !line_num line))
             )
       done; assert false
 
@@ -201,6 +240,15 @@ module Corpus = struct
       close_in in_ch;
       List.rev !res
 
+  let load_brown file =
+    let lines = File.read file in
+    List_.opt_mapi
+      (fun i line -> match Str.split (Str.regexp "#") line with
+        | [] -> None
+        | [line] -> let sentid = sprintf "%05d" i in Some (sentid, Libgrew.of_brown ~sentid line)
+        | [sentid; line] -> Some (sentid, Libgrew.of_brown ~sentid line)
+        | _ -> raise (Fail (sprintf "[file %s, line %d] Illegal Brown line >>>%s<<<<\n%!" file i line))
+      ) lines
 
 
   (** [load source] loads a corpus; [source] can be:
@@ -220,9 +268,17 @@ module Corpus = struct
             else acc
           ) files_array []
       end
-    else (* if [source] is a file *) load_conll source
-
-
+    else (* if [source] is a file *)
+      match File.get_suffix source with
+      | Some s when String_.contains "conll" s -> load_conll source
+      | Some s when String_.contains "melt" s -> load_brown source      
+      | Some s when String_.contains "brown" s -> load_brown source
+      | _ ->
+        Log.fwarning "Unknown suffix for file \"%s\", trying to guess format..." source;
+        try load_conll source
+          with _ ->
+          try load_brown source
+          with _ -> Log.critical "Fail to guess format!" 
 end (* module Corpus *)
 
 (* ==================================================================================================== *)

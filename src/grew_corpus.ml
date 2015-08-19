@@ -32,6 +32,7 @@ let handle fct () =
     | Libgrew.Build (msg,loc_opt) ->        fail "Build" msg loc_opt
     | Libgrew.Run (msg,loc_opt) ->          fail "Run" msg loc_opt
     | Libgrew.Parsing_err (msg,loc_opt) ->  fail "Parse" msg loc_opt
+    | Corpus.Fail msg ->                    fail "Load corpus" msg None
     | exc ->                                fail "Uncaught exception, please report" (Printexc.to_string exc) None
 
 (* -------------------------------------------------------------------------------- *)
