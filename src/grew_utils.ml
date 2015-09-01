@@ -185,6 +185,11 @@ end (* module Svg *)
 (* ================================================================================ *)
 module Corpus = struct
 
+  exception Dash
+  let contain_dash s =
+    try String.iter (function '-' -> raise Dash | _ -> ()) s; false
+    with Dash -> true
+
   exception Fail of string
 
   (** [load_conll file] load a corpus. It retuns an array of couples: (id: string, graph:Instance.t).
@@ -208,31 +213,40 @@ module Corpus = struct
         | Some n ->
           res := (n, Libgrew.of_conll file (List.rev !last)) :: !res;
           last := [];
-          name := None in
+          name := None;
+          incr cpt; in
     try
       while true do
         incr line_num;
-        match (!name, input_line in_ch) with
-          | (_, "") -> save_one ()
-          | Some oc, line -> last :=  (!line_num, line) :: !last
-          | None, line ->
-            (* first line of the conll, build the name of the graph (sentid or file_xxxxx) *)
-            (match Str.split (Str.regexp "\t") line with
-              | [_;_;_;_;_;fs_string;_;_;_;_] ->
-                begin
-                  let fs = List.map
-                    (fun feat_string ->
-                      match Str.split (Str.regexp "=") feat_string with
-                        | [name;value] -> (name,value)
-                        | _ -> failwith (Printf.sprintf "#1 >>%S<<\n%!" feat_string)
-                  ) (Str.split (Str.regexp "|") fs_string) in
-                  try name := Some (List.assoc "sentid" fs)
-                  with Not_found -> name := Some (sprintf "%s_%05d" base !cpt)
-                end;
-                incr cpt;
-                last :=  (!line_num, line) :: !last
-              | _ -> raise (Fail (sprintf "[file %s, line %d] Illegal Conll line >>>%s<<<<\n%!" file !line_num line))
-            )
+        let line = input_line in_ch in
+
+        match (!name, Str.split (Str.regexp "\t") line) with
+          (* a blank line marks the end of a description *)
+          | (_, []) -> save_one ()
+
+          (* ignore lines with i-j in the first column (used in UDT 1.1 for fusion words) *)
+          | _ , num::_ when contain_dash num -> ()
+
+          | (None, ["1";_;_;_;_;"_";_;_;_;_]) ->
+              name := Some (sprintf "%s_%05d" base !cpt);
+              last :=  (!line_num, line) :: !last
+          | (None, ["1";_;_;_;_;fs_string;_;_;_;_]) -> 
+              begin
+                let fs = List.map
+                  (fun feat_string ->
+                    match Str.split (Str.regexp "=") feat_string with
+                      | [name;value] -> (name,value)
+                      | _ -> raise (Fail (sprintf "[file %s, line %d] Unexpected feature >>>%s<<<<\n%!" file !line_num feat_string))
+                ) (Str.split (Str.regexp "|") fs_string) in
+                try name := Some (List.assoc "sentid" fs)
+                with Not_found -> name := Some (sprintf "%s_%05d" base !cpt);
+              end;
+              last :=  (!line_num, line) :: !last
+
+          (* any regular line with num > 1 *)   
+          | Some oc, _ -> last :=  (!line_num, line) :: !last
+
+          | None, _ -> raise (Fail (sprintf "[file %s, line %d] Unexpected Conll line >>>%s<<<<\n%!" file !line_num line))
       done; assert false
 
     with End_of_file ->
