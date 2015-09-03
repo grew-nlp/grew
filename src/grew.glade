@@ -303,10 +303,7 @@
                 <property name="resize_mode">queue</property>
                 <property name="shadow_type">none</property>
                 <child>
-                  <widget class="GtkComboBox" id="seq_list">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                  </widget>
+                  <placeholder/>
                 </child>
               </widget>
               <packing>

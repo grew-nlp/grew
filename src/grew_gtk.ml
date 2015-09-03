@@ -226,6 +226,9 @@ let init () =
   let _ = GMain.Main.init () in
   let grew_window = new grew_window () in
 
+  (* combo_box_text not implemented in lablgladecc2 *)
+  let combo_box_text = GEdit.combo_box_text ~packing:grew_window#seq_list_viewport#add () in
+
   let doc_dir = ref None in
 
   let _ = Grew_config.read_config () in
@@ -363,8 +366,6 @@ let init () =
   (* force html doc building with the "Build HTML doc" button *)
   let _ = grew_window#build_doc#connect#clicked (fun () -> error_handling build_doc ()) in
 
-  let seq_combo = ref grew_window#seq_list in
-
   let seq_list = ref [] in
 
   (* -------------------------------------------------------------------------------- *)
@@ -410,15 +411,6 @@ let init () =
   (* click on the gr refresh button *)
   let _ = grew_window#btn_refresh_gr#connect#clicked ~callback: (fun () -> error_handling load_gr ()) in
 
-
-  (* always keep the name of the last sequence used in [Grew_args.seq]. Used to stay on the same sequence when GRS is reloaded. *)
-  let _ = !seq_combo#connect#changed
-    ~callback:
-      (fun () ->
-        try Grew_args.seq := List.nth !seq_list (!seq_combo#active)
-        with Invalid_argument("List.nth") -> ()
-      ) in
-
   (* -------------------------------------------------------------------------------- *)
   let load_grs () =
     reset ();
@@ -426,28 +418,25 @@ let init () =
     match !Resources.current_grs with
       | None -> grew_window#btn_run#misc#set_sensitive false
       | Some grs ->
-        (* remove sequence list in viewport *)
-        List.iter
-          (fun c -> grew_window#seq_list_viewport#remove c)
-          grew_window#seq_list_viewport#children;
-
         (* update global var [seq_list] *)
         seq_list := Libgrew.get_sequence_names grs;
 
-        (* update viewport and sequence focus *)
+        (* remember the position to stay on the same sequence when GRS is reloaded. *)
+        let old_pos = (fst combo_box_text)#active in
+        (* remove sequence list in combo box *)
+        (fst (snd combo_box_text))#clear ();
+
+        (* update combo box and sequence focus *)
         begin
           match !seq_list with
           | [] -> grew_window#btn_run#misc#set_sensitive false
           | _  ->
             grew_window#btn_run#misc#set_sensitive true;
-            let (a,_) = GEdit.combo_box_text ~strings:(!seq_list) ~packing:grew_window#seq_list_viewport#add () in
-            seq_combo := a;
-            !seq_combo#set_active 0;
+            List.iter (fun s -> GEdit.text_combo_add combo_box_text s) !seq_list;
             grew_window#grs_label#set_label
               (match !Resources.current_grs_file with None -> "No Grs loaded" | Some f -> Filename.basename f);
-            match List_.index !Grew_args.seq !seq_list with
-              | None -> ()
-              | Some i -> !seq_combo#set_active i
+            (fst combo_box_text)#set_active 
+              (if old_pos >=0 && old_pos < List.length !seq_list then old_pos else 0);
         end;
 
         update_features ();
@@ -556,7 +545,7 @@ let init () =
       ~callback:
       (fun () ->
         try
-          let rew_display = Resources.rewrite (List.nth !seq_list (!seq_combo#active)) in
+          let rew_display = Resources.rewrite (List.nth !seq_list ((fst combo_box_text)#active)) in
           let fl = ref "G0" in
           grew_window#vpane_right#set_position 30;
           grew_window#btn_show_module#set_active false;
