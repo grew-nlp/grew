@@ -412,7 +412,7 @@ let init () =
   let _ = grew_window#btn_refresh_gr#connect#clicked ~callback: (fun () -> error_handling load_gr ()) in
 
   (* -------------------------------------------------------------------------------- *)
-  let load_grs () =
+  let load_grs ?seq () =
     reset ();
     error_handling Resources.load_grs ();
     match !Resources.current_grs with
@@ -435,8 +435,18 @@ let init () =
             List.iter (fun s -> GEdit.text_combo_add combo_box_text s) !seq_list;
             grew_window#grs_label#set_label
               (match !Resources.current_grs_file with None -> "No Grs loaded" | Some f -> Filename.basename f);
-            (fst combo_box_text)#set_active 
-              (if old_pos >=0 && old_pos < List.length !seq_list then old_pos else 0);
+            begin
+              match seq with
+              | None ->
+                (fst combo_box_text)#set_active
+                  (if old_pos >=0 && old_pos < List.length !seq_list then old_pos else 0)
+              | Some seq_name -> 
+                begin 
+                   match List_.index seq_name !seq_list with
+                  | None -> warning "Unknown sequence \"%s\"" seq_name;
+                  | Some i -> (fst combo_box_text)#set_active i
+                end
+            end
         end;
 
         update_features ();
@@ -1001,7 +1011,7 @@ let init () =
   grew_window#toplevel#show ();
 
   (* startup load of grs files (which implies loading of the gr file) *)
-  start_grs (); start_gr (); error_handling load_grs ();
+  start_grs (); start_gr (); error_handling (load_grs ~seq:!Grew_args.seq) ();
   refresh_error ();
 
   GMain.Main.main ()
