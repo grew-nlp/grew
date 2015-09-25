@@ -11,7 +11,6 @@
 open Printf
 open Grew_utils
 open Log
-open Dep2pict
 
 let fos str =
   try float_of_string str
@@ -71,21 +70,37 @@ module Grew_rew_display = struct
   let to_depfile_graph ?deco ?main_feat graph_id output_file =
     save output_file (to_depstring_graph ?deco ?main_feat graph_id)
 
-  let to_pngfile_graph ?deco ?main_feat graph_id output_file =
-    let dep = to_depstring_graph ?deco ?main_feat graph_id in
-    ignore(Dep2pict.fromDepStringToPng dep output_file)
-
-  let to_pdf_depfile_graph ?deco ?main_feat graph_id output_file =
-    let dep = to_depstring_graph ?deco ?main_feat graph_id in
-    ignore(Dep2pict.fromDepStringToPdf dep output_file)
-
   let to_pdf_dotfile_graph ?deco ?main_feat graph_id output_file =
     let dot = to_dotstring_graph ?deco ?main_feat graph_id in
     Pdf.dot_to_file dot output_file
 
+
+IFDEF DEP2PICT THEN
+  let to_pngfile_graph ?deco ?main_feat graph_id output_file =
+    let dep = to_depstring_graph ?deco ?main_feat graph_id in
+    let d2p = Dep2pict.Dep2pict.from_dep ~dep in
+    Dep2pict.Dep2pict.save_png ~filename:output_file d2p
+
+  let to_pdf_depfile_graph ?deco ?main_feat graph_id output_file =
+    let dep = to_depstring_graph ?deco ?main_feat graph_id in
+    let d2p = Dep2pict.Dep2pict.from_dep ~dep in
+    Dep2pict.Dep2pict.save_pdf ~filename:output_file d2p
+
   let to_svg_depfile_graph ?deco ?main_feat graph_id output_file =
     let dep = to_depstring_graph ?deco ?main_feat graph_id in
-    ignore(Dep2pict.fromDepStringToSvgFile dep output_file)
+    let d2p = Dep2pict.Dep2pict.from_dep ~dep in
+    Dep2pict.Dep2pict.save_svg ~filename:output_file d2p
+ELSE
+  let to_pngfile_graph ?deco ?main_feat graph_id output_file =
+    Log.critical "[to_pngfile_graph] not available without dep2pict"
+  let to_pdf_depfile_graph ?deco ?main_feat graph_id output_file =
+    Log.critical "[to_pdf_depfile_graph] is not available without dep2pict"
+  let to_svg_depfile_graph ?deco ?main_feat graph_id output_file =
+    Log.critical "[to_svg_depfile_graph] is not available without dep2pict"
+END
+
+
+
 
   let to_svg_dotfile_graph ?deco ?main_feat graph_id output_file =
     let dot = to_dotstring_graph ?deco ?main_feat graph_id in
@@ -188,8 +203,8 @@ module Grew_rew_display = struct
 
       begin
 	match rew_display with
-	  | Libgrew.Empty -> ()
-	  | Libgrew.Leaf g ->
+	  | Libgrew_types.Empty -> ()
+	  | Libgrew_types.Leaf g ->
 	    common_part "##end##" g;
             incr graph_counter;
             (match !first_leaf with
@@ -206,7 +221,7 @@ module Grew_rew_display = struct
 	    );
             connect_up ();
 
-	  | Libgrew.Local_normal_form (g,n,rd) ->
+	  | Libgrew_types.Local_normal_form (g,n,rd) ->
             common_part n g;
 	    let previous_node = !graph_counter in
             step ();
@@ -215,7 +230,7 @@ module Grew_rew_display = struct
             connect_up ();
 	    ignore(transform (string_of_int previous_node) true n rd (level+1));
 	    ()
-	  | Libgrew.Node (g,n,[]) ->
+	  | Libgrew_types.Node (g,n,[]) ->
             common_part n g;
             connect_up ();
 
@@ -226,7 +241,7 @@ module Grew_rew_display = struct
 	    incr graph_counter
 
 
-	  | Libgrew.Node (g,n,children) ->
+	  | Libgrew_types.Node (g,n,children) ->
             common_part n g;
 
 	    let previous_node = !graph_counter in
@@ -597,8 +612,8 @@ module Grew_rew_display = struct
         (*				let graph_counter_prefix = Str.global_replace (Str.regexp "G") "" first_graph_name in*)
 
 	(* Log.fdebug "[Grew_rew_display] Father : %s | Son : %s" first_graph_name gr; *)
-	let first_rule = bs.Libgrew.first in
-	let steps = bs.Libgrew.small_step in
+	let first_rule = bs.Libgrew_types.first in
+	let steps = bs.Libgrew_types.small_step in
 	(* Log.fdebug "[Grew_rew_display] First rule name : %s" first_rule.Libgrew.rule_name; *)
 
 	let dot = ref "digraph G {" in
@@ -612,7 +627,7 @@ module Grew_rew_display = struct
 
 	add (Printf.sprintf "    G%d [style=filled, fillcolor=\"%s\", label=G%d]" !graph_counter top_color !graph_counter);
 	add (Printf.sprintf "    node_mod_%d0 [fontcolor=transparent, color=transparent]" !graph_counter);
-	add (Printf.sprintf "    node_mod_%d1 [label=\"%s\", color=transparent]" !graph_counter (fix_rule_name first_rule.Libgrew.rule_name));
+	add (Printf.sprintf "    node_mod_%d1 [label=\"%s\", color=transparent]" !graph_counter (fix_rule_name first_rule.Libgrew_types.rule_name));
 	add (Printf.sprintf "    node_mod_%d0 -> node_mod_%d1 [fontcolor=transparent, color=transparent]" !graph_counter !graph_counter);
 	add (Printf.sprintf "    {rank=same;node_mod_%d0; G%d}" !graph_counter !graph_counter);
 	incr graph_counter;
@@ -635,7 +650,7 @@ module Grew_rew_display = struct
 	    add (Printf.sprintf "    G%d -> G%d" (!graph_counter-1) !graph_counter);
 
 	    add (Printf.sprintf "    node_mod_%d0 [fontcolor=transparent, color=transparent]" !graph_counter);
-	    add (Printf.sprintf "    node_mod_%d1 [label=\"%s\", color=transparent]" !graph_counter (fix_rule_name r.Libgrew.rule_name));
+	    add (Printf.sprintf "    node_mod_%d1 [label=\"%s\", color=transparent]" !graph_counter (fix_rule_name r.Libgrew_types.rule_name));
 	    add (Printf.sprintf "    node_mod_%d1 -> node_mod_%d0 [fontcolor=transparent, color=transparent]" (!graph_counter-1) !graph_counter);
 	    add (Printf.sprintf "    node_mod_%d0 -> node_mod_%d1 [fontcolor=transparent, color=transparent]" !graph_counter !graph_counter);
 	    add (Printf.sprintf "    {rank=same;node_mod_%d0; G%d}" !graph_counter !graph_counter);
@@ -668,7 +683,7 @@ module Grew_rew_display = struct
     let (gr,(gr_parent_name,rule)) = List.assoc graph !graph_map2 in
     match rule with
       | Some rule ->
-	let up = rule.Libgrew.up and down = rule.Libgrew.down in
+	let up = rule.Libgrew_types.up and down = rule.Libgrew_types.down in
 
 	current_bottom_deco := Some down;
 	current_top_deco := Some up;
@@ -683,7 +698,7 @@ module Grew_rew_display = struct
           then get_dot_graph_with_background2 ?main_feat ~deco:down ~botop:(true,false) graph
 	  else get_dep_graph_with_background2 ?main_feat ~deco:down ~botop:(true,false) graph in
 
-	let doc = Printf.sprintf "%s_%s.html" !current_selected_mod rule.Libgrew.rule_name in
+	let doc = Printf.sprintf "%s_%s.html" !current_selected_mod rule.Libgrew_types.rule_name in
 	(svg_file_top,svg_file_bottom,gr_parent_name,doc)
     | None -> failwith "get_rule_for"
 end

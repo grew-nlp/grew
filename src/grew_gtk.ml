@@ -381,9 +381,8 @@ let init () =
 
         match !Resources.current_gr with
           | None -> grew_window#btn_run#misc#set_sensitive false
-          | Some instance ->
+          | Some graph ->
             let _ = grew_window#btn_run#misc#set_sensitive true in
-            let graph = Libgrew.graph_of_instance instance in
             Grew_rew_display.graph_map := [("init", (graph, ("", "", None)))];
             Grew_rew_display.current_top_graph := "init";
 

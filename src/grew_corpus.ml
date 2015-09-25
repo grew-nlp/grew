@@ -275,9 +275,7 @@ let full () =
     let grs = Libgrew.load_grs !Grew_args.grs in
 
     (* get the list of graphs to explore *)
-    let graph_array = Array.map
-      (fun (name, instance) -> (name, Libgrew.graph_of_instance instance))
-      (Array.of_list (Corpus.get_graphs !Grew_args.input_data)) in
+    let graph_array = Array.of_list (Corpus.get_graphs !Grew_args.input_data) in
     let len = Array.length graph_array in
     printf "MSG:%d graphs loaded from '%s'\n%!" len !Grew_args.input_data;
 

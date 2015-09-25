@@ -11,6 +11,10 @@
 open Printf
 open Log
 
+IFDEF DEP2PICT THEN
+open Dep2pict
+ENDIF
+
 open Grew_args
 
 (* ================================================================================ *)
@@ -174,7 +178,8 @@ module Svg = struct
 IFDEF DEP2PICT THEN
   let dep_to_tmp dep =
     let temp_file_name = Filename.temp_file "grew_" ".svg" in
-    ignore (Dep2pict.Dep2pict.fromDepStringToSvgFile dep temp_file_name);
+    let d2p = Dep2pict.from_dep ~dep in
+    let () = Dep2pict.save_svg ~filename:temp_file_name d2p in
     temp_file_name
 ELSE
   let dep_to_tmp dep =

@@ -88,8 +88,11 @@ grew_cluster.cmx: grew_cluster.ml grew_args.cmx grew_utils.cmx grew_corpus.cmx
 
 
 grew_rew_display.cmx: grew_rew_display.ml grew_utils.cmx
-	$(OCAMLOPT) -c unix.cmxa str.cmxa $(ANSITERMINAL_OPT) $(LOG_OPT) $(D2P_OPT) $(LIBGREW_OPT) grew_utils.cmx grew_rew_display.ml
-
+ifeq (@USE_DEP2PICT@,yes)
+	$(OCAMLOPT) -c -pp 'camlp4o pa_macro.cmo -DDEP2PICT' unix.cmxa str.cmxa $(ANSITERMINAL_OPT) $(LOG_OPT) $(D2P_OPT) $(LIBGREW_OPT) grew_utils.cmx grew_rew_display.ml
+else
+	$(OCAMLOPT) -c -pp 'camlp4o pa_macro.cmo' unix.cmxa str.cmxa $(ANSITERMINAL_OPT) $(LOG_OPT) $(D2P_OPT) $(LIBGREW_OPT) grew_utils.cmx grew_rew_display.ml
+endif
 
 grew_utils.cmx: grew_utils.ml grew_args.cmx
 ifeq (@USE_DEP2PICT@,yes)
