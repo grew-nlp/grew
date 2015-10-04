@@ -225,13 +225,19 @@ module Corpus = struct
         incr line_num;
         let line = input_line in_ch in
 
-        match (!name, Str.split (Str.regexp "\t") line) with
+        match line with
+        | "" -> save_one ()
+        | s when s.[0] = '#' ->
+          begin
+            last :=  (!line_num, line) :: !last;
+            match Str.bounded_split (Str.regexp "\\(# *\\)\\|\\( *: *\\)") s 2 with
+            | ["sentid"; sentid] -> name := Some sentid
+            | _ -> ()
+          end
+        | _ ->
+          match (!name, Str.split (Str.regexp "\t") line) with
           (* a blank line marks the end of a description *)
           | (_, []) -> save_one ()
-
-          (* ignore lines with i-j in the first column (used in UDT 1.1 for fusion words) *)
-          | _ , num::_ when contain_dash num -> ()
-
           | (None, ["1";_;_;_;_;"_";_;_;_;_]) ->
               name := Some (sprintf "%s_%05d" base !cpt);
               last :=  (!line_num, line) :: !last
@@ -248,10 +254,10 @@ module Corpus = struct
               end;
               last :=  (!line_num, line) :: !last
 
-          (* any regular line with num > 1 *)   
-          | Some oc, _ -> last :=  (!line_num, line) :: !last
+            (* any regular line with num > 1 *)   
+            | Some oc, _ -> last :=  (!line_num, line) :: !last
 
-          | None, _ -> raise (Fail (sprintf "[file %s, line %d] Unexpected Conll line >>>%s<<<<\n%!" file !line_num line))
+            | None, _ -> raise (Fail (sprintf "[file %s, line %d] Unexpected Conll line >>>%s<<<<\n%!" file !line_num line))
       done; assert false
 
     with End_of_file ->
