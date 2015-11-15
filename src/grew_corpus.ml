@@ -11,6 +11,8 @@
 open Printf
 open Log
 
+open Libgrew
+
 open Grew_utils
 open Grew_args
 
@@ -19,7 +21,7 @@ open Grew_args
 let fail kind msg loc_opt =
   let loc_string = match loc_opt with
   | None -> ""
-  | Some loc -> Libgrew.string_of_loc loc in
+  | Some loc -> Loc.to_string loc in
     printf "\n====== Error: %s ======\n%s %s\n===================================\n" kind msg loc_string;
     exit 2
 
@@ -53,17 +55,18 @@ let init () =
     Unix.mkdir output_dir 0o777;
 
     (* load grs file *)
-    let grs = Libgrew.load_grs !Grew_args.grs in
+    let grs = Grs.load !Grew_args.grs in
+    let domain = Grs.get_domain grs in
 
     (* generate documentation in the [doc] folder *)
-    let _ = Libgrew.build_html_doc ~corpus:true (Filename.concat output_dir "doc") grs in
+    let _ = Grs.build_html_doc ~corpus:true (Filename.concat output_dir "doc") grs in
 
     (* get the list of graphs to rewrite *)
-    let graph_list = Corpus.get_graphs !Grew_args.input_data in
+    let graph_list = Corpus.get_graphs domain !Grew_args.input_data in
     let base_names = List.map fst graph_list in
 
     (* put the list of files to consider in the [index] file *)
-    Libgrew.save_index ~dirname:output_dir ~base_names;
+    Rewrite.save_index ~dirname:output_dir ~base_names;
 
     (* put the grs file in the output folder *)
     let _ = Sys.command (sprintf "cp %s %s" !Grew_args.grs output_dir) in
@@ -92,22 +95,22 @@ let init () =
         let header = Html.build_header prev_opt next_opt in
 
         try
-          let rh = Libgrew.rewrite ~gr ~grs ~seq:!Grew_args.seq in
-          Libgrew.write_stat stat_file rh;
+          let rh = Rewrite.rewrite ~gr ~grs ~seq:!Grew_args.seq in
+          Rewrite.write_stat stat_file rh;
 
           match !Grew_args.html with
             | Grew_args.No
-            | Grew_args.Html when Libgrew.is_empty rh ->
-              sentences := (false, base_name, 1, Libgrew.to_sentence ?main_feat:!Grew_args.main_feat gr) :: !sentences
+            | Grew_args.Html when Rewrite.is_empty rh ->
+              sentences := (false, base_name, 1, Graph.to_sentence ?main_feat:!Grew_args.main_feat gr) :: !sentences
             | _ ->
-              sentences := (true, base_name, Libgrew.num_sol rh, Libgrew.to_sentence ?main_feat:!Grew_args.main_feat gr) :: !sentences;
+              sentences := (true, base_name, Rewrite.num_sol rh, Graph.to_sentence ?main_feat:!Grew_args.main_feat gr) :: !sentences;
               (* output gr files in corpus mode *)
-              if !Grew_args.out_gr then Libgrew.save_gr output_base rh;
+              if !Grew_args.out_gr then Rewrite.save_gr domain output_base rh;
 
               (* output conll files in corpus mode *)
-              if !Grew_args.out_conll then Libgrew.save_conll output_base rh;
+              if !Grew_args.out_conll then Rewrite.save_conll domain output_base rh;
 
-              Libgrew.write_html
+              Rewrite.write_html domain
                 ~no_init: !Grew_args.no_init
                 ?filter: !Grew_args.features
                 ?main_feat: !Grew_args.main_feat
@@ -118,14 +121,14 @@ let init () =
                 output_base
         with
 
-        | Libgrew.File_dont_exists file -> Html.write_error ~header ~html ~init:gr output_base (sprintf "The file %s doesn't exist!" file)
+        | Libgrew.File_dont_exists file -> Html.write_error domain ~header ~html ~init:gr output_base (sprintf "The file %s doesn't exist!" file)
         | Libgrew.Bug (msg,loc_opt)
         | Libgrew.Build (msg,loc_opt)
         | Libgrew.Run (msg,loc_opt)
         | Libgrew.Parsing_err (msg,loc_opt) ->
           match loc_opt with
-          | None -> Html.write_error ~header ~html ~init:gr output_base msg
-          | Some loc -> Html.write_error ~header ~html ~init:gr output_base (sprintf "%s %s" msg (Libgrew.string_of_loc loc))
+          | None -> Html.write_error domain ~header ~html ~init:gr output_base msg
+          | Some loc -> Html.write_error domain ~header ~html ~init:gr output_base (sprintf "%s %s" msg (Loc.to_string loc))
 
       ) graph_array;
     Counter.finish ();
@@ -135,9 +138,9 @@ let init () =
       | None -> sprintf "Grew corpus on input dir '%s'" (Filename.basename !Grew_args.input_data) in
 
     (* TODO all confluent in Grs module *)
-    Libgrew.html_sentences ~title output_dir (List.rev !sentences);
+    Rewrite.html_sentences ~title output_dir (List.rev !sentences);
 
-    Libgrew.make_index
+    Rewrite.make_index
       ~title
       ~grs_file: !Grew_args.grs
       ~html: (match !Grew_args.html with Grew_args.No -> false | _ -> true)
@@ -156,17 +159,18 @@ let multi_conll ?(keep_empty_rh=false) () =
       | Some file -> open_out file in
 
     (* load grs file *)
-    let grs = Libgrew.load_grs !Grew_args.grs in
+    let grs = Grs.load !Grew_args.grs in
+    let domain = Grs.get_domain grs in
 
     (* get the list of files to rewrite *)
-    let graph_list = Corpus.get_graphs !Grew_args.input_data in
+    let graph_list = Corpus.get_graphs domain !Grew_args.input_data in
     let len = List.length graph_list in
 
     List.iteri
       (fun index (base_name, gr) ->
         Counter.print index len base_name;
-        let rh = Libgrew.rewrite ~gr ~grs ~seq:!Grew_args.seq in
-        match Libgrew.conll_dep_string ~keep_empty_rh rh with
+        let rh = Rewrite.rewrite ~gr ~grs ~seq:!Grew_args.seq in
+        match Rewrite.conll_dep_string domain ~keep_empty_rh rh with
           | None -> ()
           | Some string -> fprintf out_ch "%s\n" string
       ) graph_list;
@@ -199,19 +203,20 @@ let det () =
         Unix.mkdir output_dir 0o777;
 
         (* load grs file *)
-        let grs = Libgrew.load_grs !Grew_args.grs in
+        let grs = Grs.load !Grew_args.grs in
+        let domain = Grs.get_domain grs in
 
         (* get the list of graphs to rewrite *)
-        let graph_list = Corpus.get_graphs !Grew_args.input_data in
+        let graph_list = Corpus.get_graphs domain !Grew_args.input_data in
         let len = List.length graph_list in
 
         List_.iteri
           (fun index (base_name, gr) ->
             Counter.print index len base_name;
             let output_base = Filename.concat output_dir base_name in
-            let rh = Libgrew.rewrite ~gr ~grs ~seq:!Grew_args.seq in
-            if !Grew_args.out_gr then Libgrew.save_det_gr output_base rh;
-            if !Grew_args.out_conll then Libgrew.save_det_conll output_base rh
+            let rh = Rewrite.rewrite ~gr ~grs ~seq:!Grew_args.seq in
+            if !Grew_args.out_gr then Rewrite.save_det_gr domain output_base rh;
+            if !Grew_args.out_conll then Rewrite.save_det_conll domain output_base rh
           ) graph_list;
         Counter.finish ()
       ) ()
@@ -241,19 +246,20 @@ let full () =
         Unix.mkdir output_dir 0o777;
 
         (* load grs file *)
-        let grs = Libgrew.load_grs !Grew_args.grs in
+        let grs = Grs.load !Grew_args.grs in
+        let domain = Grs.get_domain grs in
 
         (* get the list of graphs to rewrite *)
-        let graph_list = Corpus.get_graphs !Grew_args.input_data in
+        let graph_list = Corpus.get_graphs domain !Grew_args.input_data in
         let len = List.length graph_list in
 
         List_.iteri
           (fun index (base_name, gr) ->
             Counter.print index len base_name;
             let output_base = Filename.concat output_dir base_name in
-            let rh = Libgrew.rewrite ~gr ~grs ~seq:!Grew_args.seq in
+            let rh = Rewrite.rewrite ~gr ~grs ~seq:!Grew_args.seq in
             if !Grew_args.out_gr then failwith "Not yet";
-            if !Grew_args.out_conll then ignore (Libgrew.save_full_conll output_base rh)
+            if !Grew_args.out_conll then ignore (Rewrite.save_full_conll domain output_base rh)
           ) graph_list;
         Counter.finish ()
       ) ()
@@ -263,7 +269,7 @@ let full () =
   let dump_error kind msg loc_opt =
     let loc_string = match loc_opt with
     | None -> ""
-    | Some loc -> Libgrew.string_of_loc loc in
+    | Some loc -> Loc.to_string loc in
       printf "ERR: %s [%s] at %s\n" kind msg loc_string
 
   let grep () =
@@ -272,10 +278,11 @@ let full () =
     then (Log.message "No input data specified: use -i option"; exit 1);
 
     (* TODO: init features and labels: load a grs file *)
-    let grs = Libgrew.load_grs !Grew_args.grs in
+    let grs = Grs.load !Grew_args.grs in
+    let domain = Grs.get_domain grs in
 
     (* get the list of graphs to explore *)
-    let graph_array = Array.of_list (Corpus.get_graphs !Grew_args.input_data) in
+    let graph_array = Array.of_list (Corpus.get_graphs domain !Grew_args.input_data) in
     let len = Array.length graph_array in
     printf "MSG:%d graphs loaded from '%s'\n%!" len !Grew_args.input_data;
 
@@ -289,11 +296,11 @@ let full () =
           | None -> let _ = Unix.select [] [] [] 0.1 in ()
           | Some pattern ->
             let (name, graph) = graph_array.(!index) in
-            let matchings = Libgrew.match_in_graph pattern graph in
+            let matchings = Graph.search_pattern domain pattern graph in
             List.iter
               (fun matching ->
-                let deco = Libgrew.match_deco pattern matching in
-                let dep = Libgrew.to_dep_graph ~deco graph in
+                let deco = Deco.build pattern matching in
+                let dep = Graph.to_dep domain ~deco graph in
                 let svg_file = Svg.dep_to_tmp dep in
                 printf "MSG: found pattern in graph [%s] --> %s\n%!" name svg_file;
               ) matchings;
@@ -312,7 +319,7 @@ let full () =
         | (None, Some file) ->
           if Sys.file_exists file
           then
-            (try patt := Some (Libgrew.load_pattern file)
+            (try patt := Some (Pattern.load domain file)
             with
               | Libgrew.File_dont_exists file ->      dump_error "IO" (sprintf "File not found: \"%s\"" file) None
               | Libgrew.Bug (msg,loc_opt) ->          dump_error "Bug" msg loc_opt
@@ -336,9 +343,9 @@ let make_index () =
   let title = match !Grew_args.title with
   | Some s -> s
   | None -> sprintf "Index for file in input_data '%s'" !Grew_args.input_data in
-  let grs = Libgrew.load_grs !Grew_args.grs in
+  let grs = Grs.load !Grew_args.grs in
   let base_names = File.read (Filename.concat output_dir "index") in
-  Libgrew.make_index
+  Rewrite.make_index
     ~title: title
     ~grs_file: !Grew_args.grs
     ~html: (match !Grew_args.html with Grew_args.No -> false | _ -> true)
@@ -374,18 +381,19 @@ let annot () =
     Unix.mkdir annot_dir 0o777;
 
     (* load grs file *)
-    let grs = Libgrew.load_grs !Grew_args.grs in
+    let grs = Grs.load !Grew_args.grs in
+    let domain = Grs.get_domain grs in
 
     (* get the list of graphs to rewrite *)
-    let graph_list = Corpus.get_graphs !Grew_args.input_data in
+    let graph_list = Corpus.get_graphs domain !Grew_args.input_data in
     let len = List.length graph_list in
 
     let bn_rh_list =
       List_.mapi
         (fun index (base_name, gr) ->
           Counter.print index len base_name;
-          (base_name, Libgrew.rewrite ~gr ~grs ~seq:!Grew_args.seq)
+          (base_name, Rewrite.rewrite ~gr ~grs ~seq:!Grew_args.seq)
         ) graph_list in
     Counter.finish ();
-    Libgrew.write_annot ~title static_dir annot_dir bn_rh_list
+    Rewrite.write_annot domain ~title static_dir annot_dir bn_rh_list
   ) ()

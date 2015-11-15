@@ -10,6 +10,7 @@
 
 open Arg
 open Log
+open Libgrew
 
 module Grew_args = struct
 
@@ -78,7 +79,7 @@ module Grew_args = struct
 
     "-grs", String (fun s -> grs := absolute s),          "<grs_file>              chose the grs file to load";
     "-seq", String (fun s -> seq := s),                   "<seq>                   set the module sequence to use";
-    "-timeout", Float (fun f -> timeout := Some f; Libgrew.set_timeout (Some f)),                   "<float>             set a timeout on rewriting";
+    "-timeout", Float (fun f -> timeout := Some f; Rewrite.set_timeout (Some f)),                   "<float>             set a timeout on rewriting";
     "-features", String (fun s -> features := Some (Str.split (Str.regexp "; *") s)),            "<feat_name_list>  set the list of feature names to printf in dep format";
     "-main_feat", String (fun s -> main_feat := Some s),       "<feat_name_list>  set the list of feature names used in dep format to set the \"main word\"\n\nOptions for GUI mode";
 

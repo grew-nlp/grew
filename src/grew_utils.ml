@@ -10,6 +10,7 @@
 
 open Printf
 open Log
+open Libgrew
 
 IFDEF DEP2PICT THEN
 open Dep2pict
@@ -130,7 +131,7 @@ module Html = struct
       | Some p, Some n -> sprintf "<a href=\"%s.html\">Previous</a> -- <a href=\"%s.html\">Next</a>" p n
 
 
-  let write_error ?(header="") ~html ?init basename msg =
+  let write_error grs ?(header="") ~html ?init basename msg =
     let stat_file = sprintf "%s.stat" basename in
 
     let out_ch = open_out stat_file in
@@ -139,7 +140,8 @@ module Html = struct
     close_out out_ch;
 
     if html
-    then Libgrew.error_html
+    then Rewrite.error_html
+      grs
       ~no_init: !Grew_args.no_init
       ?main_feat: !Grew_args.main_feat
       ~dot: !Grew_args.dot
@@ -200,7 +202,7 @@ module Corpus = struct
   (** [load_conll file] load a corpus. It retuns an array of couples: (id: string, graph:Instance.t).
       The identifier is the one described by the sentid feature of the first line of the conll desc;
       If no sentid is found, the identifier is the name of the file with a 5 digits number for the position in the file. *)
-  let load_conll file =
+  let load_conll grs file =
     let base = Filename.chop_extension (Filename.basename file) in
     let in_ch = open_in file in
     (* if the input file contains an UTF-8 byte order mark (EF BB BF), skip 3 bytes, else get back to 0 *)
@@ -216,7 +218,7 @@ module Corpus = struct
       match !name with
         | None -> ()
         | Some n ->
-          res := (n, Libgrew.of_conll file (List.rev !last)) :: !res;
+          res := (n, Graph.of_conll grs file (List.rev !last)) :: !res;
           last := [];
           name := None;
           incr cpt; in
@@ -265,13 +267,13 @@ module Corpus = struct
       close_in in_ch;
       List.rev !res
 
-  let load_brown file =
+  let load_brown grs file =
     let lines = File.read file in
     List_.opt_mapi
       (fun i line -> match Str.split (Str.regexp "#") line with
         | [] -> None
-        | [line] -> let sentid = sprintf "%05d" i in Some (sentid, Libgrew.of_brown ~sentid line)
-        | [sentid; line] -> Some (sentid, Libgrew.of_brown ~sentid line)
+        | [line] -> let sentid = sprintf "%05d" i in Some (sentid, Graph.of_brown grs ~sentid line)
+        | [sentid; line] -> Some (sentid, Graph.of_brown grs ~sentid line)
         | _ -> raise (Fail (sprintf "[file %s, line %d] Illegal Brown line >>>%s<<<<\n%!" file i line))
       ) lines
 
@@ -279,7 +281,7 @@ module Corpus = struct
   (** [load source] loads a corpus; [source] can be:
       - a folder, the corpus is the set of graphs (files matching *.gr or *.conll) in the folder
       - a conll file *)
-  let get_graphs source =
+  let get_graphs grs source =
     if Sys.is_directory source
     then (* if [source] is a folder *)
       begin
@@ -287,22 +289,22 @@ module Corpus = struct
         Array.fold_right
           (fun file acc ->
             if Filename.check_suffix file ".gr"
-            then (Filename.chop_extension file, Libgrew.load_graph (Filename.concat source file)) :: acc
+            then (Filename.chop_extension file, Graph.load grs (Filename.concat source file)) :: acc
             else if Filename.check_suffix file ".conll"
-            then (load_conll (Filename.concat source file)) @ acc
+            then (load_conll grs (Filename.concat source file)) @ acc
             else acc
           ) files_array []
       end
     else (* if [source] is a file *)
       match File.get_suffix source with
-      | Some s when String_.contains "conll" s -> load_conll source
-      | Some s when String_.contains "melt" s -> load_brown source      
-      | Some s when String_.contains "brown" s -> load_brown source
+      | Some s when String_.contains "conll" s -> load_conll grs source
+      | Some s when String_.contains "melt" s -> load_brown grs source      
+      | Some s when String_.contains "brown" s -> load_brown grs source
       | _ ->
         Log.fwarning "Unknown suffix for file \"%s\", trying to guess format..." source;
-        try load_conll source
+        try load_conll grs source
           with _ ->
-          try load_brown source
+          try load_brown grs source
           with _ -> Log.critical "Fail to guess format!" 
 end (* module Corpus *)
 
