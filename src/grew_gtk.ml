@@ -385,22 +385,27 @@ let init () =
 
         grew_window#graph_label#set_label
           (match !Resources.current_gr_file with None -> "No graph loaded" | Some f -> Filename.basename f);
+        begin
+          match !Resources.current_gr with
+            | None -> ()
+            | Some graph ->
+              Grew_rew_display.graph_map := [("init", (graph, ("", "", None)))];
+              Grew_rew_display.current_top_graph := "init";
+              let domain = Grs.get_domain (Resources.grs ()) in
+              let svg_file =
+                if grew_window#btn_gr_top_dot#active
+                then Grew_rew_display.svg_dot_temp_file domain ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) graph
+                else Grew_rew_display.svg_dep_temp_file domain ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) graph in
 
-        match !Resources.current_gr with
-          | None -> grew_window#btn_run#misc#set_sensitive false
-          | Some graph ->
-            let _ = grew_window#btn_run#misc#set_sensitive true in
-            Grew_rew_display.graph_map := [("init", (graph, ("", "", None)))];
-            Grew_rew_display.current_top_graph := "init";
-            let domain = Grs.get_domain (Resources.grs ()) in
-            let svg_file =
-              if grew_window#btn_gr_top_dot#active
-              then Grew_rew_display.svg_dot_temp_file domain ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) graph
-              else Grew_rew_display.svg_dep_temp_file domain ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) graph in
+              grew_window#vpaned_doc#misc#show ();
+              grew_window#err_view_scroll#misc#hide ();
+              graph_top_webkit#load_uri ("file://"^svg_file)
+        end;
 
-            grew_window#vpaned_doc#misc#show ();
-            grew_window#err_view_scroll#misc#hide ();
-            graph_top_webkit#load_uri ("file://"^svg_file) in
+        (* activate the run button only if there is a grs, a gr and a seqence *)
+        match (!Resources.current_grs, !Resources.current_gr, !seq_list) with
+        | (Some _, Some _, _::_) -> grew_window#btn_run#misc#set_sensitive true
+        | _ -> grew_window#btn_run#misc#set_sensitive false in
   (* end: load_gr *)
 
   (* -------------------------------------------------------------------------------- *)
@@ -435,9 +440,8 @@ let init () =
         (* update combo box and sequence focus *)
         begin
           match !seq_list with
-          | [] -> grew_window#btn_run#misc#set_sensitive false
+          | [] -> ()
           | _  ->
-            grew_window#btn_run#misc#set_sensitive true;
             List.iter (fun s -> GEdit.text_combo_add combo_box_text s) !seq_list;
             grew_window#grs_label#set_label
               (match !Resources.current_grs_file with None -> "No Grs loaded" | Some f -> Filename.basename f);
@@ -461,6 +465,7 @@ let init () =
 
         (* always reload a gr file after a grs change *)
         error_handling load_gr () in
+
   (* end: load_grs *)
   (* -------------------------------------------------------------------------------- *)
 
