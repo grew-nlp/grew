@@ -272,67 +272,41 @@ let full () =
     | Some loc -> Loc.to_string loc in
       printf "ERR: %s [%s] at %s\n" kind msg loc_string
 
-  let grep () =
-    handle (fun () ->
-    if !Grew_args.input_data = ""
-    then (Log.message "No input data specified: use -i option"; exit 1);
+  let grep () = handle
+    (fun () ->
+      match (!Grew_args.grs, !Grew_args.input_data, !Grew_args.pattern) with
+      | ("",_,_) -> Log.message "No grs file specified: use -grs option"; exit 1
+      | (_,"",_) -> Log.message "No input data specified: use -i option"; exit 1
+      | (_,_,None) -> Log.message "No pattern file specified: use -pattern option"; exit 1;
+      | (grs_file, data_file, Some pattern_request) ->
 
-    (* TODO: init features and labels: load a grs file *)
-    let grs = Grs.load !Grew_args.grs in
-    let domain = Grs.get_domain grs in
+        match Str.split (Str.regexp "|") pattern_request with
+        | [] -> Log.message "Empty pattern_request"; exit 1
+        | pattern_file :: id_list ->
 
-    (* get the list of graphs to explore *)
-    let graph_array = Array.of_list (Corpus.get_graphs domain !Grew_args.input_data) in
-    let len = Array.length graph_array in
-    printf "MSG:%d graphs loaded from '%s'\n%!" len !Grew_args.input_data;
+          let domain = Grs.get_domain (Grs.load grs_file) in
 
-    let patt = ref None in
-    let index = ref 0 in
+          (* get the list of graphs to explore *)
+          let graph_array = Array.of_list (Corpus.get_graphs domain data_file) in
 
-    let () = Unix.set_nonblock Unix.stdin in
-    while true do
-      begin
-        match !patt with
-          | None -> let _ = Unix.select [] [] [] 0.1 in ()
-          | Some pattern ->
-            let (name, graph) = graph_array.(!index) in
-            let matchings = Graph.search_pattern domain pattern graph in
-            List.iter
-              (fun matching ->
-                let deco = Deco.build pattern matching in
-                let dep = Graph.to_dep domain ~deco graph in
-                let svg_file = Svg.dep_to_tmp dep in
-                printf "MSG: found pattern in graph [%s] --> %s\n%!" name svg_file;
-              ) matchings;
-            incr index;
-            if !index = len
-            then (printf "MSG: Finish\n%!"; patt := None; index := 0)
-      end;
+          let pattern = Pattern.load domain pattern_file in
 
-      let next_command =
-        try Some (read_line ())
-        with _ -> None in
-
-      begin
-        match (!patt, next_command) with
-        | (_, None) -> ()
-        | (None, Some file) ->
-          if Sys.file_exists file
-          then
-            (try patt := Some (Pattern.load domain file)
-            with
-              | Libgrew.File_dont_exists file ->      dump_error "IO" (sprintf "File not found: \"%s\"" file) None
-              | Libgrew.Bug (msg,loc_opt) ->          dump_error "Bug" msg loc_opt
-              | Libgrew.Build (msg,loc_opt) ->        dump_error "Build" msg loc_opt
-              | Libgrew.Run (msg,loc_opt) ->          dump_error "Run" msg loc_opt
-              | Libgrew.Parsing_err (msg,loc_opt) ->  dump_error "Parse" msg loc_opt
-              | exc ->                                dump_error "Uncaught exception, please report" (Printexc.to_string exc) None)
-          else printf "ERR: File \"%s\" not found\n" file
-        | (Some _, Some "STOP") -> (printf "MSG: Abort\n%!"; patt := None; index := 0)
-        | _ -> printf "MSG: Cannot handle parallel commands\n"
-      end
-    done
-  ) ()
+          Array.iter
+            (fun (name,graph) ->
+              let matchings = Graph.search_pattern domain pattern graph in
+              List.iter
+                (fun matching ->
+                  let node_matching = Graph.node_matching pattern graph matching in
+                  printf "%s" name;
+                  List.iter
+                    (fun id ->
+                      try printf "\t%d" (List.assoc id node_matching)
+                      with Not_found -> Log.fmessage "Identifier %s not found in pattern %s" id pattern_file; exit 1
+                    ) id_list;
+                  printf "\n%!";
+                ) matchings;
+          ) graph_array
+        ) ()
 
 (* -------------------------------------------------------------------------------- *)
 let make_index () =

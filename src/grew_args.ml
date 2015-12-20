@@ -45,6 +45,7 @@ module Grew_args = struct
   let main_feat = ref None
   let timeout = ref None
   let title = ref None
+  let pattern = ref None
 
   let static_dir = ref None
 
@@ -70,17 +71,17 @@ module Grew_args = struct
   let args = [
     "-corpus", Unit (fun () -> mode := Corpus),      "                     enable corpus mode";
     "-det", Unit (fun () -> mode := Det),         "                        enable det mode: rewrite a corpus with a deterministric grs";
-    "-full", Unit (fun () -> mode := Full),         "                        enable full mode: rewrite a corpus (conll output)";
+    "-full", Unit (fun () -> mode := Full),         "                       enable full mode: rewrite a corpus (conll output)";
     "-cluster", Unit (fun () -> mode := Cluster),         "                    enable cluster mode";
-    "-filter", Unit (fun () -> mode := Filter),         "                    enable filter mode";
-    "-annot", Unit (fun () -> mode := Annot),         "                    enable annot mode";
-    "-grep", Unit (fun () -> mode := Grep),         "                     enable grep mode";
+    "-filter", Unit (fun () -> mode := Filter),         "                     enable filter mode";
+    "-annot", Unit (fun () -> mode := Annot),         "                      enable annot mode";
+    "-grep", Unit (fun () -> mode := Grep),         "                       enable grep mode";
     "-make_index", Unit (fun () -> mode := Index),  "                 just rebuild index.html in <output_dir> from the set of stat files in <input_dir>\n\nOptions for all modes";
 
     "-grs", String (fun s -> grs := absolute s),          "<grs_file>              chose the grs file to load";
     "-seq", String (fun s -> seq := s),                   "<seq>                   set the module sequence to use";
     "-timeout", Float (fun f -> timeout := Some f; Rewrite.set_timeout (Some f)),                   "<float>             set a timeout on rewriting";
-    "-features", String (fun s -> features := Some (Str.split (Str.regexp "; *") s)),            "<feat_name_list>  set the list of feature names to printf in dep format";
+    "-features", String (fun s -> features := Some (Str.split (Str.regexp "; *") s)),            "<feat_name_list>   set the list of feature names to printf in dep format";
     "-main_feat", String (fun s -> main_feat := Some s),       "<feat_name_list>  set the list of feature names used in dep format to set the \"main word\"\n\nOptions for GUI mode";
 
     (* options for GUI mode *)
@@ -89,7 +90,7 @@ module Grew_args = struct
 
     (* options for corpus, det and cluster mode *)
     "-i", String (fun file -> input_data := absolute file),  "<input_data>              set the input data (file or directory) where to find graph files (.gr or .conll) in corpus or det mode";
-    "-f", String (fun file -> output_file := Some (absolute file)), "<output_file>              set the output file where to put generate data (used with det and conll)";
+    "-f", String (fun file -> output_file := Some (absolute file)), "<output_file>             set the output file where to put generate data (used with det and conll)";
     "-o", String (fun dir -> output_dir := Some (absolute dir)), "<output_dir>              set the output dir where to generate files: normal forms graphs and/or documentation\n\nOptions for corpus and cluster modes";
 
     (* options for corpus and cluster mode *)
@@ -97,10 +98,13 @@ module Grew_args = struct
     "-html", Unit (fun () -> html := Html),         "                       generate html files for each rewritten sentence";
     "-full_html", Unit (fun () -> html := Full_html),         "                  generate html files for each sentence of the corpus";
     "-dot", Unit (fun () -> dot := true), "                        use dot to draw solutions, requires html of full_html (default is dep2pict)";
+    "-q", Unit (fun () -> quiet := true), "                          do not print progression percent (for jenkins scripts)";
     "-out_gr",  Unit (fun () -> out_gr := true),         "                     generate gr output files for each rewriting normal form of the corpus";
     "-out_conll",  Unit (fun () -> out_conll := true),         "                  generate conll output files for each rewriting normal form of the corpus";
-    "-no_init", Unit (fun () -> no_init := true), "                    do not display initial graph (requires html of full_html)\n\nOptions for cluster modes";
-    "-q", Unit (fun () -> quiet := true), "                          do not print progression percent (for jenkins scripts)";
+    "-no_init", Unit (fun () -> no_init := true), "                    do not display initial graph (requires html of full_html)\n\nOptions for grep mode";
+
+    (* options for grep mode *)
+    "-pattern",  String (fun t -> pattern := Some t),              "<file>              chose the pattern file  \n\nOptions for cluster mode";
 
     (* options for cluster mode *)
     "-nodes", Int (fun f -> oar_nodes := f),              "<num>                 set the number of nodes to reserve on the cluster (default is 2)";
