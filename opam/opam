@@ -1,9 +1,13 @@
 opam-version: "1"
 maintainer: "Bruno.Guillaume@loria.fr"
 build: [
-  ["./configure" "--prefix" prefix]
-  ["make"]
-  ["make" "install"]
+  ["make" "PREFIX=%{prefix}%"]
+]
+install: [
+  ["make" "install" "PREFIX=%{prefix}%"]
+]
+remove: [
+  ["make" "uninstall" "PREFIX=%{prefix}%"]
 ]
 depends: [
   "lablgtk"
