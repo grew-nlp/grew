@@ -60,7 +60,7 @@ module Grew_rew_display = struct
     save output_file (to_grstring_graph grs graph_id)
 
   let to_conll_graph grs graph_id =
-    Graph.to_conll grs (get_graph graph_id)
+    Graph.to_conll_string grs (get_graph graph_id)
 
   let save_conll_graph grs graph_id output_file =
     save output_file (to_conll_graph grs graph_id)
@@ -79,7 +79,6 @@ module Grew_rew_display = struct
     Pdf.dot_to_file dot output_file
 
 
-IFDEF DEP2PICT THEN
   let to_pngfile_graph grs ?deco ?main_feat graph_id output_file =
     let dep = to_depstring_graph grs ?deco ?main_feat graph_id in
     let d2p = Dep2pict.Dep2pict.from_dep ~dep in
@@ -94,17 +93,6 @@ IFDEF DEP2PICT THEN
     let dep = to_depstring_graph grs ?deco ?main_feat graph_id in
     let d2p = Dep2pict.Dep2pict.from_dep ~dep in
     Dep2pict.Dep2pict.save_svg ~filename:output_file d2p
-ELSE
-  let to_pngfile_graph grs ?deco ?main_feat graph_id output_file =
-    Log.critical "[to_pngfile_graph] not available without dep2pict"
-  let to_pdf_depfile_graph grs ?deco ?main_feat graph_id output_file =
-    Log.critical "[to_pdf_depfile_graph] is not available without dep2pict"
-  let to_svg_depfile_graph grs ?deco ?main_feat graph_id output_file =
-    Log.critical "[to_svg_depfile_graph] is not available without dep2pict"
-END
-
-
-
 
   let to_svg_dotfile_graph grs ?deco ?main_feat graph_id output_file =
     let dot = to_dotstring_graph grs ?deco ?main_feat graph_id in

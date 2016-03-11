@@ -10,11 +10,10 @@
 
 open Printf
 open Log
+open Conll
 open Libgrew
 
-IFDEF DEP2PICT THEN
 open Dep2pict
-ENDIF
 
 open Grew_args
 
@@ -177,135 +176,69 @@ module Svg = struct
     close_out out_ch;
     ignore (Sys.command(sprintf "dot -Tsvg -o %s %s " output_file temp_file_name))
 
-IFDEF DEP2PICT THEN
   let dep_to_tmp dep =
     let temp_file_name = Filename.temp_file "grew_" ".svg" in
     let d2p = Dep2pict.from_dep ~dep in
     let () = Dep2pict.save_svg ~filename:temp_file_name d2p in
     temp_file_name
-ELSE
-  let dep_to_tmp dep =
-    Log.critical "[Svg.dep_to_tmp] is not available without dep2pict"
-END
 end (* module Svg *)
 
 (* ================================================================================ *)
 module Corpus = struct
 
-  exception Dash
-  let contain_dash s =
-    try String.iter (function '-' -> raise Dash | _ -> ()) s; false
-    with Dash -> true
-
   exception Fail of string
 
-  (** [load_conll file] load a corpus. It retuns an array of couples: (id: string, graph:Instance.t).
-      The identifier is the one described by the sentid feature of the first line of the conll desc;
-      If no sentid is found, the identifier is the name of the file with a 5 digits number for the position in the file. *)
-  let load_conll grs file =
-    let base = Filename.chop_extension (Filename.basename file) in
-    let in_ch = open_in file in
-    (* if the input file contains an UTF-8 byte order mark (EF BB BF), skip 3 bytes, else get back to 0 *)
-    (match input_byte in_ch with 0xEF -> seek_in in_ch 3 | _ -> seek_in in_ch 0);
+  let load_conll domain file =
+    let conll_corpus = Conll_corpus.load file in
+    Array.map (fun (sentid, conll) -> (sentid, Graph.of_conll domain conll)) conll_corpus
 
-    let cpt = ref 0 in
-    let name = ref None in
-    let res = ref [] in
-    let last = ref [] in
-    let line_num = ref 0 in
-
-    let save_one () =
-      match !name with
-        | None -> ()
-        | Some n ->
-          res := (n, Graph.of_conll grs file (List.rev !last)) :: !res;
-          last := [];
-          name := None;
-          incr cpt; in
-    try
-      while true do
-        incr line_num;
-        let line = input_line in_ch in
-
-        match line with
-        | "" -> save_one ()
-        | s when s.[0] = '#' ->
-          begin
-            last :=  (!line_num, line) :: !last;
-            match Str.bounded_split (Str.regexp "\\(# *\\)\\|\\( *: *\\)") s 2 with
-            | ["sentid"; sentid] -> name := Some sentid
-            | _ -> ()
-          end
-        | _ ->
-          match (!name, Str.split (Str.regexp "\t") line) with
-          (* a blank line marks the end of a description *)
-          | (_, []) -> save_one ()
-          | (None, ["1";_;_;_;_;"_";_;_;_;_]) ->
-              name := Some (sprintf "%s_%05d" base !cpt);
-              last :=  (!line_num, line) :: !last
-          | (None, ["1";_;_;_;_;fs_string;_;_;_;_]) -> 
-              begin
-                let fs = List.map
-                  (fun feat_string ->
-                    match Str.split (Str.regexp "=") feat_string with
-                      | [name;value] -> (name,value)
-                      | _ -> raise (Fail (sprintf "[file %s, line %d] Unexpected feature >>>%s<<<<\n%!" file !line_num feat_string))
-                ) (Str.split (Str.regexp "|") fs_string) in
-                try name := Some (List.assoc "sentid" fs)
-                with Not_found -> name := Some (sprintf "%s_%05d" base !cpt);
-              end;
-              last :=  (!line_num, line) :: !last
-
-            (* any regular line with num > 1 *)   
-            | Some oc, _ -> last :=  (!line_num, line) :: !last
-
-            | None, _ -> raise (Fail (sprintf "[file %s, line %d] Unexpected Conll line >>>%s<<<<\n%!" file !line_num line))
-      done; assert false
-
-    with End_of_file ->
-      save_one ();
-      close_in in_ch;
-      List.rev !res
-
-  let load_brown grs file =
+  let load_brown domain file =
     let lines = File.read file in
-    List_.opt_mapi
-      (fun i line -> match Str.split (Str.regexp "#") line with
-        | [] -> None
-        | [line] -> let sentid = sprintf "%05d" i in Some (sentid, Graph.of_brown grs ~sentid line)
-        | [sentid; line] -> Some (sentid, Graph.of_brown grs ~sentid line)
-        | _ -> raise (Fail (sprintf "[file %s, line %d] Illegal Brown line >>>%s<<<<\n%!" file i line))
-      ) lines
-
+    let brown_list =
+      List_.opt_mapi
+        (fun i line -> match Str.split (Str.regexp "#") line with
+          | [] -> None
+          | [line] -> let sentid = sprintf "%05d" i in Some (sentid, Graph.of_brown domain ~sentid line)
+          | [sentid; line] -> Some (sentid, Graph.of_brown domain ~sentid line)
+          | _ -> raise (Fail (sprintf "[file %s, line %d] Illegal Brown line >>>%s<<<<\n%!" file i line))
+        ) lines in
+      Array.of_list brown_list
 
   (** [load source] loads a corpus; [source] can be:
       - a folder, the corpus is the set of graphs (files matching *.gr or *.conll) in the folder
       - a conll file *)
-  let get_graphs grs source =
+  let get_graphs domain source =
     if Sys.is_directory source
     then (* if [source] is a folder *)
       begin
         let files_array = Sys.readdir source in
+        let graph_list =
         Array.fold_right
           (fun file acc ->
             if Filename.check_suffix file ".gr"
-            then (Filename.chop_extension file, Graph.load grs (Filename.concat source file)) :: acc
+            then (Filename.chop_extension file, Graph.load domain (Filename.concat source file)) :: acc
             else if Filename.check_suffix file ".conll"
-            then (load_conll grs (Filename.concat source file)) @ acc
+            then
+              let conll = Conll.load file in
+              let graph = Graph.of_conll domain conll in
+              match Conll.get_sentid conll with
+              | Some sentid -> (sentid, graph) :: acc
+              | None -> (file, graph) :: acc
             else acc
-          ) files_array []
+          ) files_array [] in
+          Array.of_list graph_list
       end
     else (* if [source] is a file *)
       match File.get_suffix source with
-      | Some s when String_.contains "conll" s -> load_conll grs source
-      | Some s when String_.contains "melt" s -> load_brown grs source      
-      | Some s when String_.contains "brown" s -> load_brown grs source
+      | Some s when String_.contains "conll" s -> load_conll domain source
+      | Some s when String_.contains "melt" s -> load_brown domain source      
+      | Some s when String_.contains "brown" s -> load_brown domain source
       | _ ->
         Log.fwarning "Unknown suffix for file \"%s\", trying to guess format..." source;
-        try load_conll grs source
+        try load_conll domain source
           with _ ->
-          try load_brown grs source
-          with _ -> Log.critical "Fail to guess format!" 
+          try load_brown domain source
+          with _ -> Log.critical "Fail to guess format!"
 end (* module Corpus *)
 
 (* ==================================================================================================== *)

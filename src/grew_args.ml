@@ -122,19 +122,6 @@ module Grew_args = struct
   ]
 
   let parse () =
-    Arg.parse args (fun s -> Printf.printf "%s" s) usage;
-IFDEF DEP2PICT THEN
-  ()
-ELSE
-  match !html with
-    | No -> ()
-    | _ ->
-      (match !no_init with
-        | true -> ()
-        | false -> Log.message "Cannot display init graph without dep2pict --> no_init = true"; no_init := true);
-      (match !dot with
-        | true -> ()
-        | false -> Log.message "Cannot display dep normal forms without dep2pict --> dot = true"; dot := true);
-END
+    Arg.parse args (fun s -> Printf.printf "%s" s) usage
 
 end

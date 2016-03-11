@@ -10,6 +10,7 @@
 
 open Printf
 open Log
+open Conll
 
 open Libgrew
 
@@ -28,7 +29,6 @@ let fail kind msg loc_opt =
 let handle fct () =
   try fct ()
   with
-
     | Libgrew.File_dont_exists file ->      fail "IO" (sprintf "File not found: \"%s\"" file) None
     | Libgrew.Bug (msg,loc_opt) ->          fail "Bug" msg loc_opt
     | Libgrew.Build (msg,loc_opt) ->        fail "Build" msg loc_opt
@@ -62,8 +62,8 @@ let init () =
     let _ = Grs.build_html_doc ~corpus:true (Filename.concat output_dir "doc") grs in
 
     (* get the list of graphs to rewrite *)
-    let graph_list = Corpus.get_graphs domain !Grew_args.input_data in
-    let base_names = List.map fst graph_list in
+    let graph_array = Corpus.get_graphs domain !Grew_args.input_data in
+    let base_names = Array.map fst graph_array in
 
     (* put the list of files to consider in the [index] file *)
     Rewrite.save_index ~dirname:output_dir ~base_names;
@@ -72,7 +72,6 @@ let init () =
     let _ = Sys.command (sprintf "cp %s %s" !Grew_args.grs output_dir) in
 
     let sentences = ref [] in
-    let graph_array = Array.of_list graph_list in
     let len = Array.length graph_array in
 
     Array.iteri
@@ -163,17 +162,17 @@ let multi_conll ?(keep_empty_rh=false) () =
     let domain = Grs.get_domain grs in
 
     (* get the list of files to rewrite *)
-    let graph_list = Corpus.get_graphs domain !Grew_args.input_data in
-    let len = List.length graph_list in
+    let graph_array = Corpus.get_graphs domain !Grew_args.input_data in
+    let len = Array.length graph_array in
 
-    List.iteri
+    Array.iteri
       (fun index (base_name, gr) ->
         Counter.print index len base_name;
         let rh = Rewrite.rewrite ~gr ~grs ~seq:!Grew_args.seq in
         match Rewrite.conll_dep_string domain ~keep_empty_rh rh with
           | None -> ()
           | Some string -> fprintf out_ch "%s\n" string
-      ) graph_list;
+      ) graph_array;
     close_out out_ch;
     Counter.finish ()
   ) ()
@@ -207,17 +206,17 @@ let det () =
         let domain = Grs.get_domain grs in
 
         (* get the list of graphs to rewrite *)
-        let graph_list = Corpus.get_graphs domain !Grew_args.input_data in
-        let len = List.length graph_list in
+        let graph_array = Corpus.get_graphs domain !Grew_args.input_data in
+        let len = Array.length graph_array in
 
-        List_.iteri
+        Array.iteri
           (fun index (base_name, gr) ->
             Counter.print index len base_name;
             let output_base = Filename.concat output_dir base_name in
             let rh = Rewrite.rewrite ~gr ~grs ~seq:!Grew_args.seq in
             if !Grew_args.out_gr then Rewrite.save_det_gr domain output_base rh;
             if !Grew_args.out_conll then Rewrite.save_det_conll domain output_base rh
-          ) graph_list;
+          ) graph_array;
         Counter.finish ()
       ) ()
 
@@ -250,17 +249,17 @@ let full () =
         let domain = Grs.get_domain grs in
 
         (* get the list of graphs to rewrite *)
-        let graph_list = Corpus.get_graphs domain !Grew_args.input_data in
-        let len = List.length graph_list in
+        let graph_array = Corpus.get_graphs domain !Grew_args.input_data in
+        let len = Array.length graph_array in
 
-        List_.iteri
+        Array.iteri
           (fun index (base_name, gr) ->
             Counter.print index len base_name;
             let output_base = Filename.concat output_dir base_name in
             let rh = Rewrite.rewrite ~gr ~grs ~seq:!Grew_args.seq in
             if !Grew_args.out_gr then failwith "Not yet";
             if !Grew_args.out_conll then ignore (Rewrite.save_full_conll domain output_base rh)
-          ) graph_list;
+          ) graph_array;
         Counter.finish ()
       ) ()
 
@@ -287,7 +286,7 @@ let full () =
           let domain = Grs.get_domain (Grs.load grs_file) in
 
           (* get the list of graphs to explore *)
-          let graph_array = Array.of_list (Corpus.get_graphs domain data_file) in
+          let graph_array = Corpus.get_graphs domain data_file in
 
           let pattern = Pattern.load domain pattern_file in
 
@@ -318,7 +317,7 @@ let make_index () =
   | Some s -> s
   | None -> sprintf "Index for file in input_data '%s'" !Grew_args.input_data in
   let grs = Grs.load !Grew_args.grs in
-  let base_names = File.read (Filename.concat output_dir "index") in
+  let base_names = Array.of_list (File.read (Filename.concat output_dir "index")) in
   Rewrite.make_index
     ~title: title
     ~grs_file: !Grew_args.grs
@@ -359,15 +358,15 @@ let annot () =
     let domain = Grs.get_domain grs in
 
     (* get the list of graphs to rewrite *)
-    let graph_list = Corpus.get_graphs domain !Grew_args.input_data in
-    let len = List.length graph_list in
+    let graph_array = Corpus.get_graphs domain !Grew_args.input_data in
+    let len = Array.length graph_array in
 
-    let bn_rh_list =
-      List_.mapi
+    let bn_rh_array =
+      Array.mapi
         (fun index (base_name, gr) ->
           Counter.print index len base_name;
           (base_name, Rewrite.rewrite ~gr ~grs ~seq:!Grew_args.seq)
-        ) graph_list in
+        ) graph_array in
     Counter.finish ();
-    Rewrite.write_annot domain ~title static_dir annot_dir bn_rh_list
+    Rewrite.write_annot domain ~title static_dir annot_dir (Array.to_list bn_rh_array)
   ) ()

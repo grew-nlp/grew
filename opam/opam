@@ -1,0 +1,19 @@
+opam-version: "1"
+maintainer: "Bruno.Guillaume@loria.fr"
+build: [
+  ["./configure" "--prefix" prefix]
+  ["make"]
+  ["make" "install"]
+]
+depends: [
+  "lablgtk"
+  "lablwebkit"
+  "cairo2"
+  "xml-light"
+  "ANSITerminal"
+  "libcaml-log"
+  "libcaml-itext"
+  "camomile"
+  "libcaml-dep2pict"
+  "libcaml-grew"
+]
