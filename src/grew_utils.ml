@@ -219,7 +219,7 @@ module Corpus = struct
             then (Filename.chop_extension file, Graph.load domain (Filename.concat source file)) :: acc
             else if Filename.check_suffix file ".conll"
             then
-              let conll = Conll.load file in
+              let conll = Conll.load (Filename.concat source file) in
               let graph = Graph.of_conll domain conll in
               match Conll.get_sentid conll with
               | Some sentid -> (sentid, graph) :: acc
