@@ -881,10 +881,12 @@ let init () =
     ~callback: (fun () -> grew_window#toplevel#unfullscreen (); fullscreen := false) in
 
   (* ==================== (un)set dot/dep buttons ==================== *)
+  (* Unactivated because of incompatibility with OS X 10.11.4 !
   grew_window#btn_gr_bottom_dep#set_active !Grew_config.current_config.Grew_config.last_is_dep_bottom_graph;
   grew_window#btn_gr_bottom_dot#set_active (not !Grew_config.current_config.Grew_config.last_is_dep_bottom_graph);
   grew_window#btn_gr_top_dep#set_active !Grew_config.current_config.Grew_config.last_is_dep_top_graph;
   grew_window#btn_gr_top_dot#set_active (not !Grew_config.current_config.Grew_config.last_is_dep_top_graph);
+  *)
 
   (* cpt is used to avoid a loop between the two propagations of value_changed *)
   let cpt = ref 0 in
