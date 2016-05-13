@@ -20,20 +20,23 @@ open Grew_args
 (* -------------------------------------------------------------------------------- *)
 
 let fail kind msg loc_opt =
-  let loc_string = match loc_opt with
-  | None -> ""
-  | Some loc -> Loc.to_string loc in
-    printf "\n====== Error: %s ======\n%s %s\n===================================\n" kind msg loc_string;
-    exit 2
+  let text = match loc_opt with
+  | None -> msg
+  | Some loc -> sprintf "[%s] %s" (Loc.to_string loc) msg in
+  let rule = String.make (String.length text) '=' in
+  Log.fwarning "\n%s\n%s\n%s" rule text rule; exit 2
 
 let handle fct () =
   try fct ()
   with
-    | Libgrew.File_dont_exists file ->      fail "IO" (sprintf "File not found: \"%s\"" file) None
+    | Libgrew.File_not_found file ->        fail "IO" (sprintf "File not found: \"%s\"" file) None
     | Libgrew.Bug (msg,loc_opt) ->          fail "Bug" msg loc_opt
     | Libgrew.Build (msg,loc_opt) ->        fail "Build" msg loc_opt
     | Libgrew.Run (msg,loc_opt) ->          fail "Run" msg loc_opt
     | Libgrew.Parsing_err (msg,loc_opt) ->  fail "Parse" msg loc_opt
+
+    | Corpus.File_not_found file ->         fail "IO" (sprintf "File not found: \"%s\"" file) None
+
     | Corpus.Fail msg ->                    fail "Load corpus" msg None
     | exc ->                                fail "Uncaught exception, please report" (Printexc.to_string exc) None
 
@@ -306,67 +309,3 @@ let full () =
                 ) matchings;
           ) graph_array
         ) ()
-
-(* -------------------------------------------------------------------------------- *)
-let make_index () =
-  let output_dir = match !Grew_args.output_dir with
-    | None -> Log.message "No output_dir specified: use -o option!"; exit 1
-    | Some dir -> dir in
-
-  let title = match !Grew_args.title with
-  | Some s -> s
-  | None -> sprintf "Index for file in input_data '%s'" !Grew_args.input_data in
-  let grs = Grs.load !Grew_args.grs in
-  let base_names = Array.of_list (File.read (Filename.concat output_dir "index")) in
-  Rewrite.make_index
-    ~title: title
-    ~grs_file: !Grew_args.grs
-    ~html: (match !Grew_args.html with Grew_args.No -> false | _ -> true)
-    ~grs
-    ~seq: !Grew_args.seq
-    ~input_dir: !Grew_args.input_data
-    ~output_dir:output_dir
-    ~base_names
-
-(* -------------------------------------------------------------------------------- *)
-let annot () =
-  handle (fun () ->
-    let title = match !Grew_args.title with
-    | Some s -> s
-    | None -> sprintf "Annotation task in file \"%s\" on data \"%s\"" !Grew_args.grs (Filename.basename !Grew_args.input_data) in
-
-    let annot_dir = match !Grew_args.output_dir with
-      | None -> Log.message "No annot_dir specified: use -o option"; exit 1
-      | Some dir -> dir in
-
-    let static_dir = match !Grew_args.static_dir with
-      | None -> Log.message "No static_dir specified. \".\" will be used."; "."
-      | Some dir -> dir in
-
-    (* remove previous file or dir <annot_dir> *)
-    if Sys.file_exists annot_dir
-    then
-      if Sys.is_directory annot_dir
-      then ignore (Sys.command("rm -rf " ^ annot_dir))
-      else Unix.unlink annot_dir;
-
-    (* create a fresh <annot_dir> *)
-    Unix.mkdir annot_dir 0o777;
-
-    (* load grs file *)
-    let grs = Grs.load !Grew_args.grs in
-    let domain = Grs.get_domain grs in
-
-    (* get the list of graphs to rewrite *)
-    let graph_array = Corpus.get_graphs domain !Grew_args.input_data in
-    let len = Array.length graph_array in
-
-    let bn_rh_array =
-      Array.mapi
-        (fun index (base_name, gr) ->
-          Counter.print index len base_name;
-          (base_name, Rewrite.rewrite ~gr ~grs ~seq:!Grew_args.seq)
-        ) graph_array in
-    Counter.finish ();
-    Rewrite.write_annot domain ~title static_dir annot_dir (Array.to_list bn_rh_array)
-  ) ()

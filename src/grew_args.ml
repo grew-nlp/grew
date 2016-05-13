@@ -14,7 +14,7 @@ open Libgrew
 
 module Grew_args = struct
 
-  type mode = Gui | Corpus | Cluster | Filter | Index | Det | Full | Annot | Grep
+  type mode = Gui | Corpus | Filter | Det | Full | Grep
   let mode = ref Gui
 
   type html_mode =
@@ -47,24 +47,11 @@ module Grew_args = struct
   let title = ref None
   let pattern = ref None
 
-  let static_dir = ref None
-
-  let start_cluster = ref false
-  let cluster_set = ref false
-  let graphs = ref []
-  let first = ref 0
-  let max = ref 0 (* TODO: remove this unused paramater *)
-
-  let oar_nodes = ref 2
-  let oar_walltime = ref "1:0:0"
-  let oar_graph_by_node = ref 10
-
   let usage =
-    "grew has 4 running modes:\n"^
+    "grew has 3 running modes:\n"^
     "  * GUI MODE: a Gtk interface (this is the default mode)\n"^
     "  * CORPUS MODE: runs rewriting on all graphs of a directory\n"^
     "  * DET MODE: runs a deterministic grs on all graphs of a directory\n"^
-    "  * CLUSTER MODE: like corpus mode but to be runned of the cluster talc of the LORIA\n"^
     "\n"^
     "Options for mode selection:"
 
@@ -72,17 +59,15 @@ module Grew_args = struct
     "-corpus", Unit (fun () -> mode := Corpus),      "                     enable corpus mode";
     "-det", Unit (fun () -> mode := Det),         "                        enable det mode: rewrite a corpus with a deterministric grs";
     "-full", Unit (fun () -> mode := Full),         "                       enable full mode: rewrite a corpus (conll output)";
-    "-cluster", Unit (fun () -> mode := Cluster),         "                    enable cluster mode";
     "-filter", Unit (fun () -> mode := Filter),         "                     enable filter mode";
-    "-annot", Unit (fun () -> mode := Annot),         "                      enable annot mode";
     "-grep", Unit (fun () -> mode := Grep),         "                       enable grep mode";
-    "-make_index", Unit (fun () -> mode := Index),  "                 just rebuild index.html in <output_dir> from the set of stat files in <input_dir>\n\nOptions for all modes";
 
     "-grs", String (fun s -> grs := absolute s),          "<grs_file>              chose the grs file to load";
     "-seq", String (fun s -> seq := s),                   "<seq>                   set the module sequence to use";
     "-timeout", Float (fun f -> timeout := Some f; Rewrite.set_timeout (Some f)),                   "<float>             set a timeout on rewriting";
     "-features", String (fun s -> features := Some (Str.split (Str.regexp "; *") s)),            "<feat_name_list>   set the list of feature names to printf in dep format";
-    "-main_feat", String (fun s -> main_feat := Some s),       "<feat_name_list>  set the list of feature names used in dep format to set the \"main word\"\n\nOptions for GUI mode";
+    "-main_feat", String (fun s -> main_feat := Some s),       "<feat_name_list>  set the list of feature names used in dep format to set the \"main word\"";
+    "-debug", Unit (fun () -> libgrew_debug_mode ()),  "                      enable debug mode\n\nOptions for GUI mode";
 
     (* options for GUI mode *)
     "-gr", String (fun s -> gr := absolute s), "<gr_file>                set the graph file (.gr or .conll) to use";
@@ -104,21 +89,7 @@ module Grew_args = struct
     "-no_init", Unit (fun () -> no_init := true), "                    do not display initial graph (requires html of full_html)\n\nOptions for grep mode";
 
     (* options for grep mode *)
-    "-pattern",  String (fun t -> pattern := Some t),              "<file>              chose the pattern file  \n\nOptions for cluster mode";
-
-    (* options for cluster mode *)
-    "-nodes", Int (fun f -> oar_nodes := f),              "<num>                 set the number of nodes to reserve on the cluster (default is 2)";
-    "-walltime", String (fun s -> oar_walltime := s),     "<time>             set the reservation time on the cluster (default is \"1:0:0\")";
-    "-graph_by_node", Int (fun f -> oar_graph_by_node := f),              "<num>         set the number of graphes sent at the same time to a cluster node (default is 10)\n\nHIDDEN FOR CURRENT USER (do not use)";
-
-    (* Internally used options *)
-    "-start_cluster", Unit (fun () -> start_cluster := true),"              require -cluster";
-    "-cluster_set", Rest (fun l -> cluster_set := true; graphs := l::(!graphs)),"                require -cluster";
-    "-first", Int (fun f -> first := f),                  "                      require -cluster_set";
-    "-last", Int (fun f -> max := f),                  "                       require -cluster_set\n\n";
-
-    "-static_dir", String (fun dir -> static_dir := Some dir), "<static_dir>              set the dir where static file can be found in annot mode";
-
+    "-pattern",  String (fun t -> pattern := Some t),              "<file>              chose the pattern file";
   ]
 
   let parse () =

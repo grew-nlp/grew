@@ -187,6 +187,7 @@ end (* module Svg *)
 module Corpus = struct
 
   exception Fail of string
+  exception File_not_found of string
 
   let load_conll domain file =
     let conll_corpus = Conll_corpus.load file in
@@ -208,6 +209,8 @@ module Corpus = struct
       - a folder, the corpus is the set of graphs (files matching *.gr or *.conll) in the folder
       - a conll file *)
   let get_graphs domain source =
+    if not (Sys.file_exists source)
+    then raise (File_not_found source);
     if Sys.is_directory source
     then (* if [source] is a folder *)
       begin
@@ -238,7 +241,7 @@ module Corpus = struct
         try load_conll domain source
           with _ ->
           try load_brown domain source
-          with _ -> Log.critical "Fail to guess format!"
+          with _ -> raise (Fail (sprintf "Cannot load file \"%s\", unknown format" source))
 end (* module Corpus *)
 
 (* ==================================================================================================== *)
