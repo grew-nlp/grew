@@ -120,7 +120,7 @@ let init () =
                 output_base
         with
 
-        | Libgrew.File_dont_exists file -> Html.write_error domain ~header ~html ~init:gr output_base (sprintf "The file %s doesn't exist!" file)
+        | Libgrew.File_not_found file -> Html.write_error domain ~header ~html ~init:gr output_base (sprintf "The file %s doesn't exist!" file)
         | Libgrew.Bug (msg,loc_opt)
         | Libgrew.Build (msg,loc_opt)
         | Libgrew.Run (msg,loc_opt)

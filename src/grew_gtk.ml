@@ -358,7 +358,7 @@ let init () =
   let error_handling fct () =
     try fct ()
     with
-      | Libgrew.File_dont_exists file -> show_error (sprintf "The file %s doesn't exist!" file)
+      | Libgrew.File_not_found file -> show_error (sprintf "The file %s doesn't exist!" file)
       | Libgrew.Parsing_err (msg,None) -> show_error msg
       | Libgrew.Parsing_err (msg,Some loc) -> show_error (sprintf "%s %s" (Loc.to_string loc) msg)
       | Libgrew.Build (msg,None) -> show_error msg
@@ -593,7 +593,7 @@ let init () =
         with
 
           | Resources.Cannot_rewrite msg -> show_error msg
-          | Libgrew.File_dont_exists file -> show_error (sprintf "The file %s doesn't exist!" file)
+          | Libgrew.File_not_found file -> show_error (sprintf "The file %s doesn't exist!" file)
           | Libgrew.Parsing_err (msg,None) -> show_error msg
           | Libgrew.Parsing_err (msg,Some loc) -> show_error (sprintf "%s %s" (Loc.to_string loc) msg)
           | Libgrew.Build (msg,None) -> show_error msg
