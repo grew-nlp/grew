@@ -65,8 +65,8 @@ module Grew_args = struct
     "-grs", String (fun s -> grs := absolute s),          "<grs_file>              chose the grs file to load";
     "-seq", String (fun s -> seq := s),                   "<seq>                   set the module sequence to use";
     "-timeout", Float (fun f -> timeout := Some f; Rewrite.set_timeout (Some f)),                   "<float>             set a timeout on rewriting";
-    "-max_depth_det", Int (fun v -> Rewrite.set_max_depth_det v),                   "<int>         set the maximum depth of rewriting in a module in deterministric rewriting (default: 100)";
-    "-max_depth_non_det", Int (fun v -> Rewrite.set_max_depth_non_det v),                   "<int>     set the maximum depth of rewriting in a module in non-deterministric rewriting (default: 2000)";
+    "-max_depth_det", Int (fun v -> Rewrite.set_max_depth_det v),                   "<int>         set the maximum depth of rewriting in a module in deterministric rewriting (default: 2000)";
+    "-max_depth_non_det", Int (fun v -> Rewrite.set_max_depth_non_det v),                   "<int>     set the maximum depth of rewriting in a module in non-deterministric rewriting (default: 100)";
     "-features", String (fun s -> features := Some (Str.split (Str.regexp "; *") s)),            "<feat_name_list>   set the list of feature names to printf in dep format";
     "-main_feat", String (fun s -> main_feat := Some s),       "<feat_name_list>  set the list of feature names used in dep format to set the \"main word\"";
     "-debug", Unit (fun () -> libgrew_debug_mode ()),  "                      enable debug mode\n\nOptions for GUI mode";
