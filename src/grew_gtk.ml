@@ -42,6 +42,8 @@ let ask_for_file_to_open filter parent =
   dialog#add_button_stock `CANCEL `CANCEL ;
   dialog#add_select_button_stock `OPEN `OPEN ;
   dialog#add_filter filter;
+  dialog#add_filter (GFile.filter ~name:"All files" ~patterns:["*"] ());
+
   begin match dialog#run () with
     | `OPEN -> res := dialog#filename
     | `DELETE_EVENT | `CANCEL -> ()
@@ -409,7 +411,7 @@ let init () =
   (* end: load_gr *)
 
   (* -------------------------------------------------------------------------------- *)
-  let gr_or_conll_filter = GFile.filter ~name:"Graph *.(gr|conll)" ~patterns:["*.gr"; "*.conll"] () in
+  let gr_or_conll_filter = GFile.filter ~name:"Graph *.(gr|conll|melt)" ~patterns:["*.gr"; "*.conll"; "*.melt"] () in
 
   (* click on the gr file name *)
   let _ = grew_window#graph_button#connect#clicked

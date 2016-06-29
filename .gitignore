@@ -2,3 +2,4 @@ _build
 src/grew_glade.ml
 grew_main.native
 *_dev
+DATA_DIR
