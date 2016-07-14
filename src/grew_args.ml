@@ -69,7 +69,8 @@ module Grew_args = struct
     "-max_depth_non_det", Int (fun v -> Rewrite.set_max_depth_non_det v),                   "<int>     set the maximum depth of rewriting in a module in non-deterministric rewriting (default: 100)";
     "-features", String (fun s -> features := Some (Str.split (Str.regexp "; *") s)),            "<feat_name_list>   set the list of feature names to printf in dep format";
     "-main_feat", String (fun s -> main_feat := Some s),       "<feat_name_list>  set the list of feature names used in dep format to set the \"main word\"";
-    "-debug", Unit (fun () -> libgrew_debug_mode ()),  "                      enable debug mode\n\nOptions for GUI mode";
+    "-debug", Unit (fun () -> libgrew_debug_mode ()),  "                      enable debug mode";
+    "-debug_loop", Unit (fun () -> Rewrite.set_debug_loop ()),  "                 enable loop debug mode\n\nOptions for GUI mode";
 
     (* options for GUI mode *)
     "-gr", String (fun s -> gr := absolute s), "<gr_file>                set the graph file (.gr or .conll) to use";
