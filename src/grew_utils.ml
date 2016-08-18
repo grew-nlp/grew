@@ -130,7 +130,7 @@ module Html = struct
       | Some p, Some n -> sprintf "<a href=\"%s.html\">Previous</a> -- <a href=\"%s.html\">Next</a>" p n
 
 
-  let write_error grs ?(header="") ~html ?init basename msg =
+  let write_error ?domain ?(header="") ~html ?init basename msg =
     let stat_file = sprintf "%s.stat" basename in
 
     let out_ch = open_out stat_file in
@@ -140,7 +140,7 @@ module Html = struct
 
     if html
     then Rewrite.error_html
-      grs
+      ?domain
       ~no_init: !Grew_args.no_init
       ?main_feat: !Grew_args.main_feat
       ~dot: !Grew_args.dot
@@ -189,18 +189,18 @@ module Corpus = struct
   exception Fail of string
   exception File_not_found of string
 
-  let load_conll domain file =
+  let load_conll ?domain file =
     let conll_corpus = Conll_corpus.load file in
-    Array.map (fun (sentid, conll) -> (sentid, Graph.of_conll domain conll)) conll_corpus
+    Array.map (fun (sentid, conll) -> (sentid, Graph.of_conll ?domain conll)) conll_corpus
 
-  let load_brown domain file =
+  let load_brown ?domain file =
     let lines = File.read file in
     let brown_list =
       List_.opt_mapi
         (fun i line -> match Str.split (Str.regexp "#") line with
           | [] -> None
-          | [line] -> let sentid = sprintf "%05d" i in Some (sentid, Graph.of_brown domain ~sentid line)
-          | [sentid; line] -> Some (sentid, Graph.of_brown domain ~sentid line)
+          | [line] -> let sentid = sprintf "%05d" i in Some (sentid, Graph.of_brown ?domain ~sentid line)
+          | [sentid; line] -> Some (sentid, Graph.of_brown ?domain ~sentid line)
           | _ -> raise (Fail (sprintf "[file %s, line %d] Illegal Brown line >>>%s<<<<\n%!" file i line))
         ) lines in
       Array.of_list brown_list
@@ -208,7 +208,7 @@ module Corpus = struct
   (** [load source] loads a corpus; [source] can be:
       - a folder, the corpus is the set of graphs (files matching *.gr or *.conll) in the folder
       - a conll file *)
-  let get_graphs domain source =
+  let get_graphs ?domain source =
     if not (Sys.file_exists source)
     then raise (File_not_found source);
     if Sys.is_directory source
@@ -219,11 +219,11 @@ module Corpus = struct
         Array.fold_right
           (fun file acc ->
             if Filename.check_suffix file ".gr"
-            then (Filename.chop_extension file, Graph.load domain (Filename.concat source file)) :: acc
+            then (Filename.chop_extension file, Graph.load ?domain (Filename.concat source file)) :: acc
             else if Filename.check_suffix file ".conll"
             then
               let conll = Conll.load (Filename.concat source file) in
-              let graph = Graph.of_conll domain conll in
+              let graph = Graph.of_conll ?domain conll in
               match Conll.get_sentid conll with
               | Some sentid -> (sentid, graph) :: acc
               | None -> (file, graph) :: acc
@@ -233,14 +233,14 @@ module Corpus = struct
       end
     else (* if [source] is a file *)
       match File.get_suffix source with
-      | Some s when String_.contains "conll" s -> load_conll domain source
-      | Some s when String_.contains "melt" s -> load_brown domain source      
-      | Some s when String_.contains "brown" s -> load_brown domain source
+      | Some s when String_.contains "conll" s -> load_conll ?domain source
+      | Some s when String_.contains "melt" s -> load_brown ?domain source
+      | Some s when String_.contains "brown" s -> load_brown ?domain source
       | _ ->
         Log.fwarning "Unknown suffix for file \"%s\", trying to guess format..." source;
-        try load_conll domain source
+        try load_conll ?domain source
           with _ ->
-          try load_brown domain source
+          try load_brown ?domain source
           with _ -> raise (Fail (sprintf "Cannot load file \"%s\", unknown format" source))
 end (* module Corpus *)
 

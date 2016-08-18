@@ -102,7 +102,8 @@ module Resources = struct
       | (None, _) -> Log.message "No gr file defined"
       | (Some file, Some grs) ->
         Log.fmessage "Loading gr file: '%s'" file;
-        current_gr := Some (Graph.load (Grs.get_domain grs) file)
+        let domain = Grs.get_domain grs in
+        current_gr := Some (Graph.load ?domain file)
       | (Some _, None) -> Log.bug "Try to load gr file without loading grs before"
 
   (* -------------------------------------------------------------------------------- *)
@@ -148,10 +149,11 @@ let fill_vbox vbox =
 
 (* when GRS change *)
 let update_features () =
-  (match Domain.feature_names (Grs.get_domain (Resources.grs ())) with
-    | None -> Log.warning "Cannot update features"
-    | Some feats -> current_features := List.map (fun x -> (x,true)) feats
-  );
+  begin
+    match Grs.get_domain (Resources.grs ()) with
+    | None -> ()
+    | Some dom -> current_features := List.map (fun x -> (x,true)) (Domain.feature_names dom)
+  end;
   match !config_vbox with
     | None -> ()
     | Some vbox -> (* if the config windows is opened, it must be updated *)
@@ -396,8 +398,8 @@ let init () =
               let domain = Grs.get_domain (Resources.grs ()) in
               let svg_file =
                 if grew_window#btn_gr_top_dot#active
-                then Grew_rew_display.svg_dot_temp_file domain ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) graph
-                else Grew_rew_display.svg_dep_temp_file domain ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) graph in
+                then Grew_rew_display.svg_dot_temp_file ?domain ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) graph
+                else Grew_rew_display.svg_dep_temp_file ?domain ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) graph in
 
               grew_window#vpaned_doc#misc#show ();
               grew_window#err_view_scroll#misc#hide ();
@@ -614,9 +616,9 @@ let init () =
        | ["showOnBottom"; graph] ->
           let svg_file =
             if grew_window#btn_gr_bottom_dot#active
-            then (Grew_rew_display.get_dot_graph_with_background domain
+            then (Grew_rew_display.get_dot_graph_with_background ?domain
                    ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(true,false) graph)
-            else (Grew_rew_display.get_dep_graph_with_background domain ~filter:(get_current_filter ())
+            else (Grew_rew_display.get_dep_graph_with_background ?domain ~filter:(get_current_filter ())
                    ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(true,false) graph) in
           graph_bottom_webkit#load_uri ("file://"^svg_file);
           Grew_rew_display.current_bottom_graph := graph;
@@ -630,9 +632,9 @@ let init () =
         | ["showOnTop"; graph] ->
           let svg_file =
             if grew_window#btn_gr_top_dot#active
-            then (Grew_rew_display.get_dot_graph_with_background domain
+            then (Grew_rew_display.get_dot_graph_with_background ?domain
                     ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(false,true) graph)
-            else (Grew_rew_display.get_dep_graph_with_background domain ~filter:(get_current_filter ())
+            else (Grew_rew_display.get_dep_graph_with_background ?domain ~filter:(get_current_filter ())
                     ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(false,true) graph) in
           graph_top_webkit#load_uri ("file://"^svg_file);
           Grew_rew_display.current_top_graph := graph;
@@ -645,18 +647,18 @@ let init () =
         | ["showOnBottom2"; graph] ->
           let svg_file =
             if grew_window#btn_gr_bottom_dot#active
-            then (Grew_rew_display.get_dot_graph_with_background domain
+            then (Grew_rew_display.get_dot_graph_with_background ?domain
                     ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(true,false) graph)
-            else (Grew_rew_display.get_dep_graph_with_background domain ~filter:(get_current_filter ())
+            else (Grew_rew_display.get_dep_graph_with_background ?domain ~filter:(get_current_filter ())
                     ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(true,false) graph) in
           graph_bottom_webkit#load_uri ("file://"^svg_file);
           Grew_rew_display.current_bottom_graph := graph;
           true
         | ["showOnTop2"; graph] ->
           let svg_file = if grew_window#btn_gr_top_dot#active
-            then (Grew_rew_display.get_dot_graph_with_background domain
+            then (Grew_rew_display.get_dot_graph_with_background ?domain
                     ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(false,true) graph)
-            else (Grew_rew_display.get_dep_graph_with_background domain ~filter:(get_current_filter ())
+            else (Grew_rew_display.get_dep_graph_with_background ?domain ~filter:(get_current_filter ())
                     ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(false,true) graph) in
           graph_top_webkit#load_uri ("file://"^svg_file);
           Grew_rew_display.current_top_graph := graph;
@@ -693,9 +695,9 @@ let init () =
             begin
               let svg_file =
                 if grew_window#btn_gr_bottom_dot#active
-                then (Grew_rew_display.get_dot_graph_with_background2 domain
+                then (Grew_rew_display.get_dot_graph_with_background2 ?domain
                         ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(true,false) (graph^".2"))
-                else (Grew_rew_display.get_dep_graph_with_background2 domain ~filter:(get_current_filter ())
+                else (Grew_rew_display.get_dep_graph_with_background2 ?domain ~filter:(get_current_filter ())
                         ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(true,false) (graph^".2")) in
               graph_bottom_webkit#load_uri ("file://"^svg_file);
               Grew_rew_display.current_bottom_graph := (graph^".2");
@@ -710,9 +712,9 @@ let init () =
             begin
               let svg_file =
                 if grew_window#btn_gr_top_dot#active
-                then (Grew_rew_display.get_dot_graph_with_background2 domain
+                then (Grew_rew_display.get_dot_graph_with_background2 ?domain
                         ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(false,true) (graph^".2"))
-                else (Grew_rew_display.get_dep_graph_with_background2 domain ~filter:(get_current_filter ())
+                else (Grew_rew_display.get_dep_graph_with_background2 ?domain ~filter:(get_current_filter ())
                         ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(false,true) (graph^".2")) in
               graph_top_webkit#load_uri ("file://"^svg_file);
               Grew_rew_display.current_top_graph := (graph^".2");
@@ -723,7 +725,7 @@ let init () =
           let top_dot = grew_window#btn_gr_top_dot#active
           and bottom_dot = grew_window#btn_gr_bottom_dot#active in
           let (svg_file_top,svg_file_bottom,graph_top,doc_file) =
-            Grew_rew_display.get_rule_for domain
+            Grew_rew_display.get_rule_for ?domain
               ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) top_dot bottom_dot (graph^".2") in
 
           graph_top_webkit#load_uri ("file://"^svg_file_top);
@@ -754,13 +756,13 @@ let init () =
           Log.fdebug "[Grew_gtk] Try to display dep for '%s'" !Grew_rew_display.current_bottom_graph;
           !Grew_config.current_config.Grew_config.last_is_dep_bottom_graph <- true;
           let svg_file =
-            try Grew_rew_display.get_dep_graph_with_background domain
+            try Grew_rew_display.get_dep_graph_with_background ?domain
                   ~filter:(get_current_filter ())
                   ~main_feat:(!Grew_config.current_config.Grew_config.main_feat)
                   ~botop:(true,false)
                   !Grew_rew_display.current_bottom_graph
             with Not_found ->
-              Grew_rew_display.get_dep_graph_with_background2 domain
+              Grew_rew_display.get_dep_graph_with_background2 ?domain
                 ~filter:(get_current_filter ())
                 ~main_feat:(!Grew_config.current_config.Grew_config.main_feat)
                 ~botop:(true,false) !Grew_rew_display.current_bottom_graph in
@@ -779,11 +781,11 @@ let init () =
           Log.fdebug "[Grew_gtk] Try to display dep for '%s'" !Grew_rew_display.current_top_graph;
           !Grew_config.current_config.Grew_config.last_is_dep_top_graph <- true;
           let svg_file =
-            try Grew_rew_display.get_dep_graph_with_background domain
+            try Grew_rew_display.get_dep_graph_with_background ?domain
                   ~filter:(get_current_filter ())
                   ~main_feat:(!Grew_config.current_config.Grew_config.main_feat)
                   ~botop:(false,true) !Grew_rew_display.current_top_graph
-            with Not_found -> Grew_rew_display.get_dep_graph_with_background2 domain
+            with Not_found -> Grew_rew_display.get_dep_graph_with_background2 ?domain
               ~filter:(get_current_filter ())
               ~main_feat:(!Grew_config.current_config.Grew_config.main_feat)
               ~botop:(false,true) !Grew_rew_display.current_top_graph in
@@ -802,10 +804,10 @@ let init () =
           Log.fdebug "[Grew_gtk] Try to display dot for '%s'" !Grew_rew_display.current_bottom_graph;
           !Grew_config.current_config.Grew_config.last_is_dep_bottom_graph <- false;
           let svg_file =
-            try Grew_rew_display.get_dot_graph_with_background domain
+            try Grew_rew_display.get_dot_graph_with_background ?domain
                   ~main_feat:(!Grew_config.current_config.Grew_config.main_feat)
                   ~botop:(true,false) !Grew_rew_display.current_bottom_graph
-            with Not_found -> Grew_rew_display.get_dot_graph_with_background2 domain
+            with Not_found -> Grew_rew_display.get_dot_graph_with_background2 ?domain
               ~main_feat:(!Grew_config.current_config.Grew_config.main_feat)
               ~botop:(true,false) !Grew_rew_display.current_bottom_graph in
           graph_bottom_webkit#load_uri ("file://"^svg_file);
@@ -824,11 +826,11 @@ let init () =
           Log.fdebug "[Grew_gtk] Try to display dot for '%s'" !Grew_rew_display.current_top_graph;
           !Grew_config.current_config.Grew_config.last_is_dep_top_graph <- false;
           let svg_file =
-            try Grew_rew_display.get_dot_graph_with_background domain
+            try Grew_rew_display.get_dot_graph_with_background ?domain
                   ?deco:!Grew_rew_display.current_top_deco
                   ~main_feat:(!Grew_config.current_config.Grew_config.main_feat)
                   ~botop:(false,true) !Grew_rew_display.current_top_graph
-            with Not_found -> Grew_rew_display.get_dot_graph_with_background2 domain
+            with Not_found -> Grew_rew_display.get_dot_graph_with_background2 ?domain
               ~main_feat:(!Grew_config.current_config.Grew_config.main_feat)
               ~botop:(false,true) !Grew_rew_display.current_top_graph in
           graph_top_webkit#load_uri ("file://"^svg_file);
@@ -966,33 +968,33 @@ let init () =
           ignore (menuitem#connect#activate ~callback) in
         (* build save items and put them in the menu *)
         let save_items =
-          ("Save as gr", save "gr" graph (Grew_rew_display.to_grfile_graph domain)) ::
-          ("Save as conll", save "conll" graph (Grew_rew_display.save_conll_graph domain)) ::
+          ("Save as gr", save "gr" graph (Grew_rew_display.to_grfile_graph ?domain)) ::
+          ("Save as conll", save "conll" graph (Grew_rew_display.save_conll_graph ?domain)) ::
           ("Save as pdf",
             if dot
-            then save "pdf" graph (Grew_rew_display.to_pdf_dotfile_graph domain ?deco ~main_feat)
-            else save "pdf" graph (Grew_rew_display.to_pdf_depfile_graph domain ?deco ~main_feat)
+            then save "pdf" graph (Grew_rew_display.to_pdf_dotfile_graph ?domain ?deco ~main_feat)
+            else save "pdf" graph (Grew_rew_display.to_pdf_depfile_graph ?domain ?deco ~main_feat)
           ) ::
           ("Save as svg",
             if dot
-            then save "svg" graph (Grew_rew_display.to_svg_dotfile_graph domain ?deco ~main_feat)
-            else save "svg" graph (Grew_rew_display.to_svg_depfile_graph domain ?deco ~main_feat)
+            then save "svg" graph (Grew_rew_display.to_svg_dotfile_graph ?domain ?deco ~main_feat)
+            else save "svg" graph (Grew_rew_display.to_svg_depfile_graph ?domain ?deco ~main_feat)
           ) ::
-          ("Save as png", save "png" graph (Grew_rew_display.to_pngfile_graph domain ?deco ~main_feat)) ::
+          ("Save as png", save "png" graph (Grew_rew_display.to_pngfile_graph ?domain ?deco ~main_feat)) ::
           (if dot
-           then ["Save as dot", save "dot" graph (Grew_rew_display.to_dotfile_graph domain ?deco ~main_feat)]
-           else ["Save as dep", save "dep" graph (Grew_rew_display.to_depfile_graph domain ?deco ~main_feat)]
+           then ["Save as dot", save "dot" graph (Grew_rew_display.to_dotfile_graph ?domain ?deco ~main_feat)]
+           else ["Save as dep", save "dep" graph (Grew_rew_display.to_depfile_graph ?domain ?deco ~main_feat)]
           ) in
         List.iter add_item save_items;
         let _ = GMenu.separator_item ~packing:menu#append () in
 
         (* build view items and put them in the menu *)
         let view_items =
-          ("View gr", view (Grew_rew_display.to_grstring_graph domain) graph) ::
-          ("View conll", view (Grew_rew_display.to_conll_graph domain) graph) ::
+          ("View gr", view (Grew_rew_display.to_grstring_graph ?domain) graph) ::
+          ("View conll", view (Grew_rew_display.to_conll_graph ?domain) graph) ::
           (if dot
-           then ["View dot", view (Grew_rew_display.to_dotstring_graph domain ?deco ~main_feat) graph]
-           else ["View dep", view (Grew_rew_display.to_depstring_graph domain ?deco ~main_feat) graph]
+           then ["View dot", view (Grew_rew_display.to_dotstring_graph ?domain ?deco ~main_feat) graph]
+           else ["View dep", view (Grew_rew_display.to_depstring_graph ?domain ?deco ~main_feat) graph]
           ) in
         List.iter add_item view_items;
 

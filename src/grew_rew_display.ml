@@ -50,57 +50,57 @@ module Grew_rew_display = struct
     try fst (List.assoc graph_id !graph_map)
     with Not_found -> fst (List.assoc graph_id !graph_map2)
 
-  let to_dotstring_graph grs ?deco ?main_feat graph_id =
-    Graph.to_dot grs ?deco ?main_feat (get_graph graph_id)
+  let to_dotstring_graph ?domain ?deco ?main_feat graph_id =
+    Graph.to_dot ?domain ?deco ?main_feat (get_graph graph_id)
 
-  let to_grstring_graph grs graph_id =
-    Graph.to_gr grs (get_graph graph_id)
+  let to_grstring_graph ?domain graph_id =
+    Graph.to_gr ?domain (get_graph graph_id)
 
-  let to_grfile_graph grs graph_id output_file =
-    save output_file (to_grstring_graph grs graph_id)
+  let to_grfile_graph ?domain graph_id output_file =
+    save output_file (to_grstring_graph ?domain graph_id)
 
-  let to_conll_graph grs graph_id =
-    Graph.to_conll_string grs (get_graph graph_id)
+  let to_conll_graph ?domain graph_id =
+    Graph.to_conll_string ?domain (get_graph graph_id)
 
-  let save_conll_graph grs graph_id output_file =
-    save output_file (to_conll_graph grs graph_id)
+  let save_conll_graph ?domain graph_id output_file =
+    save output_file (to_conll_graph ?domain graph_id)
 
-  let to_depstring_graph grs ?deco ?main_feat graph_id =
-    Graph.to_dep grs ?deco ?main_feat (get_graph graph_id)
+  let to_depstring_graph ?domain ?deco ?main_feat graph_id =
+    Graph.to_dep ?domain ?deco ?main_feat (get_graph graph_id)
 
-  let to_dotfile_graph grs ?deco ?main_feat graph_id output_file =
-    save output_file (to_dotstring_graph grs ?deco ?main_feat graph_id)
+  let to_dotfile_graph ?domain ?deco ?main_feat graph_id output_file =
+    save output_file (to_dotstring_graph ?domain ?deco ?main_feat graph_id)
 
-  let to_depfile_graph grs ?deco ?main_feat graph_id output_file =
-    save output_file (to_depstring_graph grs ?deco ?main_feat graph_id)
+  let to_depfile_graph ?domain ?deco ?main_feat graph_id output_file =
+    save output_file (to_depstring_graph ?domain ?deco ?main_feat graph_id)
 
-  let to_pdf_dotfile_graph grs ?deco ?main_feat graph_id output_file =
-    let dot = to_dotstring_graph grs ?deco ?main_feat graph_id in
+  let to_pdf_dotfile_graph ?domain ?deco ?main_feat graph_id output_file =
+    let dot = to_dotstring_graph ?domain ?deco ?main_feat graph_id in
     Pdf.dot_to_file dot output_file
 
 
-  let to_pngfile_graph grs ?deco ?main_feat graph_id output_file =
-    let dep = to_depstring_graph grs ?deco ?main_feat graph_id in
+  let to_pngfile_graph ?domain ?deco ?main_feat graph_id output_file =
+    let dep = to_depstring_graph ?domain ?deco ?main_feat graph_id in
     let d2p = Dep2pict.Dep2pict.from_dep ~dep in
     Dep2pict.Dep2pict.save_png ~filename:output_file d2p
 
-  let to_pdf_depfile_graph grs ?deco ?main_feat graph_id output_file =
-    let dep = to_depstring_graph grs ?deco ?main_feat graph_id in
+  let to_pdf_depfile_graph ?domain ?deco ?main_feat graph_id output_file =
+    let dep = to_depstring_graph ?domain ?deco ?main_feat graph_id in
     let d2p = Dep2pict.Dep2pict.from_dep ~dep in
     Dep2pict.Dep2pict.save_pdf ~filename:output_file d2p
 
-  let to_svg_depfile_graph grs ?deco ?main_feat graph_id output_file =
-    let dep = to_depstring_graph grs ?deco ?main_feat graph_id in
+  let to_svg_depfile_graph ?domain ?deco ?main_feat graph_id output_file =
+    let dep = to_depstring_graph ?domain ?deco ?main_feat graph_id in
     let d2p = Dep2pict.Dep2pict.from_dep ~dep in
     Dep2pict.Dep2pict.save_svg ~filename:output_file d2p
 
-  let to_svg_dotfile_graph grs ?deco ?main_feat graph_id output_file =
-    let dot = to_dotstring_graph grs ?deco ?main_feat graph_id in
+  let to_svg_dotfile_graph ?domain ?deco ?main_feat graph_id output_file =
+    let dot = to_dotstring_graph ?domain ?deco ?main_feat graph_id in
     Svg.dot_to_file dot output_file
 
   (* create 2 temp file: 1 svg (via Svg.dot_to_tmp) and 1 html *)
-  let svg_dot_temp_file grs ?main_feat ?deco ?(botop=(false,false)) graph =
-    let dot = Graph.to_dot grs ?deco ?main_feat graph in
+  let svg_dot_temp_file ?domain ?main_feat ?deco ?(botop=(false,false)) graph =
+    let dot = Graph.to_dot ?domain ?deco ?main_feat graph in
     let dot = Str.replace_first (Str.regexp "digraph G {") ("digraph G {\n    bgcolor=\"transparent\";\n") dot in
     let svg_file = Svg.dot_to_tmp dot in
     let temp_file_name,out_ch = Filename.open_temp_file ~mode:[Open_rdonly;Open_wronly;Open_text] "grew_" ".html" in
@@ -110,16 +110,16 @@ module Grew_rew_display = struct
     temp_file_name
 
 
-  let get_dot_graph_with_background grs ?main_feat ?deco ?(botop=(false,false)) graph_id =
-    svg_dot_temp_file grs ?main_feat ?deco ~botop (fst (List.assoc graph_id !graph_map))
+  let get_dot_graph_with_background ?domain ?main_feat ?deco ?(botop=(false,false)) graph_id =
+    svg_dot_temp_file ?domain ?main_feat ?deco ~botop (fst (List.assoc graph_id !graph_map))
 
 
-  let get_dot_graph_with_background2 grs ?main_feat ?deco ?(botop=(false,false)) graph_id =
-    svg_dot_temp_file grs ?main_feat ?deco ~botop (fst (List.assoc graph_id !graph_map2))
+  let get_dot_graph_with_background2 ?domain ?main_feat ?deco ?(botop=(false,false)) graph_id =
+    svg_dot_temp_file ?domain ?main_feat ?deco ~botop (fst (List.assoc graph_id !graph_map2))
 
   (* create 2 temp file: 1 svg (via Svg.dep_to_tmp) and 1 html *)
-  let svg_dep_temp_file grs ?filter ?main_feat ?deco ?(botop=(false,false)) graph =
-    let dep = Graph.to_dep grs ?filter ?deco ?main_feat graph in
+  let svg_dep_temp_file ?domain ?filter ?main_feat ?deco ?(botop=(false,false)) graph =
+    let dep = Graph.to_dep ?domain ?filter ?deco ?main_feat graph in
     let svg_file = Svg.dep_to_tmp dep in
     let temp_file_name,out_ch = Filename.open_temp_file ~mode:[Open_rdonly;Open_wronly;Open_text] "grew_" ".html" in
     let color =
@@ -136,11 +136,11 @@ module Grew_rew_display = struct
     close_out out_ch;
     temp_file_name
 
-  let get_dep_graph_with_background grs ?(filter=None) ?main_feat ?(botop=(false,false)) graph_id =
-    svg_dep_temp_file grs ?filter ?main_feat ~botop (fst (List.assoc graph_id !graph_map))
+  let get_dep_graph_with_background ?domain ?(filter=None) ?main_feat ?(botop=(false,false)) graph_id =
+    svg_dep_temp_file ?domain ?filter ?main_feat ~botop (fst (List.assoc graph_id !graph_map))
 
-  let get_dep_graph_with_background2 grs ?(filter=None) ?main_feat ?deco ?(botop=(false,false)) graph_id =
-    svg_dep_temp_file grs ?filter ?main_feat ?deco ~botop (fst (List.assoc graph_id !graph_map2))
+  let get_dep_graph_with_background2 ?domain ?(filter=None) ?main_feat ?deco ?(botop=(false,false)) graph_id =
+    svg_dep_temp_file ?domain ?filter ?main_feat ?deco ~botop (fst (List.assoc graph_id !graph_map2))
 
   type leaf = No | Leaf of string | Dead_lock of string
 
@@ -671,7 +671,7 @@ module Grew_rew_display = struct
 	  close_out out_ch;
 	  svg_file
 
-  let get_rule_for grs ?main_feat top_dot bottom_dot graph =
+  let get_rule_for ?domain ?main_feat top_dot bottom_dot graph =
     let (gr,(gr_parent_name,rule)) = List.assoc graph !graph_map2 in
     match rule with
       | Some rule ->
@@ -682,13 +682,13 @@ module Grew_rew_display = struct
       
       	let svg_file_top =
       	  if top_dot
-          then get_dot_graph_with_background2 grs ?main_feat ~deco:up ~botop:(false,true) gr_parent_name
-      	  else get_dep_graph_with_background2 grs ?main_feat ~deco:up ~botop:(false,true) gr_parent_name in
+          then get_dot_graph_with_background2 ?domain ?main_feat ~deco:up ~botop:(false,true) gr_parent_name
+      	  else get_dep_graph_with_background2 ?domain ?main_feat ~deco:up ~botop:(false,true) gr_parent_name in
       
       	let svg_file_bottom =
       	  if bottom_dot
-          then get_dot_graph_with_background2 grs ?main_feat ~deco:down ~botop:(true,false) graph
-      	  else get_dep_graph_with_background2 grs ?main_feat ~deco:down ~botop:(true,false) graph in
+          then get_dot_graph_with_background2 ?domain ?main_feat ~deco:down ~botop:(true,false) graph
+      	  else get_dep_graph_with_background2 ?domain ?main_feat ~deco:down ~botop:(true,false) graph in
       
       	let doc = Printf.sprintf "%s_%s.html" !current_selected_mod rule.Libgrew_types.rule_name in
       	(svg_file_top,svg_file_bottom,gr_parent_name,doc)
