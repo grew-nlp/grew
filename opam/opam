@@ -11,7 +11,7 @@ remove: [
 ]
 depends: [
   "lablgtk"
-  "lablwebkit"
+  "lablwebkit" {= "1.8.2.1"}
   "cairo2"
   "xml-light"
   "ANSITerminal"
