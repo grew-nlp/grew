@@ -13,10 +13,8 @@ depends: [
   "lablgtk"
   "lablwebkit" {= "1.8.2.1"}
   "cairo2"
-  "xml-light"
   "ANSITerminal"
   "libcaml-log"
-  "libcaml-itext"
   "camomile"
   "libcaml-dep2pict"
   "libcaml-grew"
