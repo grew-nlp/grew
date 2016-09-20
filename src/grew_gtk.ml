@@ -81,7 +81,7 @@ module Resources = struct
 
   (* -------------------------------------------------------------------------------- *)
   let load_grs () =
-    current_grs :=  None;
+    current_grs := None;
     match !current_grs_file with
       | None -> Log.message "No grs file defined"
       | Some grs_file ->
@@ -90,21 +90,19 @@ module Resources = struct
         current_grs := Some grs
 
   (* -------------------------------------------------------------------------------- *)
-  let grs () = match !current_grs with
-    | Some x -> x
-    | None -> Log.fbug "No GRS file loaded"; exit 1
+  let domain () = match !current_grs with
+    | Some grs -> Grs.get_domain grs
+    | None -> None
 
   (* -------------------------------------------------------------------------------- *)
-  (* must be called after a grs is loaded *)
   let load_gr () =
     current_gr := None;
-    match (!current_gr_file, !current_grs) with
-      | (None, _) -> Log.message "No gr file defined"
-      | (Some file, Some grs) ->
+    match !current_gr_file with
+      | None -> Log.message "No gr file defined"
+      | Some file ->
         Log.fmessage "Loading gr file: '%s'" file;
-        let domain = Grs.get_domain grs in
+        let domain = domain () in
         current_gr := Some (Graph.load ?domain file)
-      | (Some _, None) -> Log.bug "Try to load gr file without loading grs before"
 
   (* -------------------------------------------------------------------------------- *)
   exception Cannot_rewrite of string
@@ -121,7 +119,7 @@ end (* module Resources *)
 (* ==================================================================================================== *)
 
 (* ------------------------------------------------------------ *)
-let filter_features = ref true
+let filter_features = ref false
 let current_features = ref []
 
 let get_current_filter () =
@@ -146,11 +144,10 @@ let fill_vbox vbox =
       ()
     ) !current_features
 
-
 (* when GRS change *)
 let update_features () =
   begin
-    match Grs.get_domain (Resources.grs ()) with
+    match Resources.domain () with
     | None -> ()
     | Some dom -> current_features := List.map (fun x -> (x,true)) (Domain.feature_names dom)
   end;
@@ -188,49 +185,16 @@ type side = Top | Bottom
 let string_of_side = function Top -> "top" | Bottom -> "bottom"
 
 let start_grs () =
-  match (!Grew_args.grs, !Grew_config.current_config.Grew_config.last_grs_file) with
-    (* load the file given on the command line *)
-    | (arg,_) when Sys.file_exists arg -> Resources.current_grs_file := Some arg
-
-    (* No file on command line --> load the config file *)
-    | ("",conf) when Sys.file_exists conf ->
-      warning "No grs file on command line,\nThe last used grs file \"%s\" will be used" (Filename.basename conf);
-      Resources.current_grs_file := Some conf
-
-    (* command line file not found --> load the config file *)
-    | (arg,conf) when Sys.file_exists conf ->
-      warning "The grs \"%s\" cannot be found,\nThe last used grs file \"%s\" will be used instead" (Filename.basename arg) (Filename.basename conf);
-      Resources.current_grs_file := Some conf
-
-    | ("","") ->
-      warning "No grs loaded:\n - no grs file on command line,\n - no grs file in config"
-    | ("",conf) ->
-      warning "No grs loaded:\n - no grs file on command line,\n - the last used grs file \"%s\" cannot be found" (Filename.basename conf)
-
-    | (arg,conf) ->
-      warning "No grs loaded:\n - neither the grs \"%s\"\n - nor he last used grs file \"%s\" can be found" (Filename.basename arg) (Filename.basename conf)
+  match !Grew_args.grs with
+    | "" -> warning "No grs loaded"
+    | arg when Sys.file_exists arg -> Resources.current_grs_file := Some arg
+    | arg -> warning "The grs \"%s\" cannot be found" (Filename.basename arg)
 
 let start_gr () =
-  match (!Grew_args.gr, !Grew_config.current_config.Grew_config.last_gr_file) with
-    (* load the file given on the command line *)
-    | (arg,_) when Sys.file_exists arg -> Resources.current_gr_file := Some arg
-
-    (* No file on command line --> load the config file *)
-    | ("",conf) when Sys.file_exists conf ->
-      info "No graph file on command line,\nThe last used gr file \"%s\" will be used"  (Filename.basename conf);
-      Resources.current_gr_file := Some conf
-
-    (* command line file not found --> load the config file *)
-    | (arg,conf) when Sys.file_exists conf ->
-      warning "The gr \"%s\" cannot be found,\nThe last used gr file \"%s\" will be used instead" (Filename.basename arg)  (Filename.basename conf);
-      Resources.current_gr_file := Some conf
-
-    | ("","") ->
-      warning "No gr loaded:\n - no gr file on command line,\n - no gr file in config"
-    | ("",conf) ->
-      warning "No gr loaded:\n - no gr file on command line,\n - the last used gr file \"%s\" cannot be found"  (Filename.basename conf)
-    | (arg,conf) ->
-      warning "No gr loaded:\n - neither the gr \"%s\"\n - nor he last used gr file \"%s\" can be found" (Filename.basename arg)  (Filename.basename conf)
+  match !Grew_args.gr with
+    | "" -> warning "No graph loaded"
+    | arg when Sys.file_exists arg -> Resources.current_gr_file := Some arg
+    | arg -> warning "The graph \"%s\" cannot be found" (Filename.basename arg)
 
 (* ==================================================================================================== *)
 let init () =
@@ -381,35 +345,29 @@ let init () =
 
   (* -------------------------------------------------------------------------------- *)
   let load_gr () =
-    match !Resources.current_grs_file with
-      | None -> ()
-      | _ ->
-        reset();
-        error_handling Resources.load_gr ();
-
-        grew_window#graph_label#set_label
-          (match !Resources.current_gr_file with None -> "No graph loaded" | Some f -> Filename.basename f);
-        begin
-          match !Resources.current_gr with
-            | None -> ()
-            | Some graph ->
-              Grew_rew_display.graph_map := [("init", (graph, ("", "", None)))];
-              Grew_rew_display.current_top_graph := "init";
-              let domain = Grs.get_domain (Resources.grs ()) in
-              let svg_file =
-                if grew_window#btn_gr_top_dot#active
-                then Grew_rew_display.svg_dot_temp_file ?domain ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) graph
-                else Grew_rew_display.svg_dep_temp_file ?domain ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) graph in
-
-              grew_window#vpaned_doc#misc#show ();
-              grew_window#err_view_scroll#misc#hide ();
-              graph_top_webkit#load_uri ("file://"^svg_file)
-        end;
-
-        (* activate the run button only if there is a grs, a gr and a seqence *)
-        match (!Resources.current_grs, !Resources.current_gr, !seq_list) with
-        | (Some _, Some _, _::_) -> grew_window#btn_run#misc#set_sensitive true
-        | _ -> grew_window#btn_run#misc#set_sensitive false in
+    reset();
+    error_handling Resources.load_gr ();
+    grew_window#graph_label#set_label
+      (match !Resources.current_gr_file with None -> "No graph loaded" | Some f -> Filename.basename f);
+    begin
+      match !Resources.current_gr with
+        | None -> ()
+        | Some graph ->
+          Grew_rew_display.graph_map := [("init", (graph, ("", "", None)))];
+          Grew_rew_display.current_top_graph := "init";
+          let domain = Resources.domain () in
+          let svg_file =
+            if grew_window#btn_gr_top_dot#active
+            then Grew_rew_display.svg_dot_temp_file ?domain ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) graph
+            else Grew_rew_display.svg_dep_temp_file ?domain ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) graph in
+          grew_window#vpaned_doc#misc#show ();
+          grew_window#err_view_scroll#misc#hide ();
+          graph_top_webkit#load_uri ("file://"^svg_file)
+    end;
+    (* activate the run button only if there is a grs, a gr and a seqence *)
+    match (!Resources.current_grs, !Resources.current_gr, !seq_list) with
+    | (Some _, Some _, _::_) -> grew_window#btn_run#misc#set_sensitive true
+    | _ -> grew_window#btn_run#misc#set_sensitive false in
   (* end: load_gr *)
 
   (* -------------------------------------------------------------------------------- *)
@@ -611,7 +569,7 @@ let init () =
   let _ = grs_webkit#connect#script_alert
     ~callback:
     (fun _ msg ->
-      let domain = Grs.get_domain (Resources.grs ()) in
+      let domain = Resources.domain () in
       match Str.split (Str.regexp "::") msg with
        | ["showOnBottom"; graph] ->
           let svg_file =
@@ -685,7 +643,7 @@ let init () =
 
   let _ = module_webkit#connect#script_alert
     ~callback:(fun _ msg ->
-      let domain = Grs.get_domain (Resources.grs ()) in
+      let domain = Resources.domain () in
       match Str.split (Str.regexp "::") msg with
         | ["showOnBottom"; graph]
         | ["showOnBottom2"; graph] ->
@@ -748,7 +706,7 @@ let init () =
   let _ =  grew_window#btn_gr_bottom_dep#connect#clicked
     ~callback:
     (fun () ->
-      let domain = Grs.get_domain (Resources.grs ()) in
+      let domain = Resources.domain () in
       grew_window#btn_gr_bottom_dot#set_active (not grew_window#btn_gr_bottom_dep#active);
       if (grew_window#btn_gr_bottom_dep#active) && (!Grew_rew_display.current_bottom_graph <> "")
       then
@@ -773,7 +731,7 @@ let init () =
   let _ = grew_window#btn_gr_top_dep#connect#clicked
     ~callback:
     (fun () ->
-      let domain = Grs.get_domain (Resources.grs ()) in
+      let domain = Resources.domain () in
       grew_window#btn_gr_top_dot#set_active (not grew_window#btn_gr_top_dep#active);
       if (grew_window#btn_gr_top_dep#active) && (!Grew_rew_display.current_top_graph <> "")
       then
@@ -796,7 +754,7 @@ let init () =
   let _ = grew_window#btn_gr_bottom_dot#connect#clicked
     ~callback:
     (fun () ->
-      let domain = Grs.get_domain (Resources.grs ()) in
+      let domain = Resources.domain () in
       grew_window#btn_gr_bottom_dep#set_active (not grew_window#btn_gr_bottom_dot#active);
       if (grew_window#btn_gr_bottom_dot#active) && (!Grew_rew_display.current_bottom_graph <> "")
       then
@@ -818,7 +776,7 @@ let init () =
   let _ = grew_window#btn_gr_top_dot#connect#clicked
     ~callback:
     (fun () ->
-      let domain = Grs.get_domain (Resources.grs ()) in
+      let domain = Resources.domain () in
       grew_window#btn_gr_top_dep#set_active (not grew_window#btn_gr_top_dot#active);
       if (grew_window#btn_gr_top_dot#active) && (!Grew_rew_display.current_top_graph <> "")
       then
@@ -944,7 +902,7 @@ let init () =
     if GdkEvent.Button.button ev <> 3
     then false (* we did not handle this *)
     else
-      let domain = Grs.get_domain (Resources.grs ()) in
+      let domain = Resources.domain () in
       let graph = match side with
         | Top -> !Grew_rew_display.current_top_graph
         | Bottom -> !Grew_rew_display.current_bottom_graph in
@@ -1015,14 +973,6 @@ let init () =
   (* At exit, save the last grs/gr files used for next grew usage *)
   at_exit
     (fun () ->
-      (match !Resources.current_grs_file with
-        | Some file -> !Grew_config.current_config.Grew_config.last_grs_file <- file
-        | None -> ()
-      );
-      (match  !Resources.current_gr_file with
-        | Some file -> !Grew_config.current_config.Grew_config.last_gr_file <- file
-        | None -> ()
-      );
       Grew_config.save_config ()
     );
 

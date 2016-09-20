@@ -13,9 +13,6 @@ open Log
 module Grew_config = struct
 
   type config = {
-    mutable last_gr_file:string;
-    mutable last_grs_file:string;
-
     mutable last_doc_zoom:int;
     mutable last_rewriting_history_zoom:int;
     mutable last_rule_zoom:int;
@@ -32,8 +29,6 @@ module Grew_config = struct
   }
 
   let default_config = {
-    last_gr_file = "";
-    last_grs_file = "";
     last_doc_zoom = 100;
     last_rewriting_history_zoom = 100;
     last_rule_zoom = 100;
@@ -50,8 +45,6 @@ module Grew_config = struct
 
   let read_config_file config_file =
     let config = ref {
-      last_gr_file = "";
-      last_grs_file = "";
       last_doc_zoom = 100;
       last_rewriting_history_zoom = 100;
       last_rule_zoom = 100;
@@ -73,8 +66,6 @@ module Grew_config = struct
       let value_bool = try bool_of_string (List.nth splitted 1) with _ -> true in
 
       match (List.nth splitted 0) with
-      | "LAST_GR_FILE" -> config := {!config with last_gr_file=value_str}
-      | "LAST_GRS_FILE" -> config := {!config with last_grs_file=value_str}
       | "LAST_DOC_ZOOM" -> config := {!config with last_doc_zoom=value_int}
       | "LAST_REWRITING_HISTORY_ZOOM" -> config := {!config with last_rewriting_history_zoom=value_int}
       | "LAST_RULE_ZOOM" -> config := {!config with last_rule_zoom=value_int}
@@ -106,8 +97,6 @@ module Grew_config = struct
           let config_file = Filename.concat dirname "config.txt" in
 
           let out_ch = open_out config_file in
-          Printf.fprintf out_ch "LAST_GR_FILE=%s\n%!" config.last_gr_file;
-          Printf.fprintf out_ch "LAST_GRS_FILE=%s\n%!" config.last_grs_file;
           Printf.fprintf out_ch "LAST_DOC_ZOOM=%d\n%!" config.last_doc_zoom;
           Printf.fprintf out_ch "LAST_REWRITING_HISTORY_ZOOM=%d\n%!" config.last_rewriting_history_zoom;
           Printf.fprintf out_ch "LAST_RULE_ZOOM=%d\n%!" config.last_rule_zoom;
@@ -179,8 +168,6 @@ module Grew_config = struct
         current_config := default_config
 
   let print_config config =
-    Printf.printf "LAST_GR_FILE=%s\n%!" config.last_gr_file;
-    Printf.printf "LAST_GRS_FILE=%s\n%!" config.last_grs_file;
     Printf.printf "LAST_DOC_ZOOM=%d\n%!" config.last_doc_zoom;
     Printf.printf "LAST_REWRITING_HISTORY_ZOOM=%d\n%!" config.last_rewriting_history_zoom;
     Printf.printf "LAST_RULE_ZOOM=%d\n%!" config.last_rule_zoom;
