@@ -18,7 +18,6 @@ open Grew_glade
 open Grew_rew_display
 open Grew_utils
 open Grew_args
-open Grew_config
 
 type msg =
  | Error of string
@@ -150,17 +149,20 @@ let display_config_window () =
 
       fill_vbox win#config_vbox;
 
-      let () = win#main_feat#set_text !Grew_config.current_config.Grew_config.main_feat in
+      let main_feat = match !Grew_args.main_feat with
+        | None -> "phon"
+        | Some s -> s in
+
+      let () = win#main_feat#set_text main_feat in
 
       let _ = win#main_feat#connect#changed
-        ~callback: (fun () -> !Grew_config.current_config.Grew_config.main_feat <- win#main_feat#text) in
+        ~callback: (fun () -> Grew_args.main_feat := Some win#main_feat#text) in
 
       let _ = win#btn_config_close#connect#clicked ~callback:
         (fun () -> config_vbox := None; win#toplevel#destroy ()) in
       let _ = win#toplevel#event#connect#delete ~callback: (fun _ -> config_vbox := None; false) in
       win#toplevel#show ()
     end
-
 
 type save = Png | Pdf_dep | Pdf_dot | Dep | Dot | Gr | Conll
 type side = Top | Bottom
@@ -177,11 +179,10 @@ let init () =
 
   let doc_dir = ref None in
 
-  let _ = Grew_config.read_config () in
+  let main_feat = match !Grew_args.main_feat with
+    | None -> "phon"
+    | Some s -> s in
 
-  (match !Grew_args.main_feat with
-    | None -> ()
-    | Some s -> !Grew_config.current_config.Grew_config.main_feat <- s);
   let empty_html = "<html><body><font color=red fontname=Arial>Nothing to display</font></body></html>" in
 
   let _ = grew_window#btn_preferences#connect#clicked ~callback: (fun _ -> display_config_window ()) in (* XXX *)
@@ -223,18 +224,6 @@ let init () =
   web_settings_doc#set_enable_default_context_menu true;
   doc_webkit#set_settings web_settings_doc;
 
-(*   doc_webkit#set_zoom_level ((float_of_int !Grew_config.current_config.Grew_config.last_doc_zoom) /. 100.);
-  grs_webkit#set_zoom_level ((float_of_int !Grew_config.current_config.Grew_config.last_rewriting_history_zoom) /. 100.);
-  module_webkit#set_zoom_level ((float_of_int !Grew_config.current_config.Grew_config.last_rule_zoom) /. 100.);
-  graph_top_webkit#set_zoom_level ((float_of_int !Grew_config.current_config.Grew_config.last_top_graph_zoom) /. 100.);
-  graph_bottom_webkit#set_zoom_level ((float_of_int !Grew_config.current_config.Grew_config.last_bottom_graph_zoom) /. 100.);
-
-  grew_window#doc_zoom#adjustment#set_value (float_of_int !Grew_config.current_config.Grew_config.last_doc_zoom);
-  grew_window#grs_zoom#adjustment#set_value (float_of_int !Grew_config.current_config.Grew_config.last_rewriting_history_zoom);
-  grew_window#graph_top_zoom#adjustment#set_value (float_of_int !Grew_config.current_config.Grew_config.last_top_graph_zoom);
-  grew_window#graph_bottom_zoom#adjustment#set_value (float_of_int !Grew_config.current_config.Grew_config.last_bottom_graph_zoom);
-  grew_window#module_zoom#adjustment#set_value (float_of_int !Grew_config.current_config.Grew_config.last_rule_zoom);
- *)
   let refresh_error () =
     match !messages with
     | [] -> grew_window#err_view_scroll#misc#hide ();
@@ -334,8 +323,8 @@ let init () =
         let domain = Resources.domain () in
         let svg_file =
           if grew_window#btn_gr_top_dot#active
-          then Grew_rew_display.svg_dot_temp_file ?domain ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) graph
-          else Grew_rew_display.svg_dep_temp_file ?domain ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) graph in
+          then Grew_rew_display.svg_dot_temp_file ?domain ~main_feat graph
+          else Grew_rew_display.svg_dep_temp_file ?domain ~main_feat graph in
         grew_window#vpaned_doc#misc#show ();
         grew_window#err_view_scroll#misc#hide ();
         graph_top_webkit#load_uri ("file://"^svg_file) in
@@ -464,7 +453,7 @@ let init () =
     ~callback:
     (fun () ->
       if grew_window#btn_show_grs#active
-      then grew_window#vpaned_left#set_position (!Grew_config.current_config.Grew_config.last_grs_position)
+      then grew_window#vpaned_left#set_position 400
       else (grew_window#vpaned_left#set_position 30; check_positions ())
     ) in
 
@@ -472,8 +461,7 @@ let init () =
     ~callback:
     (fun _ ->
       if (grew_window#vpaned_left#position > 30)
-      then (grew_window#btn_show_grs#set_active true;
-            !Grew_config.current_config.Grew_config.last_grs_position <- grew_window#vpaned_left#position)
+      then grew_window#btn_show_grs#set_active true
       else (grew_window#vpaned_left#set_position 30;
             grew_window#btn_show_grs#set_active false);
       check_positions ();
@@ -484,7 +472,7 @@ let init () =
     ~callback:
     (fun () ->
       if grew_window#btn_show_module#active
-      then (grew_window#vpane_right#set_position (!Grew_config.current_config.Grew_config.last_module_position))
+      then grew_window#vpane_right#set_position 400
       else (grew_window#vpane_right#set_position 30; check_positions ())
     ) in
 
@@ -492,8 +480,7 @@ let init () =
     ~callback:
     (fun b ->
       if (grew_window#vpane_right#position > 30)
-      then (grew_window#btn_show_module#set_active true;
-            !Grew_config.current_config.Grew_config.last_module_position <- grew_window#vpane_right#position)
+      then grew_window#btn_show_module#set_active true
       else (grew_window#vpane_right#set_position 30;
             grew_window#btn_show_module#set_active false);
       check_positions ();
@@ -554,9 +541,9 @@ let init () =
           let svg_file =
             if grew_window#btn_gr_bottom_dot#active
             then (Grew_rew_display.get_dot_graph_with_background ?domain
-                   ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(true,false) graph)
+                   ~main_feat ~botop:(true,false) graph)
             else (Grew_rew_display.get_dep_graph_with_background ?domain ~filter:(get_current_filter ())
-                   ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(true,false) graph) in
+                   ~main_feat ~botop:(true,false) graph) in
           graph_bottom_webkit#load_uri ("file://"^svg_file);
           Grew_rew_display.current_bottom_graph := graph;
           module_webkit#load_html_string empty_html "";
@@ -570,9 +557,9 @@ let init () =
           let svg_file =
             if grew_window#btn_gr_top_dot#active
             then (Grew_rew_display.get_dot_graph_with_background ?domain
-                    ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(false,true) graph)
+                    ~main_feat ~botop:(false,true) graph)
             else (Grew_rew_display.get_dep_graph_with_background ?domain ~filter:(get_current_filter ())
-                    ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(false,true) graph) in
+                    ~main_feat ~botop:(false,true) graph) in
           graph_top_webkit#load_uri ("file://"^svg_file);
           Grew_rew_display.current_top_graph := graph;
           module_webkit#load_html_string empty_html "";
@@ -585,18 +572,18 @@ let init () =
           let svg_file =
             if grew_window#btn_gr_bottom_dot#active
             then (Grew_rew_display.get_dot_graph_with_background ?domain
-                    ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(true,false) graph)
+                    ~main_feat ~botop:(true,false) graph)
             else (Grew_rew_display.get_dep_graph_with_background ?domain ~filter:(get_current_filter ())
-                    ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(true,false) graph) in
+                    ~main_feat ~botop:(true,false) graph) in
           graph_bottom_webkit#load_uri ("file://"^svg_file);
           Grew_rew_display.current_bottom_graph := graph;
           true
         | ["showOnTop2"; graph] ->
           let svg_file = if grew_window#btn_gr_top_dot#active
             then (Grew_rew_display.get_dot_graph_with_background ?domain
-                    ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(false,true) graph)
+                    ~main_feat ~botop:(false,true) graph)
             else (Grew_rew_display.get_dep_graph_with_background ?domain ~filter:(get_current_filter ())
-                    ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(false,true) graph) in
+                    ~main_feat ~botop:(false,true) graph) in
           graph_top_webkit#load_uri ("file://"^svg_file);
           Grew_rew_display.current_top_graph := graph;
           true
@@ -633,9 +620,9 @@ let init () =
               let svg_file =
                 if grew_window#btn_gr_bottom_dot#active
                 then (Grew_rew_display.get_dot_graph_with_background2 ?domain
-                        ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(true,false) (graph^".2"))
+                        ~main_feat ~botop:(true,false) (graph^".2"))
                 else (Grew_rew_display.get_dep_graph_with_background2 ?domain ~filter:(get_current_filter ())
-                        ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(true,false) (graph^".2")) in
+                        ~main_feat ~botop:(true,false) (graph^".2")) in
               graph_bottom_webkit#load_uri ("file://"^svg_file);
               Grew_rew_display.current_bottom_graph := (graph^".2");
               grs_webkit#execute_script "remove_back_from_current_bottom()";
@@ -650,9 +637,9 @@ let init () =
               let svg_file =
                 if grew_window#btn_gr_top_dot#active
                 then (Grew_rew_display.get_dot_graph_with_background2 ?domain
-                        ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(false,true) (graph^".2"))
+                        ~main_feat ~botop:(false,true) (graph^".2"))
                 else (Grew_rew_display.get_dep_graph_with_background2 ?domain ~filter:(get_current_filter ())
-                        ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) ~botop:(false,true) (graph^".2")) in
+                        ~main_feat ~botop:(false,true) (graph^".2")) in
               graph_top_webkit#load_uri ("file://"^svg_file);
               Grew_rew_display.current_top_graph := (graph^".2");
               grs_webkit#execute_script "remove_back_from_current_top()";
@@ -663,7 +650,7 @@ let init () =
           and bottom_dot = grew_window#btn_gr_bottom_dot#active in
           let (svg_file_top,svg_file_bottom,graph_top,doc_file) =
             Grew_rew_display.get_rule_for ?domain
-              ~main_feat:(!Grew_config.current_config.Grew_config.main_feat) top_dot bottom_dot (graph^".2") in
+              ~main_feat top_dot bottom_dot (graph^".2") in
 
           graph_top_webkit#load_uri ("file://"^svg_file_top);
           graph_bottom_webkit#load_uri ("file://"^svg_file_bottom);
@@ -691,17 +678,16 @@ let init () =
       then
         begin
           Log.fdebug "[Grew_gtk] Try to display dep for '%s'" !Grew_rew_display.current_bottom_graph;
-          !Grew_config.current_config.Grew_config.last_is_dep_bottom_graph <- true;
           let svg_file =
             try Grew_rew_display.get_dep_graph_with_background ?domain
                   ~filter:(get_current_filter ())
-                  ~main_feat:(!Grew_config.current_config.Grew_config.main_feat)
+                  ~main_feat
                   ~botop:(true,false)
                   !Grew_rew_display.current_bottom_graph
             with Not_found ->
               Grew_rew_display.get_dep_graph_with_background2 ?domain
                 ~filter:(get_current_filter ())
-                ~main_feat:(!Grew_config.current_config.Grew_config.main_feat)
+                ~main_feat
                 ~botop:(true,false) !Grew_rew_display.current_bottom_graph in
           graph_bottom_webkit#load_uri ("file://"^svg_file);
         end
@@ -716,15 +702,14 @@ let init () =
       then
         begin
           Log.fdebug "[Grew_gtk] Try to display dep for '%s'" !Grew_rew_display.current_top_graph;
-          !Grew_config.current_config.Grew_config.last_is_dep_top_graph <- true;
           let svg_file =
             try Grew_rew_display.get_dep_graph_with_background ?domain
                   ~filter:(get_current_filter ())
-                  ~main_feat:(!Grew_config.current_config.Grew_config.main_feat)
+                  ~main_feat
                   ~botop:(false,true) !Grew_rew_display.current_top_graph
             with Not_found -> Grew_rew_display.get_dep_graph_with_background2 ?domain
               ~filter:(get_current_filter ())
-              ~main_feat:(!Grew_config.current_config.Grew_config.main_feat)
+              ~main_feat
               ~botop:(false,true) !Grew_rew_display.current_top_graph in
           graph_top_webkit#load_uri ("file://"^svg_file);
         end
@@ -739,13 +724,12 @@ let init () =
       then
         begin
           Log.fdebug "[Grew_gtk] Try to display dot for '%s'" !Grew_rew_display.current_bottom_graph;
-          !Grew_config.current_config.Grew_config.last_is_dep_bottom_graph <- false;
           let svg_file =
             try Grew_rew_display.get_dot_graph_with_background ?domain
-                  ~main_feat:(!Grew_config.current_config.Grew_config.main_feat)
+                  ~main_feat
                   ~botop:(true,false) !Grew_rew_display.current_bottom_graph
             with Not_found -> Grew_rew_display.get_dot_graph_with_background2 ?domain
-              ~main_feat:(!Grew_config.current_config.Grew_config.main_feat)
+              ~main_feat
               ~botop:(true,false) !Grew_rew_display.current_bottom_graph in
           graph_bottom_webkit#load_uri ("file://"^svg_file);
         end
@@ -761,14 +745,13 @@ let init () =
       then
         begin
           Log.fdebug "[Grew_gtk] Try to display dot for '%s'" !Grew_rew_display.current_top_graph;
-          !Grew_config.current_config.Grew_config.last_is_dep_top_graph <- false;
           let svg_file =
             try Grew_rew_display.get_dot_graph_with_background ?domain
                   ?deco:!Grew_rew_display.current_top_deco
-                  ~main_feat:(!Grew_config.current_config.Grew_config.main_feat)
+                  ~main_feat
                   ~botop:(false,true) !Grew_rew_display.current_top_graph
             with Not_found -> Grew_rew_display.get_dot_graph_with_background2 ?domain
-              ~main_feat:(!Grew_config.current_config.Grew_config.main_feat)
+              ~main_feat
               ~botop:(false,true) !Grew_rew_display.current_top_graph in
           graph_top_webkit#load_uri ("file://"^svg_file);
         end
@@ -780,36 +763,31 @@ let init () =
   let _ = grew_window#grs_zoom#connect#value_changed
     ~callback:
     (fun () ->
-      grs_webkit#set_zoom_level (grew_window#grs_zoom#adjustment#value /. 100.);
-      !Grew_config.current_config.Grew_config.last_rewriting_history_zoom <- int_of_float grew_window#grs_zoom#adjustment#value;
+      grs_webkit#set_zoom_level (grew_window#grs_zoom#adjustment#value /. 100.)
     ) in
 
   let _ = grew_window#doc_zoom#connect#value_changed
     ~callback:
     (fun () ->
-      doc_webkit#set_zoom_level (grew_window#doc_zoom#adjustment#value /. 100.);
-      !Grew_config.current_config.Grew_config.last_doc_zoom <- int_of_float grew_window#doc_zoom#adjustment#value;
+      doc_webkit#set_zoom_level (grew_window#doc_zoom#adjustment#value /. 100.)
     ) in
 
   let _ = grew_window#graph_top_zoom#connect#value_changed
     ~callback:
     (fun () ->
-      graph_top_webkit#set_zoom_level (grew_window#graph_top_zoom#adjustment#value /. 100.);
-      !Grew_config.current_config.Grew_config.last_top_graph_zoom <- int_of_float grew_window#graph_top_zoom#adjustment#value;
+      graph_top_webkit#set_zoom_level (grew_window#graph_top_zoom#adjustment#value /. 100.)
     ) in
 
   let _ = grew_window#graph_bottom_zoom#connect#value_changed
     ~callback:
     (fun () ->
-      graph_bottom_webkit#set_zoom_level (grew_window#graph_bottom_zoom#adjustment#value /. 100.);
-      !Grew_config.current_config.Grew_config.last_bottom_graph_zoom <- int_of_float grew_window#graph_bottom_zoom#adjustment#value;
+      graph_bottom_webkit#set_zoom_level (grew_window#graph_bottom_zoom#adjustment#value /. 100.)
     ) in
 
   let _ = grew_window#module_zoom#connect#value_changed
     ~callback:
     (fun () ->
-      module_webkit#set_zoom_level (grew_window#module_zoom#adjustment#value /. 100.);
-      !Grew_config.current_config.Grew_config.last_rule_zoom <- int_of_float grew_window#module_zoom#adjustment#value;
+      module_webkit#set_zoom_level (grew_window#module_zoom#adjustment#value /. 100.)
     ) in
 
   (* -------------------------------------------------------------------------------- *)
@@ -820,14 +798,6 @@ let init () =
 
   let _ = grew_window#btn_leave_fullscreen#connect#clicked
     ~callback: (fun () -> grew_window#toplevel#unfullscreen (); fullscreen := false) in
-
-  (* ==================== (un)set dot/dep buttons ==================== *)
-  (* Unactivated because of incompatibility with OS X 10.11.4 !
-  grew_window#btn_gr_bottom_dep#set_active !Grew_config.current_config.Grew_config.last_is_dep_bottom_graph;
-  grew_window#btn_gr_bottom_dot#set_active (not !Grew_config.current_config.Grew_config.last_is_dep_bottom_graph);
-  grew_window#btn_gr_top_dep#set_active !Grew_config.current_config.Grew_config.last_is_dep_top_graph;
-  grew_window#btn_gr_top_dot#set_active (not !Grew_config.current_config.Grew_config.last_is_dep_top_graph);
-  *)
 
   (* cpt is used to avoid a loop between the two propagations of value_changed *)
   let cpt = ref 0 in
@@ -895,7 +865,6 @@ let init () =
           match side with
           | Top -> !Grew_rew_display.current_top_deco
           | Bottom -> !Grew_rew_display.current_bottom_deco in
-        let main_feat = !Grew_config.current_config.Grew_config.main_feat in
 
         (* create the contextual menu *)
         let menu = GMenu.menu () in
@@ -943,12 +912,6 @@ let init () =
   let _ = grew_window#graph_view_top#event#connect#button_press ~callback: (contextual_menu Top) in
   let _ = grew_window#graph_view_bottom#event#add [`BUTTON_PRESS] in
   let _ = grew_window#graph_view_bottom#event#connect#button_press ~callback: (contextual_menu Bottom) in
-
-  (* At exit, save the last grs/gr files used for next grew usage *)
-  at_exit
-    (fun () ->
-      Grew_config.save_config ()
-    );
 
   (* force doc building in required on the commande line *)
   if !Grew_args.gui_doc then build_doc ();
