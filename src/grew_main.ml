@@ -15,7 +15,7 @@ open Grew_gtk
 
 let _ =
   Printexc.record_backtrace true;
-  Log.set_active_levels [`DEBUG; `INFO; `MESSAGE; `WARNING];
+  Log.set_active_levels [`INFO; `MESSAGE; `WARNING];
   Log.set_write_to_log_file false;
 
   (* ignore(open_in "/tmp/tmp.svg"); *)
