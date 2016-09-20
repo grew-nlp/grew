@@ -55,13 +55,20 @@ module Grew_args = struct
     "\n"^
     "Options for mode selection:"
 
+  let dump_version () =
+    Printf.printf "grew:    %s\n" VERSION;
+    Printf.printf "libgrew: %s\n" (Libgrew.get_version ())
+
   let args = [
     "-corpus", Unit (fun () -> mode := Corpus),      "                     enable corpus mode";
     "-det", Unit (fun () -> mode := Det),         "                        enable det mode: rewrite a corpus with a deterministric grs";
     "-full", Unit (fun () -> mode := Full),         "                       enable full mode: rewrite a corpus (conll output)";
     "-filter", Unit (fun () -> mode := Filter),         "                     enable filter mode";
-    "-grep", Unit (fun () -> mode := Grep),         "                       enable grep mode\n\nOptions for all modes";
+    "-grep", Unit (fun () -> mode := Grep),         "                       enable grep mode";
 
+    "-version", Unit (fun () -> dump_version(); exit 0),         "                       gives versions of code and libraries\n\nOptions for all modes";
+
+    (* options for all modes *)
     "-grs", String (fun s -> grs := absolute s),          "<grs_file>              chose the grs file to load";
     "-seq", String (fun s -> seq := s),                   "<seq>                   set the module sequence to use";
     "-timeout", Float (fun f -> timeout := Some f; Rewrite.set_timeout (Some f)),                   "<float>             set a timeout on rewriting";
