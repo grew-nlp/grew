@@ -11,7 +11,9 @@ let read file =
 let () =
   dispatch begin function
   | After_rules ->
-    let pp_src = S[A"-pp"; A("camlp4o pa_macro.cmo -DBUILD_GUI -DDATA_DIR=\\\""^(read "DATA_DIR")^"\\\" -DVERSION=\\\""^(read "VERSION")^"\\\"")] in
+    let data_dir = "\""^(read "DATA_DIR")^"\""
+    and version = "\""^(read "VERSION")^"\"" in
+    let pp_src = S[A"-pp"; A("cppo -D 'VERSION "^version^"' -D 'DATA_DIR "^data_dir^"'")] in
     flag ["ocaml"; "ocamldep"] & pp_src;
     flag ["ocaml"; "compile"] & pp_src; 
   | _ -> ()

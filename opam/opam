@@ -10,6 +10,7 @@ remove: [
   ["make" "uninstall" "PREFIX=%{prefix}%"]
 ]
 depends: [
+  "cppo"
   "lablgtk"
   "lablwebkit" {= "1.8.2.1"}
   "cairo2"
