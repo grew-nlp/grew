@@ -27,8 +27,8 @@ module Grew_args = struct
     then Filename.concat (Sys.getcwd ()) s
     else s
 
-  let grs = ref ""
-  let gr = ref ""
+  let grs = ref None
+  let gr = ref None
   let gui_doc = ref false
 
   let input_data = ref ""
@@ -69,7 +69,7 @@ module Grew_args = struct
     "-version", Unit (fun () -> dump_version(); exit 0),         "                       gives versions of code and libraries\n\nOptions for all modes";
 
     (* options for all modes *)
-    "-grs", String (fun s -> grs := absolute s),          "<grs_file>              chose the grs file to load";
+    "-grs", String (fun s -> grs := Some (absolute s)),          "<grs_file>              chose the grs file to load";
     "-seq", String (fun s -> seq := s),                   "<seq>                   set the module sequence to use";
     "-timeout", Float (fun f -> timeout := Some f; Rewrite.set_timeout (Some f)),                   "<float>             set a timeout on rewriting";
     "-max_depth_det", Int (fun v -> Rewrite.set_max_depth_det v),                   "<int>         set the maximum depth of rewriting in a module in deterministric rewriting (default: 2000)";
@@ -80,7 +80,7 @@ module Grew_args = struct
     "-debug_loop", Unit (fun () -> Rewrite.set_debug_loop ()),  "                 enable loop debug mode\n\nOptions for GUI mode";
 
     (* options for GUI mode *)
-    "-gr", String (fun s -> gr := absolute s), "<gr_file>                set the graph file (.gr or .conll) to use";
+    "-gr", String (fun s -> gr := Some (absolute s)), "<gr_file>                set the graph file (.gr or .conll) to use";
     "-doc", Unit (fun () -> gui_doc := true), "                        force to build the GRS doc\n\nOptions for corpus, det and cluster modes";
 
     (* options for corpus, det and cluster mode *)

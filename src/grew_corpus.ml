@@ -58,7 +58,10 @@ let init () =
     Unix.mkdir output_dir 0o777;
 
     (* load grs file *)
-    let grs = Grs.load !Grew_args.grs in
+    let grs_file = match !Grew_args.grs with
+    | None -> Log.message "No grs filespecified: use -grs option"; exit 1
+    | Some f -> f in
+    let grs = Grs.load grs_file in
     let domain = Grs.get_domain grs in
 
     (* generate documentation in the [doc] folder *)
@@ -72,7 +75,7 @@ let init () =
     Rewrite.save_index ~dirname:output_dir ~base_names;
 
     (* put the grs file in the output folder *)
-    let _ = Sys.command (sprintf "cp %s %s" !Grew_args.grs output_dir) in
+    let _ = Sys.command (sprintf "cp %s %s" grs_file output_dir) in
 
     let sentences = ref [] in
     let len = Array.length graph_array in
@@ -145,7 +148,7 @@ let init () =
 
     Rewrite.make_index
       ~title
-      ~grs_file: !Grew_args.grs
+      ~grs_file
       ~html: (match !Grew_args.html with Grew_args.No -> false | _ -> true)
       ~grs
       ~seq: !Grew_args.seq
@@ -162,7 +165,11 @@ let multi_conll ?(keep_empty_rh=false) () =
       | Some file -> open_out file in
 
     (* load grs file *)
-    let grs = Grs.load !Grew_args.grs in
+    let grs_file = match !Grew_args.grs with
+    | None -> Log.message "No grs filespecified: use -grs option"; exit 1
+    | Some f -> f in
+
+    let grs = Grs.load grs_file in
     let domain = Grs.get_domain grs in
 
     (* get the list of files to rewrite *)
@@ -206,7 +213,10 @@ let det () =
         Unix.mkdir output_dir 0o777;
 
         (* load grs file *)
-        let grs = Grs.load !Grew_args.grs in
+        let grs_file = match !Grew_args.grs with
+        | None -> Log.message "No grs filespecified: use -grs option"; exit 1
+        | Some f -> f in
+        let grs = Grs.load grs_file in
         let domain = Grs.get_domain grs in
 
         (* get the list of graphs to rewrite *)
@@ -249,7 +259,11 @@ let full () =
         Unix.mkdir output_dir 0o777;
 
         (* load grs file *)
-        let grs = Grs.load !Grew_args.grs in
+        let grs_file = match !Grew_args.grs with
+        | None -> Log.message "No grs filespecified: use -grs option"; exit 1
+        | Some f -> f in
+
+        let grs = Grs.load grs_file in
         let domain = Grs.get_domain grs in
 
         (* get the list of graphs to rewrite *)
@@ -278,10 +292,10 @@ let full () =
   let grep () = handle
     (fun () ->
       match (!Grew_args.grs, !Grew_args.input_data, !Grew_args.pattern) with
-      | ("",_,_) -> Log.message "No grs file specified: use -grs option"; exit 1
+      | (None,_,_) -> Log.message "No grs file specified: use -grs option"; exit 1
       | (_,"",_) -> Log.message "No input data specified: use -i option"; exit 1
       | (_,_,None) -> Log.message "No pattern file specified: use -pattern option"; exit 1;
-      | (grs_file, data_file, Some pattern_request) ->
+      | (Some grs_file, data_file, Some pattern_request) ->
 
         match Str.split (Str.regexp "|") pattern_request with
         | [] -> Log.message "Empty pattern_request"; exit 1
