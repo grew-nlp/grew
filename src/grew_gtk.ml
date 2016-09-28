@@ -70,31 +70,39 @@ let ask_for_file_to_save filter parent =
 (* ==================================================================================================== *)
 module Resources = struct
   let current_grs = ref None
+  let current_grs_file = ref None
   let current_gr = ref None
+  let current_gr_file = ref None
 
   (* -------------------------------------------------------------------------------- *)
-  let load_grs grs_file =
+  let load_grs () =
     current_grs := None;
-    Log.fmessage "Loading grs file: '%s'" grs_file;
-    current_grs := Some (Grs.load grs_file, grs_file)
+    match !current_grs_file with
+    | None -> ()
+    | Some file -> 
+        Log.fmessage "Loading grs file: '%s'" file;
+        current_grs := Some (Grs.load file)
 
   (* -------------------------------------------------------------------------------- *)
   let domain () = match !current_grs with
-    | Some (grs,_) -> Grs.get_domain grs
+    | Some grs -> Grs.get_domain grs
     | None -> None
 
   (* -------------------------------------------------------------------------------- *)
-  let load_gr file =
+  let load_gr () =
     current_gr := None;
-    Log.fmessage "Loading gr file: '%s'" file;
-    let domain = domain () in
-    current_gr := Some (Graph.load ?domain file, file)
+    match !current_gr_file with
+    | None -> ()
+    | Some file -> 
+      Log.fmessage "Loading gr file: '%s'" file;
+      let domain = domain () in
+      current_gr := Some (Graph.load ?domain file)
 
   (* -------------------------------------------------------------------------------- *)
   exception Cannot_rewrite of string
   let rewrite seq =
     match (!current_grs, !current_gr) with
-      | (Some (grs,_), Some (gr,_)) -> Rewrite.display gr grs seq
+      | (Some grs, Some gr) -> Rewrite.display gr grs seq
       | (None, _) -> raise (Cannot_rewrite "No grs file loaded")
       | (_, None) -> raise (Cannot_rewrite "No graph file loaded")
 end (* module Resources *)
@@ -219,6 +227,9 @@ let init () =
   graph_bottom_webkit#set_settings web_settings_def;
   error_webkit#set_settings web_settings_def;
 
+  grew_window#graph_label#set_use_markup true;
+  grew_window#grs_label#set_use_markup true;
+
   (* Doc is usual html view: the contextual menu is enable *)
   let web_settings_doc = GWebSettings.web_settings () in
   web_settings_doc#set_enable_default_context_menu true;
@@ -255,7 +266,7 @@ let init () =
   let build_doc () =
     match !Resources.current_grs with
       | None -> ()
-      | Some (grs,_) ->
+      | Some grs ->
         let temp_dir_name = Filename.get_temp_dir_name () in
         let dir = Filename.concat temp_dir_name "grew" in
         Grs.build_html_doc dir grs;
@@ -284,8 +295,9 @@ let init () =
     grew_window#btn_show_grs#set_active false in
 
   let error_handling fct arg =
-    try fct arg
-    with
+    begin
+      try fct arg
+      with
       | Libgrew.File_not_found file -> show_error (sprintf "The file %s doesn't exist!" file)
       | Libgrew.Parsing_err (msg,None) -> show_error msg
       | Libgrew.Parsing_err (msg,Some loc) -> show_error (sprintf "%s %s" (Loc.to_string loc) msg)
@@ -294,7 +306,9 @@ let init () =
       | Libgrew.Run (msg,None) -> show_error msg
       | Libgrew.Run (msg,Some loc) -> show_error (sprintf "%s %s" (Loc.to_string loc) msg)
       | Libgrew.Bug (msg,_) -> show_error msg
-      | exc -> show_error (Printexc.to_string exc) in
+      | exc -> show_error (Printexc.to_string exc)
+    end;
+    refresh_error () in
 
   (** CALLBACKS *)
 
@@ -309,14 +323,12 @@ let init () =
     | _ -> grew_window#btn_run#misc#set_sensitive false in
 
   (* -------------------------------------------------------------------------------- *)
-  let load_gr gr_file =
+  let load_gr () =
     reset();
-    error_handling Resources.load_gr gr_file;
+    error_handling Resources.load_gr ();
 
-    match !Resources.current_gr with
-    | None ->
-        grew_window#graph_label#set_label "No graph loaded"
-    | Some (graph,_) ->
+    match (!Resources.current_gr, !Resources.current_gr_file) with
+    | (Some graph, Some gr_file) ->
         grew_window#graph_label#set_label (Filename.basename gr_file);
         Grew_rew_display.graph_map := [("init", (graph, ("", "", None)))];
         Grew_rew_display.current_top_graph := "init";
@@ -327,12 +339,20 @@ let init () =
           else Grew_rew_display.svg_dep_temp_file ?domain ~main_feat graph in
         grew_window#vpaned_doc#misc#show ();
         grew_window#err_view_scroll#misc#hide ();
-        graph_top_webkit#load_uri ("file://"^svg_file) in
+        graph_top_webkit#load_uri ("file://"^svg_file)
+    | (_, Some file) -> 
+        grew_window#graph_label#set_label ("<span color=\"red\">"^(Filename.basename file)^"</span>")
+    | _ ->
+        grew_window#graph_label#set_label "No graph loaded" in
 
   let refresh_gr () =
-    match !Resources.current_gr with
-    | None -> ()
-    | Some (_,gr_file) -> error_handling load_gr gr_file; refresh_btn_run () in
+    (match !Resources.current_gr_file with
+      | None -> ()
+      | Some gr_file ->
+        error_handling load_gr ();
+        refresh_btn_run ()
+    );
+    refresh_error () in
 
 
   (* -------------------------------------------------------------------------------- *)
@@ -343,22 +363,28 @@ let init () =
     (fun () ->
       match ask_for_file_to_open gr_or_conll_filter grew_window#toplevel with
         | None -> ()
-        | Some f -> error_handling load_gr f; refresh_btn_run ()
+        | Some f ->
+          Resources.current_gr_file := Some f;
+          error_handling load_gr ();
+          refresh_btn_run ()
     ) in
 
 
   (* click on the gr refresh button *)
-  let _ = grew_window#btn_refresh_gr#connect#clicked ~callback: refresh_gr in
+  let _ = grew_window#btn_refresh_gr#connect#clicked
+    ~callback: (fun () ->
+      messages := [];
+      refresh_gr ()
+    ) in
 
   (* -------------------------------------------------------------------------------- *)
-  let load_grs ?seq grs_file =
+  let load_grs ?seq () =
     reset ();
-    error_handling Resources.load_grs grs_file;
-    match !Resources.current_grs with
-    | None ->
-        grew_window#grs_label#set_label "No Grs loaded";
-    | Some (grs,_) ->
-        grew_window#grs_label#set_label (Filename.basename grs_file);
+    error_handling Resources.load_grs ();
+    begin
+    match (!Resources.current_grs, !Resources.current_grs_file) with
+    | (Some grs, Some file) ->
+        grew_window#grs_label#set_label (Filename.basename file);
 
         (* update global var [seq_list] *)
         seq_list := Grs.get_sequence_names grs;
@@ -386,11 +412,16 @@ let init () =
                   | Some i -> (fst combo_box_text)#set_active i
                 end
             end
-        end;
+        end
+    | (None, Some file) ->
+        grew_window#grs_label#set_label ("<span color=\"red\">"^(Filename.basename file)^"</span>")
+    | _ ->
+      grew_window#grs_label#set_label "No Grs loaded"
+    end;
 
-        update_features ();
-        doc_dir := None;
-        refresh_doc_webkit () in
+    update_features ();
+    doc_dir := None;
+    refresh_doc_webkit () in
 
   (* end: load_grs *)
   (* -------------------------------------------------------------------------------- *)
@@ -405,16 +436,18 @@ let init () =
       match ask_for_file_to_open grs_filter grew_window#toplevel with
         | None -> ()
         | Some new_grs ->
-          error_handling load_grs new_grs;
+          Resources.current_grs_file := Some new_grs;
+          error_handling load_grs ();
           refresh_gr ();
     ) in
 
   (* click on the grs refresh button *)
   let _ = grew_window#btn_refresh_grs#connect#clicked
     ~callback: (fun () ->
-      match !Resources.current_grs with
-      | None -> ()
-      | Some (_,grs_file) -> error_handling load_grs grs_file; refresh_gr ()) in
+      messages := [];
+      error_handling load_grs ();
+      refresh_gr ()
+    ) in
 
 
   let check_positions () =
@@ -921,8 +954,12 @@ let init () =
   grew_window#toplevel#show ();
 
   (* startup load of grs files (which implies loading of the gr file) *)
-  (match !Grew_args.grs with None -> () | Some grs_file -> load_grs ~seq:!Grew_args.seq grs_file);
-  (match !Grew_args.gr with None -> () | Some gr_file -> load_gr gr_file);
+  Resources.current_grs_file := !Grew_args.grs;
+  load_grs ~seq:!Grew_args.seq ();
+
+  Resources.current_gr_file := !Grew_args.gr;
+  load_gr ();
+
   refresh_btn_run ();
   refresh_error ();
   GMain.Main.main ()
