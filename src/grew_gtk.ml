@@ -298,15 +298,9 @@ let init () =
     begin
       try fct arg
       with
-      | Libgrew.File_not_found file -> show_error (sprintf "The file %s doesn't exist!" file)
-      | Libgrew.Parsing_err (msg,None) -> show_error msg
-      | Libgrew.Parsing_err (msg,Some loc) -> show_error (sprintf "%s %s" (Loc.to_string loc) msg)
-      | Libgrew.Build (msg,None) -> show_error msg
-      | Libgrew.Build (msg,Some loc) -> show_error (sprintf "%s %s" (Loc.to_string loc) msg)
-      | Libgrew.Run (msg,None) -> show_error msg
-      | Libgrew.Run (msg,Some loc) -> show_error (sprintf "%s %s" (Loc.to_string loc) msg)
-      | Libgrew.Bug (msg,_) -> show_error msg
-      | exc -> show_error (Printexc.to_string exc)
+      | Libgrew.Error msg -> show_error msg
+      | Libgrew.Bug msg -> show_error (sprintf "Libgrew.bug, please report: %s" msg)
+      | exc -> show_error (sprintf "Uncaught exception, please report: %s" (Printexc.to_string exc))
     end;
     refresh_error () in
 
@@ -552,16 +546,10 @@ let init () =
           grs_webkit#execute_script("alert('showOnTop2::G0')");
           grs_webkit#execute_script("alert('showOnBottom2::"^(!fl)^"')");
         with
-
           | Resources.Cannot_rewrite msg -> show_error msg
-          | Libgrew.File_not_found file -> show_error (sprintf "The file %s doesn't exist!" file)
-          | Libgrew.Parsing_err (msg,None) -> show_error msg
-          | Libgrew.Parsing_err (msg,Some loc) -> show_error (sprintf "%s %s" (Loc.to_string loc) msg)
-          | Libgrew.Build (msg,None) -> show_error msg
-          | Libgrew.Build (msg,Some loc) -> show_error (sprintf "%s %s" (Loc.to_string loc) msg)
-          | Libgrew.Run (msg,None) -> show_error msg
-          | Libgrew.Run (msg,Some loc) -> show_error (sprintf "%s %s" (Loc.to_string loc) msg)
-          | Libgrew.Bug (msg,_) -> show_error msg
+          | Libgrew.Error msg -> show_error msg
+          | Libgrew.Bug msg -> show_error (sprintf "Libgrew.bug, please report: %s" msg)
+          | exc -> show_error (sprintf "Uncaught exception, please report: %s" (Printexc.to_string exc))
       ) in
 
   (** CLICK ON SVG GRAPHS *)

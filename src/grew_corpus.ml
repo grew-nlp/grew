@@ -19,26 +19,19 @@ open Grew_args
 
 (* -------------------------------------------------------------------------------- *)
 
-let fail kind msg loc_opt =
-  let text = match loc_opt with
-  | None -> msg
-  | Some loc -> sprintf "[%s] %s" (Loc.to_string loc) msg in
-  let rule = String.make (String.length text) '=' in
-  Log.fwarning "\n%s\n%s\n%s" rule text rule; exit 2
+let fail msg =
+  let rule = String.make (String.length msg) '=' in
+  Log.fwarning "\n%s\n%s\n%s" rule msg rule; exit 2
 
 let handle fct () =
   try fct ()
   with
-    | Libgrew.File_not_found file ->        fail "IO" (sprintf "File not found: \"%s\"" file) None
-    | Libgrew.Bug (msg,loc_opt) ->          fail "Bug" msg loc_opt
-    | Libgrew.Build (msg,loc_opt) ->        fail "Build" msg loc_opt
-    | Libgrew.Run (msg,loc_opt) ->          fail "Run" msg loc_opt
-    | Libgrew.Parsing_err (msg,loc_opt) ->  fail "Parse" msg loc_opt
+    | Libgrew.Error msg ->           fail msg
+    | Corpus.File_not_found file ->  fail (sprintf "File not found: \"%s\"" file)
+    | Corpus.Fail msg ->             fail msg
 
-    | Corpus.File_not_found file ->         fail "IO" (sprintf "File not found: \"%s\"" file) None
-
-    | Corpus.Fail msg ->                    fail "Load corpus" msg None
-    | exc ->                                fail "Uncaught exception, please report" (Printexc.to_string exc) None
+    | Libgrew.Bug msg ->             fail (sprintf "Libgrew.bug, please report: %s" msg)
+    | exc ->                         fail (sprintf "Uncaught exception, please report: %s" (Printexc.to_string exc))
 
 (* -------------------------------------------------------------------------------- *)
 let init () =
@@ -127,15 +120,9 @@ let init () =
                 output_base
         with
 
-        | Libgrew.File_not_found file -> Html.write_error ?domain ~header ~html ~init:gr output_base (sprintf "The file %s doesn't exist!" file)
-        | Libgrew.Bug (msg,loc_opt)
-        | Libgrew.Build (msg,loc_opt)
-        | Libgrew.Run (msg,loc_opt)
-        | Libgrew.Parsing_err (msg,loc_opt) ->
-          match loc_opt with
-          | None -> Html.write_error ?domain ~header ~html ~init:gr output_base msg
-          | Some loc -> Html.write_error ?domain ~header ~html ~init:gr output_base (sprintf "%s %s" msg (Loc.to_string loc))
-
+        | Libgrew.Bug msg ->
+          Html.write_error ?domain ~header ~html ~init:gr output_base  (sprintf "Libgrew.bug, please report: %s" msg)
+        | Libgrew.Error msg -> Html.write_error ?domain ~header ~html ~init:gr output_base msg
       ) graph_array;
     Counter.finish ();
 
@@ -283,12 +270,6 @@ let full () =
 
 
 (* -------------------------------------------------------------------------------- *)
-  let dump_error kind msg loc_opt =
-    let loc_string = match loc_opt with
-    | None -> ""
-    | Some loc -> Loc.to_string loc in
-      printf "ERR: %s [%s] at %s\n" kind msg loc_string
-
   let grep () = handle
     (fun () ->
       match (!Grew_args.grs, !Grew_args.input_data, !Grew_args.pattern) with
