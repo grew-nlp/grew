@@ -13,6 +13,7 @@ open Log
 open Conll
 
 open Libgrew
+open Dep2pict
 
 open Grew_utils
 open Grew_args
@@ -272,36 +273,63 @@ let full () =
 (* -------------------------------------------------------------------------------- *)
   let grep () = handle
     (fun () ->
-      match (!Grew_args.grs, !Grew_args.input_data, !Grew_args.pattern) with
-      | (None,_,_) -> Log.message "No grs file specified: use -grs option"; exit 1
-      | (_,"",_) -> Log.message "No input data specified: use -i option"; exit 1
-      | (_,_,None) -> Log.message "No pattern file specified: use -pattern option"; exit 1;
-      | (Some grs_file, data_file, Some pattern_request) ->
+      match (!Grew_args.input_data, !Grew_args.pattern, !Grew_args.node_id) with
+      | ("",_,_) -> Log.message "No input data specified: use -i option"; exit 1
+      | (_,None,_) -> Log.message "No pattern file specified: use -pattern option"; exit 1;
+      | (_,_,None) -> Log.message "No node_id specified: use -node_id option"; exit 1;
+      | (data_file, Some pattern_file, Some node_id) ->
 
-        match Str.split (Str.regexp "|") pattern_request with
-        | [] -> Log.message "Empty pattern_request"; exit 1
-        | pattern_file :: id_list ->
+      let domain = match !Grew_args.grs with
+      | None -> None
+      | Some grs_file -> Grs.get_domain (Grs.load grs_file) in
 
-          let domain = Grs.get_domain (Grs.load grs_file) in
+      (* get the array of graphs to explore *)
+      let graph_array = Corpus.get_graphs ?domain data_file in
 
-          (* get the list of graphs to explore *)
-          let graph_array = Corpus.get_graphs ?domain data_file in
+      let pattern = Pattern.load ?domain pattern_file in
 
-          let pattern = Pattern.load ?domain pattern_file in
-
-          Array.iter
-            (fun (name,graph) ->
-              let matchings = Graph.search_pattern ?domain pattern graph in
-              List.iter
-                (fun matching ->
-                  let node_matching = Graph.node_matching pattern graph matching in
-                  printf "%s" name;
+      match !Grew_args.output_dir with
+        | None -> 
+            Array.iter
+              (fun (name,graph) ->
+                let matchings = Graph.search_pattern ?domain pattern graph in
                   List.iter
-                    (fun id ->
-                      try printf "\t%d" (List.assoc id node_matching)
-                      with Not_found -> Log.fmessage "Identifier %s not found in pattern %s" id pattern_file; exit 1
-                    ) id_list;
-                  printf "\n%!";
-                ) matchings;
-          ) graph_array
-        ) ()
+                    (fun matching ->
+                      let node_matching = Graph.node_matching pattern graph matching in
+                      let graph_node_id = List.assoc node_id node_matching in
+                      printf "%s\t%d\n" name graph_node_id
+                    ) matchings
+              ) graph_array
+        | Some dir ->
+            if Sys.file_exists dir && not (Sys.is_directory dir)
+            then (Log.fmessage "\"%s\" is a file" dir; exit 1);
+
+            if not (Sys.file_exists dir) then Unix.mkdir dir 0o755;
+
+            let buff = Buffer.create 32 in
+            Array.iter
+              (fun (name,graph) ->
+                let matchings = Graph.search_pattern ?domain pattern graph in
+                  List.iter
+                    (fun matching ->
+                      let node_matching = Graph.node_matching pattern graph matching in
+                      let graph_node_id = List.assoc node_id node_matching in
+                      let filename = Filename.concat dir (sprintf "%s__%d.svg" name graph_node_id) in
+                      if Sys.file_exists filename
+                        then (Log.message "Try to erase a previous file"; exit 1)
+                        else 
+                          begin
+                            let deco = Deco.build pattern matching in
+                            let dep = Graph.to_dep ?domain ~deco graph in
+                            let _ = Dep2pict.save_svg ~filename (Dep2pict.from_dep ~dep) in
+                            let shift = Dep2pict.highlight_shift () in
+                            bprintf buff "%s@%f\n" (Filename.basename filename) (match shift with None -> 0. | Some v -> v)
+                          end
+                    ) matchings
+              ) graph_array;
+              let out_ch = open_out (Filename.concat dir "list") in
+              fprintf out_ch "%s" (Buffer.contents buff);
+              close_out out_ch
+    ) ()
+
+

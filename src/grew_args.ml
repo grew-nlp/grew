@@ -46,6 +46,7 @@ module Grew_args = struct
   let timeout = ref None
   let title = ref None
   let pattern = ref None
+  let node_id = ref None
 
   let usage =
     "grew has 3 running modes:\n"^
@@ -99,7 +100,8 @@ module Grew_args = struct
     "-no_init", Unit (fun () -> no_init := true), "                    do not display initial graph (requires html of full_html)\n\nOptions for grep mode";
 
     (* options for grep mode *)
-    "-pattern",  String (fun t -> pattern := Some t),              "<file>              chose the pattern file";
+    "-pattern",  String (fun t -> pattern := Some t),              "<file>              choose the pattern file";
+    "-node_id",  String (fun t -> node_id := Some t),              "<node_id>           choose the main node of the pattern";
   ]
 
   let parse () =
