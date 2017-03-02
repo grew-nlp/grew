@@ -283,10 +283,14 @@ let full () =
       | None -> None
       | Some grs_file -> Grs.get_domain (Grs.load grs_file) in
 
+      let pattern = Pattern.load ?domain pattern_file in
+
+      if not (List.mem node_id (Pattern.pid_list pattern))
+      then (Log.fmessage "The requester node_id \"%s\" is not defined in the pattern" node_id; exit 1)
+      else
+
       (* get the array of graphs to explore *)
       let graph_array = Corpus.get_graphs ?domain data_file in
-
-      let pattern = Pattern.load ?domain pattern_file in
 
       match !Grew_args.output_dir with
         | None -> 
