@@ -22,11 +22,6 @@ module Grew_args = struct
     | Html       (* html an png files are produced only when rewriting history is not empty *)
     | Full_html  (* html an png files are always produced *)
 
-  let absolute s =
-    if Filename.is_relative s
-    then Filename.concat (Sys.getcwd ()) s
-    else s
-
   let grs = ref None
   let gr = ref None
   let gui_doc = ref false
@@ -70,7 +65,7 @@ module Grew_args = struct
     "-version", Unit (fun () -> dump_version(); exit 0),         "                       gives versions of code and libraries\n\nOptions for all modes";
 
     (* options for all modes *)
-    "-grs", String (fun s -> grs := Some (absolute s)),          "<grs_file>              chose the grs file to load";
+    "-grs", String (fun s -> grs := Some s),          "<grs_file>              chose the grs file to load";
     "-seq", String (fun s -> seq := s),                   "<seq>                   set the module sequence to use";
     "-timeout", Float (fun f -> timeout := Some f; Rewrite.set_timeout (Some f)),                   "<float>             set a timeout on rewriting";
     "-max_depth_det", Int (fun v -> Rewrite.set_max_depth_det v),                   "<int>         set the maximum depth of rewriting in a module in deterministric rewriting (default: 2000)";
@@ -81,13 +76,13 @@ module Grew_args = struct
     "-debug_loop", Unit (fun () -> Rewrite.set_debug_loop ()),  "                 enable loop debug mode\n\nOptions for GUI mode";
 
     (* options for GUI mode *)
-    "-gr", String (fun s -> gr := Some (absolute s)), "<gr_file>                set the graph file (.gr or .conll) to use";
+    "-gr", String (fun s -> gr := Some s), "<gr_file>                set the graph file (.gr or .conll) to use";
     "-doc", Unit (fun () -> gui_doc := true), "                        force to build the GRS doc\n\nOptions for corpus, det and cluster modes";
 
     (* options for corpus, det and cluster mode *)
-    "-i", String (fun file -> input_data := absolute file),  "<input_data>              set the input data (file or directory) where to find graph files (.gr or .conll) in corpus or det mode";
-    "-f", String (fun file -> output_file := Some (absolute file)), "<output_file>             set the output file where to put generate data (used with det and conll)";
-    "-o", String (fun dir -> output_dir := Some (absolute dir)), "<output_dir>              set the output dir where to generate files: normal forms graphs and/or documentation\n\nOptions for corpus and cluster modes";
+    "-i", String (fun file -> input_data := file),  "<input_data>              set the input data (file or directory) where to find graph files (.gr or .conll) in corpus or det mode";
+    "-f", String (fun file -> output_file := Some file), "<output_file>             set the output file where to put generate data (used with det and conll)";
+    "-o", String (fun dir -> output_dir := Some dir), "<output_dir>              set the output dir where to generate files: normal forms graphs and/or documentation\n\nOptions for corpus and cluster modes";
 
     (* options for corpus and cluster mode *)
     "-title", String (fun t -> title := Some t),               "                      set the title for the generated page of statistics";
