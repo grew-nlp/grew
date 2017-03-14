@@ -285,15 +285,15 @@ let full () =
 
       let pattern = Pattern.load ?domain pattern_file in
 
-      if not (List.mem node_id (Pattern.pid_list pattern))
-      then (Log.fmessage "The requester node_id \"%s\" is not defined in the pattern" node_id; exit 1)
+      if not (List.mem node_id (Pattern.pid_name_list pattern))
+      then (Log.fmessage "The requested node_id \"%s\" is not defined in the pattern" node_id; exit 1)
       else
 
       (* get the array of graphs to explore *)
       let graph_array = Corpus.get_graphs ?domain data_file in
 
       match !Grew_args.output_dir with
-        | None -> 
+        | None ->
             Array.iter
               (fun (name,graph) ->
                 let matchings = Graph.search_pattern ?domain pattern graph in
@@ -321,7 +321,7 @@ let full () =
                       let filename = Filename.concat dir (sprintf "%s__%d.svg" name graph_node_id) in
                       if Sys.file_exists filename
                         then (Log.message "Try to erase a previous file"; exit 1)
-                        else 
+                        else
                           begin
                             let deco = Deco.build pattern matching in
                             let dep = Graph.to_dep ?domain ~deco graph in

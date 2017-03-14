@@ -1,1 +1,2 @@
-true:	package(str, ANSITerminal, camomile, cairo2, log, conll, dep2pict, lablgtk2, lablgtk2.rsvg, lablgtk2.glade, lablwebkit)
+true:	package(containers, str, ANSITerminal, camomile, cairo2, log, svg, conll, dep2pict, lablgtk2, lablgtk2.rsvg, lablgtk2.glade, lablwebkit)
+true: bin_annot
