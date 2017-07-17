@@ -14,7 +14,7 @@ open Libgrew
 
 module Grew_args = struct
 
-  type mode = Gui | Corpus | Filter | Det | Full | Grep
+  type mode = Gui | Corpus | Filter | Det | Full | Grep | Test
   let mode = ref Gui
 
   type html_mode =
@@ -61,6 +61,7 @@ module Grew_args = struct
     "-full", Unit (fun () -> mode := Full),         "                       enable full mode: rewrite a corpus (conll output)";
     "-filter", Unit (fun () -> mode := Filter),         "                     enable filter mode";
     "-grep", Unit (fun () -> mode := Grep),         "                       enable grep mode";
+    "-test", Unit (fun () -> mode := Test),         "                       enable test mode";
 
     "-version", Unit (fun () -> dump_version(); exit 0),         "                       gives versions of code and libraries\n\nOptions for all modes";
 

@@ -301,7 +301,7 @@ let full () =
                     (fun matching ->
                       let node_matching = Graph.node_matching pattern graph matching in
                       let graph_node_id = List.assoc node_id node_matching in
-                      printf "%s\t%d\n" name graph_node_id
+                      printf "%s\t%g\n" name graph_node_id
                     ) matchings
               ) graph_array
         | Some dir ->
@@ -318,7 +318,7 @@ let full () =
                     (fun matching ->
                       let node_matching = Graph.node_matching pattern graph matching in
                       let graph_node_id = List.assoc node_id node_matching in
-                      let filename = Filename.concat dir (sprintf "%s__%d.svg" name graph_node_id) in
+                      let filename = Filename.concat dir (sprintf "%s__%g.svg" name graph_node_id) in
                       if Sys.file_exists filename
                         then (Log.message "Try to erase a previous file"; exit 1)
                         else
