@@ -79,7 +79,7 @@ module Resources = struct
     current_grs := None;
     match !current_grs_file with
     | None -> ()
-    | Some file -> 
+    | Some file ->
         Log.fmessage "Loading grs file: '%s'" file;
         current_grs := Some (Grs.load file)
 
@@ -93,7 +93,7 @@ module Resources = struct
     current_gr := None;
     match !current_gr_file with
     | None -> ()
-    | Some file -> 
+    | Some file ->
       Log.fmessage "Loading gr file: '%s'" file;
       let domain = domain () in
       current_gr := Some (Graph.load ?domain file)
@@ -334,7 +334,7 @@ let init () =
         grew_window#vpaned_doc#misc#show ();
         grew_window#err_view_scroll#misc#hide ();
         graph_top_webkit#load_uri ("file://"^svg_file)
-    | (_, Some file) -> 
+    | (_, Some file) ->
         grew_window#graph_label#set_label ("<span color=\"red\">"^(Filename.basename file)^"</span>")
     | _ ->
         grew_window#graph_label#set_label "No graph loaded" in
@@ -400,7 +400,7 @@ let init () =
                 (fst combo_box_text)#set_active
                   (if old_pos >=0 && old_pos < List.length !seq_list then old_pos else 0)
               | Some seq_name ->
-                begin 
+                begin
                    match List_.index seq_name !seq_list with
                   | None -> warning "Unknown sequence \"%s\"" seq_name;
                   | Some i -> (fst combo_box_text)#set_active i
