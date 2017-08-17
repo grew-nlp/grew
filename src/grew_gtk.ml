@@ -81,11 +81,11 @@ module Resources = struct
     | None -> ()
     | Some file ->
         Log.fmessage "Loading grs file: '%s'" file;
-        current_grs := Some (Grs.load file)
+        current_grs := Some (New_grs.load file)
 
   (* -------------------------------------------------------------------------------- *)
   let domain () = match !current_grs with
-    | Some grs -> Grs.get_domain grs
+    | Some grs -> New_grs.domain grs
     | None -> None
 
   (* -------------------------------------------------------------------------------- *)
@@ -102,7 +102,7 @@ module Resources = struct
   exception Cannot_rewrite of string
   let rewrite seq =
     match (!current_grs, !current_gr) with
-      | (Some grs, Some gr) -> Rewrite.display gr grs seq
+      | (Some grs, Some gr) -> Rewrite.new_display gr grs seq
       | (None, _) -> raise (Cannot_rewrite "No grs file loaded")
       | (_, None) -> raise (Cannot_rewrite "No graph file loaded")
 end (* module Resources *)
@@ -269,7 +269,7 @@ let init () =
       | Some grs ->
         let temp_dir_name = Filename.get_temp_dir_name () in
         let dir = Filename.concat temp_dir_name "grew" in
-        Grs.build_html_doc dir grs;
+        (* Grs.build_html_doc dir grs; *)
         doc_dir := Some dir;
         refresh_doc_webkit () in
 
@@ -381,7 +381,7 @@ let init () =
         grew_window#grs_label#set_label (Filename.basename file);
 
         (* update global var [seq_list] *)
-        seq_list := Grs.get_sequence_names grs;
+        seq_list := New_grs.get_strat_list grs;
 
         (* remember the position to stay on the same sequence when GRS is reloaded. *)
         let old_pos = (fst combo_box_text)#active in
