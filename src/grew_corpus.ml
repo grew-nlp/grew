@@ -146,7 +146,7 @@ let init () =
   ) ()
 
 (* -------------------------------------------------------------------------------- *)
-let multi_conll ?(keep_empty_rh=false) () =
+let multi_conll () =
   handle (fun () ->
     let out_ch = match !Grew_args.output_file with
       | None -> Log.message "No output_file specified: use -f option"; exit 1
@@ -157,8 +157,8 @@ let multi_conll ?(keep_empty_rh=false) () =
     | None -> Log.message "No grs filespecified: use -grs option"; exit 1
     | Some f -> f in
 
-    let grs = Grs.load grs_file in
-    let domain = Grs.get_domain grs in
+    let grs = New_grs.load grs_file in
+    let domain = New_grs.domain grs in
 
     (* get the list of files to rewrite *)
     let graph_array = Corpus.get_graphs ?domain !Grew_args.input_data in
@@ -167,10 +167,14 @@ let multi_conll ?(keep_empty_rh=false) () =
     Array.iteri
       (fun index (base_name, gr) ->
         Counter.print index len base_name;
-        let rh = Rewrite.rewrite ~gr ~grs ~seq:!Grew_args.seq in
-        match Rewrite.conll_dep_string ?domain ~keep_empty_rh rh with
-          | None -> ()
-          | Some string -> fprintf out_ch "%s\n" string
+        match Rewrite.new_simple_rewrite ~gr ~grs ~strat:!Grew_args.seq with
+        | [one] -> fprintf out_ch "%s\n" (Graph.to_conll_string ?domain one)
+        | l ->
+          let len = List.length l in
+          List.iteri (fun i gr ->
+              fprintf out_ch "# normal form number %d out of %d\n" (i+1) len;
+              fprintf out_ch "%s\n" (Graph.to_conll_string ?domain gr)
+            ) l
       ) graph_array;
     close_out out_ch;
     Counter.finish ()
@@ -185,7 +189,7 @@ let det () =
     match (!Grew_args.output_dir, !Grew_args.output_file) with
       | (None, None) -> Log.message "No output specified: use -o or -f option"; exit 1
       | (Some _, Some _) -> Log.message "Ambiguous output: you cannot use -o and -f options together"; exit 1
-      | (None, Some output_file) -> multi_conll ~keep_empty_rh:true ()
+      | (None, Some output_file) -> multi_conll ()
       | (Some output_dir, None) ->
         if not (!Grew_args.out_gr || !Grew_args.out_conll)
         then (Log.message "No output format specified: use -out_gr or -out_conll option"; exit 1);
@@ -231,7 +235,7 @@ let full () =
     match (!Grew_args.output_dir, !Grew_args.output_file) with
       | (None, None) -> Log.message "No output specified: use -o or -f option"; exit 1
       | (Some _, Some _) -> Log.message "Ambiguous output: you cannot use -o and -f options together"; exit 1
-      | (None, Some output_file) -> multi_conll ~keep_empty_rh:true ()
+      | (None, Some output_file) -> multi_conll ()
       | (Some output_dir, None) ->
         if not (!Grew_args.out_gr || !Grew_args.out_conll)
         then (Log.message "No output format specified: use -out_gr or -out_conll option"; exit 1);
