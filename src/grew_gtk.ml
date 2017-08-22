@@ -410,10 +410,11 @@ let init () =
               | None ->
                 (fst combo_box_text)#set_active
                   (if old_pos >=0 && old_pos < List.length !seq_list then old_pos else 0)
-              | Some seq_name ->
+              | Some strat ->
+                grew_window#strat#set_text strat;
                 begin
-                   match List_.index seq_name !seq_list with
-                  | None -> warning "Unknown sequence \"%s\"" seq_name;
+                   match List_.index strat !seq_list with
+                  | None -> ()
                   | Some i -> (fst combo_box_text)#set_active i
                 end
             end
