@@ -676,22 +676,21 @@ module Grew_rew_display = struct
     match rule with
       | Some rule ->
       	let up = rule.Libgrew_types.up and down = rule.Libgrew_types.down in
-      
+
       	current_bottom_deco := Some down;
       	current_top_deco := Some up;
-      
+
       	let svg_file_top =
       	  if top_dot
           then get_dot_graph_with_background2 ?domain ?main_feat ~deco:up ~botop:(false,true) gr_parent_name
       	  else get_dep_graph_with_background2 ?domain ?main_feat ~deco:up ~botop:(false,true) gr_parent_name in
-      
+
       	let svg_file_bottom =
       	  if bottom_dot
           then get_dot_graph_with_background2 ?domain ?main_feat ~deco:down ~botop:(true,false) graph
       	  else get_dep_graph_with_background2 ?domain ?main_feat ~deco:down ~botop:(true,false) graph in
-      
+
       	let doc = Printf.sprintf "%s_%s.html" !current_selected_mod rule.Libgrew_types.rule_name in
       	(svg_file_top,svg_file_bottom,gr_parent_name,doc)
       | None -> failwith "get_rule_for"
 end
-      

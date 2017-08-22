@@ -55,11 +55,11 @@ let init () =
     let grs_file = match !Grew_args.grs with
     | None -> Log.message "No grs filespecified: use -grs option"; exit 1
     | Some f -> f in
-    let grs = Grs.load grs_file in
-    let domain = Grs.get_domain grs in
+    let grs = Old_grs.load grs_file in
+    let domain = Old_grs.get_domain grs in
 
     (* generate documentation in the [doc] folder *)
-    let _ = Grs.build_html_doc ~corpus:true (Filename.concat output_dir "doc") grs in
+    let _ = Old_grs.build_html_doc ~corpus:true (Filename.concat output_dir "doc") grs in
 
     (* get the list of graphs to rewrite *)
     let graph_array = Corpus.get_graphs ?domain !Grew_args.input_data in
@@ -157,8 +157,8 @@ let multi_conll () =
     | None -> Log.message "No grs filespecified: use -grs option"; exit 1
     | Some f -> f in
 
-    let grs = New_grs.load grs_file in
-    let domain = New_grs.domain grs in
+    let grs = Grs.load grs_file in
+    let domain = Grs.domain grs in
 
     (* get the list of files to rewrite *)
     let graph_array = Corpus.get_graphs ?domain !Grew_args.input_data in
@@ -167,7 +167,7 @@ let multi_conll () =
     Array.iteri
       (fun index (base_name, gr) ->
         Counter.print index len base_name;
-        match Rewrite.new_simple_rewrite ~gr ~grs ~strat:!Grew_args.seq with
+        match Rewrite.simple_rewrite ~gr ~grs ~strat:!Grew_args.seq with
         | [one] -> fprintf out_ch "%s\n" (Graph.to_conll_string ?domain one)
         | l ->
           let len = List.length l in
@@ -208,8 +208,8 @@ let det () =
         let grs_file = match !Grew_args.grs with
         | None -> Log.message "No grs filespecified: use -grs option"; exit 1
         | Some f -> f in
-        let grs = Grs.load grs_file in
-        let domain = Grs.get_domain grs in
+        let grs = Old_grs.load grs_file in
+        let domain = Old_grs.get_domain grs in
 
         (* get the list of graphs to rewrite *)
         let graph_array = Corpus.get_graphs ?domain !Grew_args.input_data in
@@ -255,8 +255,8 @@ let full () =
         | None -> Log.message "No grs filespecified: use -grs option"; exit 1
         | Some f -> f in
 
-        let grs = Grs.load grs_file in
-        let domain = Grs.get_domain grs in
+        let grs = Old_grs.load grs_file in
+        let domain = Old_grs.get_domain grs in
 
         (* get the list of graphs to rewrite *)
         let graph_array = Corpus.get_graphs ?domain !Grew_args.input_data in
@@ -285,7 +285,7 @@ let full () =
 
       let domain = match !Grew_args.grs with
       | None -> None
-      | Some grs_file -> Grs.get_domain (Grs.load grs_file) in
+      | Some grs_file -> Old_grs.get_domain (Old_grs.load grs_file) in
 
       let pattern = Pattern.load ?domain pattern_file in
 

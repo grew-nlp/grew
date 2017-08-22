@@ -81,11 +81,11 @@ module Resources = struct
     | None -> ()
     | Some file ->
         Log.fmessage "Loading grs file: '%s'" file;
-        current_grs := Some (New_grs.load file)
+        current_grs := Some (Grs.load file)
 
   (* -------------------------------------------------------------------------------- *)
   let domain () = match !current_grs with
-    | Some grs -> New_grs.domain grs
+    | Some grs -> Grs.domain grs
     | None -> None
 
   (* -------------------------------------------------------------------------------- *)
@@ -100,9 +100,14 @@ module Resources = struct
 
   (* -------------------------------------------------------------------------------- *)
   exception Cannot_rewrite of string
-  let rewrite seq =
+  let rewrite strat =
     match (!current_grs, !current_gr) with
-      | (Some grs, Some gr) -> Rewrite.new_display gr grs seq
+      | (Some grs, Some gr) ->
+        begin
+          match (Rewrite.at_least_one ~grs ~strat, Rewrite.at_most_one ~grs ~strat) with
+        | (true, true) -> Rewrite.display gr grs strat
+        | _ -> raise (Cannot_rewrite "Only deterministic GRS can be used in GUI")
+        end;
       | (None, _) -> raise (Cannot_rewrite "No grs file loaded")
       | (_, None) -> raise (Cannot_rewrite "No graph file loaded")
 end (* module Resources *)
@@ -316,6 +321,12 @@ let init () =
     | (Some _, Some _, _::_) -> grew_window#btn_run#misc#set_sensitive true
     | _ -> grew_window#btn_run#misc#set_sensitive false in
 
+  let _ = (fst combo_box_text)#connect#changed
+    (fun () ->
+      let name = List.nth !seq_list (fst combo_box_text)#active in
+      grew_window#strat#set_text name;
+    ) in
+
   (* -------------------------------------------------------------------------------- *)
   let load_gr () =
     reset();
@@ -381,7 +392,7 @@ let init () =
         grew_window#grs_label#set_label (Filename.basename file);
 
         (* update global var [seq_list] *)
-        seq_list := New_grs.get_strat_list grs;
+        seq_list := Grs.get_strat_list grs;
 
         (* remember the position to stay on the same sequence when GRS is reloaded. *)
         let old_pos = (fst combo_box_text)#active in
@@ -521,7 +532,7 @@ let init () =
       ~callback:
       (fun () ->
         try
-          let rew_display = Resources.rewrite (List.nth !seq_list ((fst combo_box_text)#active)) in
+          let rew_display = Resources.rewrite grew_window#strat#text in
           let fl = ref "G0" in
           grew_window#vpane_right#set_position 30;
           grew_window#btn_show_module#set_active false;
