@@ -313,7 +313,7 @@
               </packing>
             </child>
             <child>
-              <widget class="GtkViewport" id="seq_list_viewport">
+              <widget class="GtkViewport" id="strat_list_viewport">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="resize_mode">queue</property>

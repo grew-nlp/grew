@@ -188,7 +188,7 @@ let init () =
   let grew_window = new grew_window () in
 
   (* combo_box_text not implemented in lablgladecc2 *)
-  let combo_box_text = GEdit.combo_box_text ~packing:grew_window#seq_list_viewport#add () in
+  let combo_box_text = GEdit.combo_box_text ~packing:grew_window#strat_list_viewport#add () in
 
   let doc_dir = ref None in
 
@@ -314,18 +314,19 @@ let init () =
   (* force html doc building with the "Build HTML doc" button *)
   let _ = grew_window#build_doc#connect#clicked (fun () -> error_handling build_doc ()) in
 
-  let seq_list = ref [] in
+  let strat_list = ref [] in
 
   let refresh_btn_run () =
-    match (!Resources.current_grs, !Resources.current_gr, !seq_list) with
+    match (!Resources.current_grs, !Resources.current_gr, !strat_list) with
     | (Some _, Some _, _::_) -> grew_window#btn_run#misc#set_sensitive true
     | _ -> grew_window#btn_run#misc#set_sensitive false in
 
   let _ = (fst combo_box_text)#connect#changed
     (fun () ->
-      let name = List.nth !seq_list (fst combo_box_text)#active in
+    try
+      let name = List.nth !strat_list (fst combo_box_text)#active in
       grew_window#strat#set_text name;
-    ) in
+    with _ -> ()) in
 
   (* -------------------------------------------------------------------------------- *)
   let load_gr () =
@@ -383,7 +384,7 @@ let init () =
     ) in
 
   (* -------------------------------------------------------------------------------- *)
-  let load_grs ?seq () =
+  let load_grs ?strat () =
     reset ();
     error_handling Resources.load_grs ();
     begin
@@ -391,33 +392,25 @@ let init () =
     | (Some grs, Some file) ->
         grew_window#grs_label#set_label (Filename.basename file);
 
-        (* update global var [seq_list] *)
-        seq_list := Grs.get_strat_list grs;
+        (* update global var [strat_list] *)
+        strat_list := Grs.get_strat_list grs;
 
-        (* remember the position to stay on the same sequence when GRS is reloaded. *)
-        let old_pos = (fst combo_box_text)#active in
-        (* remove sequence list in combo box *)
+        (* remove strat list in combo box *)
         (fst (snd combo_box_text))#clear ();
 
-        (* update combo box and sequence focus *)
+        (* update combo box *)
+        List.iter (fun s -> GEdit.text_combo_add combo_box_text s) !strat_list;
+
         begin
-          match !seq_list with
-          | [] -> ()
-          | _  ->
-            List.iter (fun s -> GEdit.text_combo_add combo_box_text s) !seq_list;
-            begin
-              match seq with
-              | None ->
-                (fst combo_box_text)#set_active
-                  (if old_pos >=0 && old_pos < List.length !seq_list then old_pos else 0)
-              | Some strat ->
-                grew_window#strat#set_text strat;
-                begin
-                   match List_.index strat !seq_list with
-                  | None -> ()
-                  | Some i -> (fst combo_box_text)#set_active i
-                end
-            end
+          match strat with
+          | None -> ()
+          | Some strat ->
+            grew_window#strat#set_text strat;
+              begin
+              match List_.index strat !strat_list with
+              | None -> ()
+              | Some i -> (fst combo_box_text)#set_active i
+              end
         end
     | (None, Some file) ->
         grew_window#grs_label#set_label ("<span color=\"red\">"^(Filename.basename file)^"</span>")
@@ -955,7 +948,7 @@ let init () =
 
   (* startup load of grs files (which implies loading of the gr file) *)
   Resources.current_grs_file := !Grew_args.grs;
-  load_grs ~seq:!Grew_args.seq ();
+  load_grs ~strat:!Grew_args.strat ();
 
   Resources.current_gr_file := !Grew_args.gr;
   load_gr ();

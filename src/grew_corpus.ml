@@ -94,7 +94,7 @@ let init () =
         let header = Html.build_header prev_opt next_opt in
 
         try
-          let rh = Rewrite.rewrite ~gr ~grs ~seq:!Grew_args.seq in
+          let rh = Rewrite.rewrite ~gr ~grs ~seq:!Grew_args.strat in
           Rewrite.write_stat stat_file rh;
 
           match !Grew_args.html with
@@ -139,7 +139,7 @@ let init () =
       ~grs_file
       ~html: (match !Grew_args.html with Grew_args.No -> false | _ -> true)
       ~grs
-      ~seq: !Grew_args.seq
+      ~seq: !Grew_args.strat
       ~input_dir: !Grew_args.input_data
       ~output_dir
       ~base_names
@@ -167,7 +167,7 @@ let multi_conll () =
     Array.iteri
       (fun index (base_name, gr) ->
         Counter.print index len base_name;
-        match Rewrite.simple_rewrite ~gr ~grs ~strat:!Grew_args.seq with
+        match Rewrite.simple_rewrite ~gr ~grs ~strat:!Grew_args.strat with
         | [one] -> fprintf out_ch "%s\n" (Graph.to_conll_string ?domain one)
         | l ->
           let len = List.length l in
@@ -219,7 +219,7 @@ let det () =
           (fun index (base_name, gr) ->
             Counter.print index len base_name;
             let output_base = Filename.concat output_dir base_name in
-            let rh = Rewrite.rewrite ~gr ~grs ~seq:!Grew_args.seq in
+            let rh = Rewrite.rewrite ~gr ~grs ~seq:!Grew_args.strat in
             if !Grew_args.out_gr then Rewrite.save_det_gr ?domain output_base rh;
             if !Grew_args.out_conll then Rewrite.save_det_conll ?domain output_base rh
           ) graph_array;
@@ -266,7 +266,7 @@ let full () =
           (fun index (base_name, gr) ->
             Counter.print index len base_name;
             let output_base = Filename.concat output_dir base_name in
-            let rh = Rewrite.rewrite ~gr ~grs ~seq:!Grew_args.seq in
+            let rh = Rewrite.rewrite ~gr ~grs ~seq:!Grew_args.strat in
             if !Grew_args.out_gr then failwith "Not yet";
             if !Grew_args.out_conll then ignore (Rewrite.save_full_conll ?domain output_base rh)
           ) graph_array;

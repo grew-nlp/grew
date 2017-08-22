@@ -29,7 +29,7 @@ module Grew_args = struct
   let input_data = ref ""
   let output_dir = ref None
   let output_file = ref None
-  let seq = ref "main"
+  let strat = ref "main"
   let no_init = ref false
   let quiet = ref false
   let html = ref No
@@ -67,7 +67,8 @@ module Grew_args = struct
 
     (* options for all modes *)
     "-grs", String (fun s -> grs := Some s),          "<grs_file>              chose the grs file to load";
-    "-seq", String (fun s -> seq := s),                   "<seq>                   set the module sequence to use";
+    "-strat", String (fun s -> strat := s),                   "<strat>                 set the module strategy to use";
+    "-seq", String (fun s -> strat := s),                   "<strat>                 [DEPRECATED] replaced by -strat option";
     "-timeout", Float (fun f -> timeout := Some f; Rewrite.set_timeout (Some f)),                   "<float>             set a timeout on rewriting";
     "-max_depth_det", Int (fun v -> Rewrite.set_max_depth_det v),                   "<int>         set the maximum depth of rewriting in a module in deterministric rewriting (default: 2000)";
     "-max_depth_non_det", Int (fun v -> Rewrite.set_max_depth_non_det v),                   "<int>     set the maximum depth of rewriting in a module in non-deterministric rewriting (default: 100)";
