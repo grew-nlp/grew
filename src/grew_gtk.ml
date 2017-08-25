@@ -106,7 +106,8 @@ module Resources = struct
         begin
           match (Rewrite.at_least_one ~grs ~strat, Rewrite.at_most_one ~grs ~strat) with
         | (true, true) -> Rewrite.display gr grs strat
-        | _ -> raise (Cannot_rewrite "Only deterministic GRS can be used in GUI")
+        | (false, true) -> raise (Cannot_rewrite "The current strategy may not be productive (cannot be used in GUI)")
+        | (_, false) -> raise (Cannot_rewrite "The current strategy is not deterministic (cannot be used in GUI)")
         end;
       | (None, _) -> raise (Cannot_rewrite "No grs file loaded")
       | (_, None) -> raise (Cannot_rewrite "No graph file loaded")
@@ -327,6 +328,33 @@ let init () =
       let name = List.nth !strat_list (fst combo_box_text)#active in
       grew_window#strat#set_text name;
     with _ -> ()) in
+
+  let nc = grew_window#statusbar#new_context ~name:"context" in
+
+  let _ = grew_window#strat#connect#changed
+      (fun () ->
+        ignore (nc#pop () );
+        let strat = grew_window#strat#text in
+        match !Resources.current_grs with
+          | Some grs ->
+            begin
+              try
+                match (Rewrite.at_least_one ~grs ~strat, Rewrite.at_most_one ~grs ~strat) with
+                | (true, true) -> grew_window#btn_run#misc#set_sensitive true
+                | (false, true) ->
+                  grew_window#btn_run#misc#set_sensitive false;
+                  ignore (nc#push "The current strategy may not be productive (cannot be used in GUI)")
+                | (_, false) ->
+                  grew_window#btn_run#misc#set_sensitive false;
+                  ignore (nc#push "The current strategy is not deterministic (cannot be used in GUI)")
+              with Error s ->
+                grew_window#btn_run#misc#set_sensitive false;
+                ignore (nc#push ("Cannot parse strategy: "^s))
+            end
+          | None -> ()
+
+
+      ) in
 
   (* -------------------------------------------------------------------------------- *)
   let load_gr () =
