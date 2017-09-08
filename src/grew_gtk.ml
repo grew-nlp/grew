@@ -81,7 +81,7 @@ module Resources = struct
     | None -> ()
     | Some file ->
         Log.fmessage "Loading grs file: '%s'" file;
-        current_grs := Some (Grs.load file)
+        current_grs := Some (if !Grew_args.old_grs then Grs.load_old file else Grs.load file)
 
   (* -------------------------------------------------------------------------------- *)
   let domain () = match !current_grs with

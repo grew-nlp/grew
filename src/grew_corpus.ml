@@ -181,7 +181,7 @@ let multi_conll () =
   ) ()
 
 (* -------------------------------------------------------------------------------- *)
-let det () =
+let obsolete_det () =
   handle (fun () ->
     if !Grew_args.input_data = ""
     then (Log.message "No input data specified: use -i option"; exit 1);
@@ -274,6 +274,54 @@ let full () =
       ) ()
 
 
+
+(* -------------------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------------- *)
+let transform () =
+  handle (fun () ->
+    if !Grew_args.input_data = ""
+    then (Log.message "No input data specified: use -i option"; exit 1);
+
+    match (!Grew_args.grs, !Grew_args.input_data, !Grew_args.output_file) with
+      | (None,_,_) -> Log.message "No grs filespecified: use -grs option"; exit 1
+      | (_,"",_) -> Log.message "No input data specified: use -i option"; exit 1
+      | (_,_,None) -> Log.message "No output specified: use -f option"; exit 1
+      | (Some grs_file, input, Some output_file) ->
+      let out_ch = open_out output_file in
+      let grs = Grs.load grs_file in
+      let domain = Grs.domain grs in
+
+    (* get the list of files to rewrite *)
+    let graph_array = Corpus.get_graphs ?domain input in
+    let len = Array.length graph_array in
+
+    Array.iteri
+      (fun index (id, gr) ->
+        Counter.print index len id;
+        match Rewrite.simple_rewrite ~gr ~grs ~strat:!Grew_args.strat with
+        | [one] -> fprintf out_ch "%s\n" (Graph.to_conll_string ?domain one)
+        | l ->
+          List.iteri (fun i gr ->
+            let conll = Graph.to_conll ?domain gr in
+            let conll_new_id = Conll.set_sentid (sprintf "%s_%d" id i) conll in
+            fprintf out_ch "%s\n" (Conll.to_string conll_new_id)
+            ) l
+      ) graph_array;
+    close_out out_ch;
+    Counter.finish ()
+
+
+      ) ()
+
+
 (* -------------------------------------------------------------------------------- *)
   let grep () = handle
     (fun () ->
@@ -285,7 +333,7 @@ let full () =
 
       let domain = match !Grew_args.grs with
       | None -> None
-      | Some grs_file -> Old_grs.get_domain (Old_grs.load grs_file) in
+      | Some file -> Grs.domain (if !Grew_args.old_grs then Grs.load_old file else Grs.load file) in
 
       let pattern = Pattern.load ?domain pattern_file in
 
@@ -339,5 +387,3 @@ let full () =
               fprintf out_ch "%s" (Buffer.contents buff);
               close_out out_ch
     ) ()
-
-

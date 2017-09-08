@@ -14,7 +14,7 @@ open Libgrew
 
 module Grew_args = struct
 
-  type mode = Gui | Corpus | Filter | Det | Full | Grep | Test
+  type mode = Gui | Corpus | Filter | Transform | Full | Grep | Test
   let mode = ref Gui
 
   type html_mode =
@@ -25,6 +25,7 @@ module Grew_args = struct
   let grs = ref None
   let gr = ref None
   let gui_doc = ref false
+  let old_grs = ref false
 
   let input_data = ref ""
   let output_dir = ref None
@@ -57,7 +58,7 @@ module Grew_args = struct
 
   let args = [
     "-corpus", Unit (fun () -> mode := Corpus),      "                     enable corpus mode";
-    "-det", Unit (fun () -> mode := Det),         "                        enable det mode: rewrite a corpus with a deterministric grs";
+    "-det", Unit (fun () -> mode := Transform),         "                        enable det mode: rewrite a corpus with a deterministric grs";
     "-full", Unit (fun () -> mode := Full),         "                       enable full mode: rewrite a corpus (conll output)";
     "-filter", Unit (fun () -> mode := Filter),         "                     enable filter mode";
     "-grep", Unit (fun () -> mode := Grep),         "                       enable grep mode";
@@ -67,6 +68,7 @@ module Grew_args = struct
 
     (* options for all modes *)
     "-grs", String (fun s -> grs := Some s),          "<grs_file>              chose the grs file to load";
+    "-old_grs", Unit (fun () -> old_grs := true), "                       Use old grs parser";
     "-strat", String (fun s -> strat := s),                   "<strat>                 set the module strategy to use";
     "-seq", String (fun s -> strat := s),                   "<strat>                 [DEPRECATED] replaced by -strat option";
     "-timeout", Float (fun f -> timeout := Some f; Rewrite.set_timeout (Some f)),                   "<float>             set a timeout on rewriting";
