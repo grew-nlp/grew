@@ -14,7 +14,7 @@ open Libgrew
 
 module Grew_args = struct
 
-  type mode = Gui | Corpus | Filter | Transform | Full | Grep | Test
+  type mode = Gui | Transform | Grep | Test
   let mode = ref Gui
 
   type html_mode =
@@ -56,11 +56,13 @@ module Grew_args = struct
     Printf.printf "grew:    %s\n" VERSION;
     Printf.printf "libgrew: %s\n" (Libgrew.get_version ())
 
+  let obsolote mode = failwith (Printf.sprintf "The mode %s was removed, sorry!" mode)
+
   let args = [
-    "-corpus", Unit (fun () -> mode := Corpus),      "                     enable corpus mode";
+    "-corpus", Unit (fun () -> obsolote "corpus"),      "                     enable corpus mode";
     "-det", Unit (fun () -> mode := Transform),         "                        enable det mode: rewrite a corpus with a deterministric grs";
-    "-full", Unit (fun () -> mode := Full),         "                       enable full mode: rewrite a corpus (conll output)";
-    "-filter", Unit (fun () -> mode := Filter),         "                     enable filter mode";
+    "-full", Unit (fun () -> obsolote "full"),         "                       [REMOVED] enable full mode: rewrite a corpus (conll output)";
+    "-filter", Unit (fun () -> obsolote "filter"),         "                     [REMOVED] enable filter mode";
     "-grep", Unit (fun () -> mode := Grep),         "                       enable grep mode";
     "-test", Unit (fun () -> mode := Test),         "                       enable test mode";
 

@@ -25,10 +25,7 @@ let _ =
 
   match !Grew_args.mode with
   | Grew_args.Gui -> Grew_gtk.init ()
-  | Grew_args.Corpus -> Grew_corpus.init ()
   | Grew_args.Transform -> Grew_corpus.transform ()
-  | Grew_args.Full -> Grew_corpus.full ()
-  | Grew_args.Filter -> Grew_corpus.multi_conll ()
   | Grew_args.Grep -> Grew_corpus.grep ()
 
   | Grew_args.Test -> failwith "No test available"
