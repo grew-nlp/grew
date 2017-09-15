@@ -567,8 +567,7 @@ module Grew_rew_display = struct
 	  | 59 ->
 	    if (Str.string_match module_text_match line 0) then (
 	      Printf.fprintf out_ch "<text text-anchor=\"middle\" x=\"%s\" y=\"%s\" font-family=\"%s\"
-		font-size=\"%s\"
-		font-variant=\"small-caps\">%s</text>\n"
+		font-size=\"%s\">%s</text>\n"
 		(Str.matched_group 1 line)
 		(Str.matched_group 2 line)
 		(Str.matched_group 3 line)
