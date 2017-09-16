@@ -191,8 +191,6 @@ let init () =
   (* combo_box_text not implemented in lablgladecc2 *)
   let combo_box_text = GEdit.combo_box_text ~packing:grew_window#strat_list_viewport#add () in
 
-  let doc_dir = ref None in
-
   let main_feat = match !Grew_args.main_feat with
     | None -> "phon"
     | Some s -> s in
@@ -202,14 +200,12 @@ let init () =
   let _ = grew_window#btn_preferences#connect#clicked ~callback: (fun _ -> display_config_window ()) in (* XXX *)
 
   (** WEBKITS CREATIONS *)
-  let doc_webkit = GWebView.web_view ~packing:grew_window#doc_view#add () in
   let grs_webkit = GWebView.web_view ~packing:grew_window#grs_view#add () in
   let module_webkit = GWebView.web_view ~packing:grew_window#module_view#add () in
   let error_webkit = GWebView.web_view ~packing:grew_window#err_view_scroll#add () in
   let graph_top_webkit = GWebView.web_view ~packing:grew_window#graph_view_top#add () in
   let graph_bottom_webkit = GWebView.web_view ~packing:grew_window#graph_view_bottom#add () in
 
-  doc_webkit#set_full_content_zoom true;
   grs_webkit#set_full_content_zoom true;
   module_webkit#set_full_content_zoom true;
   graph_top_webkit#set_full_content_zoom true;
@@ -217,7 +213,6 @@ let init () =
   error_webkit#set_full_content_zoom true;
 
   (* ensure UTF-8 encoding *)
-  doc_webkit#set_custom_encoding "UTF-8";
   grs_webkit#set_custom_encoding "UTF-8";
   module_webkit#set_custom_encoding "UTF-8";
   graph_top_webkit#set_custom_encoding "UTF-8";
@@ -235,11 +230,6 @@ let init () =
 
   grew_window#graph_label#set_use_markup true;
   grew_window#grs_label#set_use_markup true;
-
-  (* Doc is usual html view: the contextual menu is enable *)
-  let web_settings_doc = GWebSettings.web_settings () in
-  web_settings_doc#set_enable_default_context_menu true;
-  doc_webkit#set_settings web_settings_doc;
 
   let refresh_error () =
     match !messages with
@@ -260,43 +250,23 @@ let init () =
     error "%s" msg;
     refresh_error () in
 
-  let refresh_doc_webkit () =
-    match !doc_dir with
-      | Some dir ->
-        doc_webkit#load_uri ("file://"^(Filename.concat dir "index.html"));
-        grew_window#build_doc#misc#hide ()
-      | None ->
-        doc_webkit#load_html_string empty_html "";
-        grew_window#build_doc#misc#show () in
-
-  let build_doc () =
-    match !Resources.current_grs with
-      | None -> ()
-      | Some grs ->
-        let temp_dir_name = Filename.get_temp_dir_name () in
-        let dir = Filename.concat temp_dir_name "grew" in
-        (* Grs.build_html_doc dir grs; *)
-        doc_dir := Some dir;
-        refresh_doc_webkit () in
-
   let reset ()  =
     (* empty all webkits *)
     graph_top_webkit#load_html_string empty_html "";
     graph_bottom_webkit#load_html_string empty_html "";
     module_webkit#load_html_string empty_html "";
     grs_webkit#load_html_string empty_html "";
-    refresh_doc_webkit ();
 
     Grew_rew_display.current_bottom_graph := "";
     Grew_rew_display.current_top_graph := "";
 
     (* reset the default panes *)
-    grew_window#vpaned_doc#misc#show ();
+    grew_window#vpaned_corpus#misc#show ();
     grew_window#err_view_scroll#misc#hide ();
     grew_window#vpane_right#set_position 30;
     grew_window#btn_show_module#set_active false;
-    grew_window#vpaned_doc#set_position 30;
-    grew_window#btn_show_doc#set_active false;
+    grew_window#vpaned_corpus#set_position 30;
+    grew_window#btn_show_corpus#set_active false;
     grew_window#vpaned_left#set_position 30;
     grew_window#btn_show_grs#set_active false in
 
@@ -311,9 +281,6 @@ let init () =
     refresh_error () in
 
   (** CALLBACKS *)
-
-  (* force html doc building with the "Build HTML doc" button *)
-  let _ = grew_window#build_doc#connect#clicked (fun () -> error_handling build_doc ()) in
 
   let strat_list = ref [] in
 
@@ -371,7 +338,7 @@ let init () =
           if grew_window#btn_gr_top_dot#active
           then Grew_rew_display.svg_dot_temp_file ?domain ~main_feat graph
           else Grew_rew_display.svg_dep_temp_file ?domain ~main_feat graph in
-        grew_window#vpaned_doc#misc#show ();
+        grew_window#vpaned_corpus#misc#show ();
         grew_window#err_view_scroll#misc#hide ();
         graph_top_webkit#load_uri ("file://"^svg_file)
     | (_, Some file) ->
@@ -446,9 +413,7 @@ let init () =
       grew_window#grs_label#set_label "No Grs loaded"
     end;
 
-    update_features ();
-    doc_dir := None;
-    refresh_doc_webkit () in
+    update_features () in
 
   (* end: load_grs *)
   (* -------------------------------------------------------------------------------- *)
@@ -478,9 +443,9 @@ let init () =
 
 
   let check_positions () =
-    if (grew_window#vpaned_doc#position < 30)
-    then (grew_window#vpaned_doc#set_position 30;
-          grew_window#btn_show_doc#set_active false);
+    if (grew_window#vpaned_corpus#position < 30)
+    then (grew_window#vpaned_corpus#set_position 30;
+          grew_window#btn_show_corpus#set_active false);
 
     if (grew_window#vpaned_left#position < 30)
     then (grew_window#vpaned_left#set_position 30;
@@ -490,21 +455,21 @@ let init () =
     then (grew_window#vpane_right#set_position 30;
           grew_window#btn_show_module#set_active false) in
 
-  let _ = grew_window#btn_show_doc#connect#clicked
+  let _ = grew_window#btn_show_corpus#connect#clicked
     ~callback:
     (fun () ->
-      if grew_window#btn_show_doc#active
-      then grew_window#vpaned_doc#set_position 250
-      else (grew_window#vpaned_doc#set_position 30; check_positions ())
+      if grew_window#btn_show_corpus#active
+      then grew_window#vpaned_corpus#set_position 250
+      else (grew_window#vpaned_corpus#set_position 30; check_positions ())
     ) in
 
-  let _ = grew_window#vpaned_doc#event#connect#button_release
+  let _ = grew_window#vpaned_corpus#event#connect#button_release
     ~callback:
     (fun b ->
-      if (grew_window#vpaned_doc#position > 30)
-      then (grew_window#btn_show_doc#set_active true)
-      else (grew_window#vpaned_doc#set_position 30;
-            grew_window#btn_show_doc#set_active false);
+      if (grew_window#vpaned_corpus#position > 30)
+      then (grew_window#btn_show_corpus#set_active true)
+      else (grew_window#vpaned_corpus#set_position 30;
+            grew_window#btn_show_corpus#set_active false);
       check_positions ();
       false
     ) in
@@ -558,12 +523,11 @@ let init () =
           let fl = ref "G0" in
           grew_window#vpane_right#set_position 30;
           grew_window#btn_show_module#set_active false;
-          grew_window#vpaned_doc#set_position 30;
-          grew_window#btn_show_doc#set_active false;
+          grew_window#vpaned_corpus#set_position 30;
+          grew_window#btn_show_corpus#set_active false;
           grew_window#btn_show_grs#set_active true;
           graph_top_webkit#load_html_string empty_html "";
           graph_bottom_webkit#load_html_string empty_html "";
-          refresh_doc_webkit ();
           module_webkit#load_html_string empty_html "";
 
           if (grew_window#vpaned_left#position <= 30)
@@ -574,7 +538,7 @@ let init () =
           Grew_rew_display.transform ~show_bottom:true file_svg (file_svg^".trans.svg") !fl;
           grs_webkit#load_uri ("file://"^file_svg^".trans.svg");
           Log.debug ("[Grew_gtk] file://"^file_svg^".trans.svg");
-          grew_window#vpaned_doc#misc#show ();
+          grew_window#vpaned_corpus#misc#show ();
           grew_window#err_view_scroll#misc#hide ();
           grs_webkit#execute_script("alert('showOnTop2::G0')");
           grs_webkit#execute_script("alert('showOnBottom2::"^(!fl)^"')");
@@ -709,10 +673,6 @@ let init () =
           graph_top_webkit#load_uri ("file://"^svg_file_top);
           graph_bottom_webkit#load_uri ("file://"^svg_file_bottom);
 
-          (match !doc_dir with
-            | Some dir -> doc_webkit#load_uri ("file://"^(Filename.concat dir doc_file))
-            | None -> doc_webkit#load_html_string empty_html "");
-
           Grew_rew_display.current_top_graph := (graph_top);
           Grew_rew_display.current_bottom_graph := (graph^".2");
           click_marker1 := true;
@@ -818,12 +778,6 @@ let init () =
     ~callback:
     (fun () ->
       grs_webkit#set_zoom_level (grew_window#grs_zoom#adjustment#value /. 100.)
-    ) in
-
-  let _ = grew_window#doc_zoom#connect#value_changed
-    ~callback:
-    (fun () ->
-      doc_webkit#set_zoom_level (grew_window#doc_zoom#adjustment#value /. 100.)
     ) in
 
   let _ = grew_window#graph_top_zoom#connect#value_changed
@@ -966,9 +920,6 @@ let init () =
   let _ = grew_window#graph_view_top#event#connect#button_press ~callback: (contextual_menu Top) in
   let _ = grew_window#graph_view_bottom#event#add [`BUTTON_PRESS] in
   let _ = grew_window#graph_view_bottom#event#connect#button_press ~callback: (contextual_menu Bottom) in
-
-  (* force doc building in required on the commande line *)
-  if !Grew_args.gui_doc then build_doc ();
 
   (* Really start the gui *)
   grew_window#check_widgets ();

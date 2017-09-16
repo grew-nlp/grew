@@ -478,7 +478,7 @@
           </packing>
         </child>
         <child>
-          <widget class="GtkHPaned" id="vpaned_doc">
+          <widget class="GtkHPaned" id="vpaned_corpus">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="border_width">5</property>
@@ -489,107 +489,12 @@
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <child>
-                  <widget class="GtkViewport" id="viewport3">
+                  <widget class="GtkViewport" id="viewport_corpus">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="resize_mode">queue</property>
                     <child>
-                      <widget class="GtkVBox" id="vbox5">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <child>
-                          <widget class="GtkHBox" id="hbox11">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <child>
-                              <widget class="GtkHBox" id="hbox12">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <child>
-                                  <widget class="GtkLabel" id="label13">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">False</property>
-                                    <property name="label" translatable="yes">-</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="padding">5</property>
-                                    <property name="position">0</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkHScale" id="doc_zoom">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="adjustment">100 30 310 1 10 10</property>
-                                    <property name="round_digits">0</property>
-                                    <property name="digits">0</property>
-                                    <property name="value_pos">right</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">True</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">1</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkLabel" id="label14">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">False</property>
-                                    <property name="label" translatable="yes">+</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="padding">5</property>
-                                    <property name="position">2</property>
-                                  </packing>
-                                </child>
-                              </widget>
-                              <packing>
-                                <property name="expand">True</property>
-                                <property name="fill">True</property>
-                                <property name="position">0</property>
-                              </packing>
-                            </child>
-                          </widget>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">0</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <widget class="GtkButton" id="build_doc">
-                            <property name="label" translatable="yes">Build HTML doc</property>
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="receives_default">True</property>
-                          </widget>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">False</property>
-                            <property name="position">1</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <widget class="GtkScrolledWindow" id="doc_view">
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="hscrollbar_policy">automatic</property>
-                            <property name="vscrollbar_policy">automatic</property>
-                            <child>
-                              <placeholder/>
-                            </child>
-                          </widget>
-                          <packing>
-                            <property name="expand">True</property>
-                            <property name="fill">True</property>
-                            <property name="position">2</property>
-                          </packing>
-                        </child>
-                      </widget>
+                      <placeholder/>
                     </child>
                   </widget>
                   <packing>
@@ -622,16 +527,16 @@
                       </packing>
                     </child>
                     <child>
-                      <widget class="GtkToggleButton" id="btn_show_doc">
+                      <widget class="GtkToggleButton" id="btn_show_corpus">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
                         <property name="relief">none</property>
                         <child>
-                          <widget class="GtkLabel" id="doc_label">
+                          <widget class="GtkLabel" id="corpus_label">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">Documentation</property>
+                            <property name="label" translatable="yes">Corpus</property>
                             <property name="angle">90</property>
                           </widget>
                         </child>
