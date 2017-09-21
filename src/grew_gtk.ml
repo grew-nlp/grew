@@ -318,7 +318,7 @@ let init () =
     (* reset the default panes *)
     grew_window#vpaned_corpus#misc#show ();
     grew_window#err_view_scroll#misc#hide ();
-    grew_window#vpane_right#set_position 30;
+    grew_window#vpaned_right#set_position 30;
     grew_window#vpaned_left#set_position 30 in
 
   let error_handling fct arg =
@@ -404,12 +404,15 @@ let init () =
   let load_corpus () =
     reset();
     error_handling Resources.load_corpus ();
-    fill_corpus_list ();
     Resources.update_graph ();
     match (!Resources.current_corpus, !Resources.current_corpus_file) with
     | (Some corpus, Some corpus_file) ->
+        fill_corpus_list ();
         grew_window#graph_label#set_label (Filename.basename corpus_file);
         col#set_title (Filename.basename corpus_file);
+        if Array.length corpus = 1
+        then grew_window#vpaned_corpus#set_position 30
+        else grew_window#vpaned_corpus#set_position 200;
         load_graph ();
     | (None, Some file) ->
         grew_window#graph_label#set_label ("<span color=\"red\">"^(Filename.basename file)^"</span>")
@@ -540,19 +543,19 @@ let init () =
       then grew_window#vpaned_left#set_position 30;
       false) in
 
-  (* --- vpane_right --- *)
+  (* --- vpaned_right --- *)
   let _ = grew_window#btn_show_module#connect#clicked
     ~callback:
     (fun () ->
-      if grew_window#vpane_right#position = 30
-      then grew_window#vpane_right#set_position 300
-      else grew_window#vpane_right#set_position 30
+      if grew_window#vpaned_right#position = 30
+      then grew_window#vpaned_right#set_position 300
+      else grew_window#vpaned_right#set_position 30
     ) in
 
-  let _ = grew_window#vpane_right#event#connect#button_release
+  let _ = grew_window#vpaned_right#event#connect#button_release
     ~callback: (fun _ ->
-      if grew_window#vpane_right#position < 30
-      then grew_window#vpane_right#set_position 30;
+      if grew_window#vpaned_right#position < 30
+      then grew_window#vpaned_right#set_position 30;
       false) in
 
   let _ =  grew_window#toplevel#connect#destroy ~callback:(GMain.quit) in
@@ -564,7 +567,7 @@ let init () =
         try
           let rew_display = Resources.rewrite grew_window#strat#text in
           let fl = ref "G0" in
-          grew_window#vpane_right#set_position 30;
+          grew_window#vpaned_right#set_position 30;
           graph_top_webkit#load_html_string empty_html "";
           graph_bottom_webkit#load_html_string empty_html "";
           module_webkit#load_html_string empty_html "";
@@ -607,7 +610,7 @@ let init () =
           grs_webkit#execute_script
            "if (get_edge_flag()) { remove_back_from_current_top(); hide_current_edge(); current_edge_two='qsd';current_top_graph='';current_bottom_graph=''; alert('removeTop'); }";
           grs_webkit#execute_script "set_edge_flag(false)";
-          grew_window#vpane_right#set_position 30;
+          grew_window#vpaned_right#set_position 30;
           true
         | ["showOnTop"; graph] ->
           let svg_file =
@@ -621,7 +624,7 @@ let init () =
           module_webkit#load_html_string empty_html "";
           grs_webkit#execute_script "if (get_edge_flag()) { remove_back_from_current_bottom(); hide_current_edge(); current_edge_two='qsd';current_top_graph='';current_bottom_graph=''; alert('removeBottom'); }";
           grs_webkit#execute_script "set_edge_flag(false)";
-          grew_window#vpane_right#set_position 30;
+          grew_window#vpaned_right#set_position 30;
           true
         | ["showOnBottom2"; graph] ->
           let svg_file =
@@ -643,8 +646,8 @@ let init () =
           Grew_rew_display.current_top_graph := graph;
           true
         | ["showModuleFromGraph"; graph] ->
-          if (grew_window#vpane_right#position <= 30)
-          then (grew_window#vpane_right#set_position 250);
+          if (grew_window#vpaned_right#position <= 30)
+          then (grew_window#vpaned_right#set_position 250);
           let svg_file = Grew_rew_display.get_big_step_for graph in
           module_webkit#load_uri ("file://"^svg_file);
           grs_webkit#execute_script "set_edge_flag(true)";
@@ -956,8 +959,6 @@ let init () =
   let _ = grew_window#graph_view_top#event#connect#button_press ~callback: (contextual_menu Top) in
   let _ = grew_window#graph_view_bottom#event#add [`BUTTON_PRESS] in
   let _ = grew_window#graph_view_bottom#event#connect#button_press ~callback: (contextual_menu Bottom) in
-
-  grew_window#vpaned_corpus#set_position 200;
 
   (* Really start the gui *)
   grew_window#check_widgets ();
