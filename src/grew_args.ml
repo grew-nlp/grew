@@ -23,11 +23,10 @@ module Grew_args = struct
     | Full_html  (* html an png files are always produced *)
 
   let grs = ref None
-  let gr = ref None
   let gui_doc = ref false
   let old_grs = ref false
 
-  let input_data = ref ""
+  let input_data = ref None
   let output_dir = ref None
   let output_file = ref None
   let strat = ref "main"
@@ -82,11 +81,10 @@ module Grew_args = struct
     "-debug_loop", Unit (fun () -> Rewrite.set_debug_loop ()),  "                 enable loop debug mode\n\nOptions for GUI mode";
 
     (* options for GUI mode *)
-    "-gr", String (fun s -> gr := Some s), "<gr_file>                set the graph file (.gr or .conll) to use";
     "-doc", Unit (fun () -> gui_doc := true), "                        force to build the GRS doc\n\nOptions for corpus, det and cluster modes";
 
     (* options for corpus, det and cluster mode *)
-    "-i", String (fun file -> input_data := file),  "<input_data>              set the input data (file or directory) where to find graph files (.gr or .conll) in corpus or det mode";
+    "-i", String (fun file -> input_data := Some file),  "<input_data>              set the input data (file or directory) where to find graph files (.gr or .conll) in corpus or det mode";
     "-f", String (fun file -> output_file := Some file), "<output_file>             set the output file where to put generate data (used with det and conll)";
     "-o", String (fun dir -> output_dir := Some dir), "<output_dir>              set the output dir where to generate files: normal forms graphs and/or documentation\n\nOptions for corpus and cluster modes";
 

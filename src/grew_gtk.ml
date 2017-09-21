@@ -71,8 +71,10 @@ let ask_for_file_to_save filter parent =
 module Resources = struct
   let current_grs = ref None
   let current_grs_file = ref None
-  let current_gr = ref None
-  let current_gr_file = ref None
+  let current_corpus = ref None
+  let current_corpus_file = ref None
+  let current_sentid = ref None
+  let current_graph = ref None
 
   (* -------------------------------------------------------------------------------- *)
   let load_grs () =
@@ -89,28 +91,51 @@ module Resources = struct
     | None -> None
 
   (* -------------------------------------------------------------------------------- *)
-  let load_gr () =
-    current_gr := None;
-    match !current_gr_file with
+  let load_corpus () =
+    current_corpus := None;
+    match !current_corpus_file with
     | None -> ()
     | Some file ->
       Log.fmessage "Loading gr file: '%s'" file;
       let domain = domain () in
-      current_gr := Some (Graph.load ?domain file)
+      current_corpus := Some (Corpus.get_graphs ?domain file)
+
+  (* -------------------------------------------------------------------------------- *)
+  exception Found of int
+  let array_assoc key array =
+    try
+      Array.iteri (fun i (k,_) -> if k = key then raise (Found i)) array;
+      None
+    with Found i -> Some (snd array.(i))
+
+  let rec update_graph () =
+    match (!current_corpus, !current_sentid) with
+      | (None, _) -> current_graph := None
+      | (Some corpus, None) ->
+        current_sentid := Some (fst corpus.(0));
+        update_graph ()
+      | (Some corpus, Some sentid) ->
+        begin
+          match array_assoc sentid corpus with
+          | None -> warning "sentid %s not found, select first graph" sentid;
+            current_sentid := Some (fst corpus.(0));
+            update_graph ()
+          | Some gr -> current_graph := Some gr
+        end
 
   (* -------------------------------------------------------------------------------- *)
   exception Cannot_rewrite of string
   let rewrite strat =
-    match (!current_grs, !current_gr) with
-      | (Some grs, Some gr) ->
-        begin
-          match (Rewrite.at_least_one ~grs ~strat, Rewrite.at_most_one ~grs ~strat) with
-        | (true, true) -> Rewrite.display gr grs strat
-        | (false, true) -> raise (Cannot_rewrite "The current strategy may not be productive (cannot be used in GUI)")
-        | (_, false) -> raise (Cannot_rewrite "The current strategy is not deterministic (cannot be used in GUI)")
-        end;
+    match (!current_grs, !current_graph) with
       | (None, _) -> raise (Cannot_rewrite "No grs file loaded")
       | (_, None) -> raise (Cannot_rewrite "No graph file loaded")
+      | (Some grs, Some gr) ->
+          begin
+            match (Rewrite.at_least_one ~grs ~strat, Rewrite.at_most_one ~grs ~strat) with
+            | (true, true) -> Rewrite.display gr grs strat
+            | (false, true) -> raise (Cannot_rewrite "The current strategy may not be productive (cannot be used in GUI)")
+            | (_, false) -> raise (Cannot_rewrite "The current strategy is not deterministic (cannot be used in GUI)")
+            end;
 end (* module Resources *)
 (* ==================================================================================================== *)
 
@@ -184,9 +209,37 @@ type side = Top | Bottom
 let string_of_side = function Top -> "top" | Bottom -> "bottom"
 
 (* ==================================================================================================== *)
+
+let cols = new GTree.column_list
+let column = cols#add Gobject.Data.string
+let model = GTree.list_store cols
+let renderer = GTree.cell_renderer_text []
+let col = GTree.view_column ~renderer:(renderer, ["text", column]) ()
+
+
+
+(* ==================================================================================================== *)
 let init () =
   let _ = GMain.Main.init () in
   let grew_window = new grew_window () in
+
+
+
+  let scrolled_window = GBin.scrolled_window ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC ~packing:grew_window#vbox_corpus#add () in
+
+  let treeview = GTree.view ~model ~packing:scrolled_window#add_with_viewport () in
+  let _ = treeview#append_column col in
+
+  let fill_corpus_list () =
+    let _ = model#clear () in
+    match !Resources.current_corpus with
+    | None -> ()
+    | Some corpus ->
+      Array.iter
+        (fun (sentid, _) ->
+          let iter = model#append () in
+         model#set ~row:iter ~column sentid
+        ) corpus in
 
   (* combo_box_text not implemented in lablgladecc2 *)
   let combo_box_text = GEdit.combo_box_text ~packing:grew_window#strat_list_viewport#add () in
@@ -211,6 +264,8 @@ let init () =
   graph_top_webkit#set_full_content_zoom true;
   graph_bottom_webkit#set_full_content_zoom true;
   error_webkit#set_full_content_zoom true;
+  grs_webkit#set_zoom_level 0.8;
+  module_webkit#set_zoom_level 0.8;
 
   (* ensure UTF-8 encoding *)
   grs_webkit#set_custom_encoding "UTF-8";
@@ -264,11 +319,7 @@ let init () =
     grew_window#vpaned_corpus#misc#show ();
     grew_window#err_view_scroll#misc#hide ();
     grew_window#vpane_right#set_position 30;
-    grew_window#btn_show_module#set_active false;
-    grew_window#vpaned_corpus#set_position 30;
-    grew_window#btn_show_corpus#set_active false;
-    grew_window#vpaned_left#set_position 30;
-    grew_window#btn_show_grs#set_active false in
+    grew_window#vpaned_left#set_position 30 in
 
   let error_handling fct arg =
     begin
@@ -285,7 +336,7 @@ let init () =
   let strat_list = ref [] in
 
   let refresh_btn_run () =
-    match (!Resources.current_grs, !Resources.current_gr, !strat_list) with
+    match (!Resources.current_grs, !Resources.current_corpus, !strat_list) with
     | (Some _, Some _, _::_) -> grew_window#btn_run#misc#set_sensitive true
     | _ -> grew_window#btn_run#misc#set_sensitive false in
 
@@ -323,34 +374,52 @@ let init () =
 
       ) in
 
+  let load_graph () =
+    match !Resources.current_graph with
+    | None -> graph_top_webkit#load_html_string empty_html ""
+    | Some graph ->
+            Grew_rew_display.graph_map := [("init", (graph, ("", "", None)))];
+            Grew_rew_display.current_top_graph := "init";
+            let domain = Resources.domain () in
+            let svg_file =
+              if grew_window#btn_gr_top_dot#active
+              then Grew_rew_display.svg_dot_temp_file ?domain ~main_feat graph
+              else Grew_rew_display.svg_dep_temp_file ?domain ~main_feat graph in
+            grew_window#vpaned_corpus#misc#show ();
+            grew_window#err_view_scroll#misc#hide ();
+            graph_top_webkit#load_uri ("file://"^svg_file) in
+
+  let _ = treeview#connect#row_activated ~callback: (
+    fun tree_path _ ->
+      let row = model#get_iter tree_path in
+      let name = (model#get ~row ~column) in
+      Resources.current_sentid := Some name;
+      reset ();
+      Resources.update_graph ();
+      load_graph ()
+    ) in
+
+
   (* -------------------------------------------------------------------------------- *)
-  let load_gr () =
+  let load_corpus () =
     reset();
-    error_handling Resources.load_gr ();
-
-    match (!Resources.current_gr, !Resources.current_gr_file) with
-    | (Some graph, Some gr_file) ->
-        grew_window#graph_label#set_label (Filename.basename gr_file);
-        Grew_rew_display.graph_map := [("init", (graph, ("", "", None)))];
-        Grew_rew_display.current_top_graph := "init";
-        let domain = Resources.domain () in
-        let svg_file =
-          if grew_window#btn_gr_top_dot#active
-          then Grew_rew_display.svg_dot_temp_file ?domain ~main_feat graph
-          else Grew_rew_display.svg_dep_temp_file ?domain ~main_feat graph in
-        grew_window#vpaned_corpus#misc#show ();
-        grew_window#err_view_scroll#misc#hide ();
-        graph_top_webkit#load_uri ("file://"^svg_file)
-    | (_, Some file) ->
+    error_handling Resources.load_corpus ();
+    fill_corpus_list ();
+    Resources.update_graph ();
+    match (!Resources.current_corpus, !Resources.current_corpus_file) with
+    | (Some corpus, Some corpus_file) ->
+        grew_window#graph_label#set_label (Filename.basename corpus_file);
+        col#set_title (Filename.basename corpus_file);
+        load_graph ();
+    | (None, Some file) ->
         grew_window#graph_label#set_label ("<span color=\"red\">"^(Filename.basename file)^"</span>")
-    | _ ->
-        grew_window#graph_label#set_label "No graph loaded" in
+    | (_,None) -> grew_window#graph_label#set_label "No corpus loaded" in
 
-  let refresh_gr () =
-    (match !Resources.current_gr_file with
+  let refresh_corpus () =
+    (match !Resources.current_corpus_file with
       | None -> ()
       | Some gr_file ->
-        error_handling load_gr ();
+        error_handling load_corpus ();
         refresh_btn_run ()
     );
     refresh_error () in
@@ -365,8 +434,8 @@ let init () =
       match ask_for_file_to_open gr_or_conll_filter grew_window#toplevel with
         | None -> ()
         | Some f ->
-          Resources.current_gr_file := Some f;
-          error_handling load_gr ();
+          Resources.current_corpus_file := Some f;
+          error_handling load_corpus ();
           refresh_btn_run ()
     ) in
 
@@ -375,7 +444,7 @@ let init () =
   let _ = grew_window#btn_refresh_gr#connect#clicked
     ~callback: (fun () ->
       messages := [];
-      refresh_gr ()
+      refresh_corpus ()
     ) in
 
   (* -------------------------------------------------------------------------------- *)
@@ -430,7 +499,7 @@ let init () =
         | Some new_grs ->
           Resources.current_grs_file := Some new_grs;
           error_handling load_grs ();
-          refresh_gr ();
+          refresh_corpus ();
     ) in
 
   (* click on the grs refresh button *)
@@ -438,79 +507,53 @@ let init () =
     ~callback: (fun () ->
       messages := [];
       error_handling load_grs ();
-      refresh_gr ()
+      refresh_corpus ()
     ) in
 
-
-  let check_positions () =
-    if (grew_window#vpaned_corpus#position < 30)
-    then (grew_window#vpaned_corpus#set_position 30;
-          grew_window#btn_show_corpus#set_active false);
-
-    if (grew_window#vpaned_left#position < 30)
-    then (grew_window#vpaned_left#set_position 30;
-          grew_window#btn_show_grs#set_active false);
-
-    if (grew_window#vpane_right#position < 30)
-    then (grew_window#vpane_right#set_position 30;
-          grew_window#btn_show_module#set_active false) in
-
+  (* --- vpaned_corpus --- *)
   let _ = grew_window#btn_show_corpus#connect#clicked
     ~callback:
     (fun () ->
-      if grew_window#btn_show_corpus#active
-      then grew_window#vpaned_corpus#set_position 250
-      else (grew_window#vpaned_corpus#set_position 30; check_positions ())
+      if grew_window#vpaned_corpus#position = 30
+      then grew_window#vpaned_corpus#set_position 200
+      else grew_window#vpaned_corpus#set_position 30
     ) in
 
   let _ = grew_window#vpaned_corpus#event#connect#button_release
-    ~callback:
-    (fun b ->
-      if (grew_window#vpaned_corpus#position > 30)
-      then (grew_window#btn_show_corpus#set_active true)
-      else (grew_window#vpaned_corpus#set_position 30;
-            grew_window#btn_show_corpus#set_active false);
-      check_positions ();
-      false
-    ) in
+    ~callback: (fun _ ->
+      if grew_window#vpaned_corpus#position < 30
+      then grew_window#vpaned_corpus#set_position 30;
+      false) in
 
+  (* --- vpaned_left --- *)
   let _ = grew_window#btn_show_grs#connect#clicked
     ~callback:
     (fun () ->
-      if grew_window#btn_show_grs#active
-      then grew_window#vpaned_left#set_position 400
-      else (grew_window#vpaned_left#set_position 30; check_positions ())
+      if grew_window#vpaned_left#position = 30
+      then grew_window#vpaned_left#set_position 300
+      else grew_window#vpaned_left#set_position 30
     ) in
 
   let _ = grew_window#vpaned_left#event#connect#button_release
-    ~callback:
-    (fun _ ->
-      if (grew_window#vpaned_left#position > 30)
-      then grew_window#btn_show_grs#set_active true
-      else (grew_window#vpaned_left#set_position 30;
-            grew_window#btn_show_grs#set_active false);
-      check_positions ();
-      false
-    ) in
+    ~callback: (fun _ ->
+      if grew_window#vpaned_left#position < 30
+      then grew_window#vpaned_left#set_position 30;
+      false) in
 
+  (* --- vpane_right --- *)
   let _ = grew_window#btn_show_module#connect#clicked
     ~callback:
     (fun () ->
-      if grew_window#btn_show_module#active
-      then grew_window#vpane_right#set_position 400
-      else (grew_window#vpane_right#set_position 30; check_positions ())
+      if grew_window#vpane_right#position = 30
+      then grew_window#vpane_right#set_position 300
+      else grew_window#vpane_right#set_position 30
     ) in
 
   let _ = grew_window#vpane_right#event#connect#button_release
-    ~callback:
-    (fun b ->
-      if (grew_window#vpane_right#position > 30)
-      then grew_window#btn_show_module#set_active true
-      else (grew_window#vpane_right#set_position 30;
-            grew_window#btn_show_module#set_active false);
-      check_positions ();
-      false
-    ) in
+    ~callback: (fun _ ->
+      if grew_window#vpane_right#position < 30
+      then grew_window#vpane_right#set_position 30;
+      false) in
 
   let _ =  grew_window#toplevel#connect#destroy ~callback:(GMain.quit) in
 
@@ -522,10 +565,6 @@ let init () =
           let rew_display = Resources.rewrite grew_window#strat#text in
           let fl = ref "G0" in
           grew_window#vpane_right#set_position 30;
-          grew_window#btn_show_module#set_active false;
-          grew_window#vpaned_corpus#set_position 30;
-          grew_window#btn_show_corpus#set_active false;
-          grew_window#btn_show_grs#set_active true;
           graph_top_webkit#load_html_string empty_html "";
           graph_bottom_webkit#load_html_string empty_html "";
           module_webkit#load_html_string empty_html "";
@@ -568,7 +607,6 @@ let init () =
           grs_webkit#execute_script
            "if (get_edge_flag()) { remove_back_from_current_top(); hide_current_edge(); current_edge_two='qsd';current_top_graph='';current_bottom_graph=''; alert('removeTop'); }";
           grs_webkit#execute_script "set_edge_flag(false)";
-          grew_window#btn_show_module#set_active false;
           grew_window#vpane_right#set_position 30;
           true
         | ["showOnTop"; graph] ->
@@ -583,7 +621,6 @@ let init () =
           module_webkit#load_html_string empty_html "";
           grs_webkit#execute_script "if (get_edge_flag()) { remove_back_from_current_bottom(); hide_current_edge(); current_edge_two='qsd';current_top_graph='';current_bottom_graph=''; alert('removeBottom'); }";
           grs_webkit#execute_script "set_edge_flag(false)";
-          grew_window#btn_show_module#set_active false;
           grew_window#vpane_right#set_position 30;
           true
         | ["showOnBottom2"; graph] ->
@@ -611,7 +648,6 @@ let init () =
           let svg_file = Grew_rew_display.get_big_step_for graph in
           module_webkit#load_uri ("file://"^svg_file);
           grs_webkit#execute_script "set_edge_flag(true)";
-          grew_window#btn_show_module#set_active true;
           true
         | ["removeTop"] ->
           graph_top_webkit#load_html_string empty_html "";
@@ -921,6 +957,8 @@ let init () =
   let _ = grew_window#graph_view_bottom#event#add [`BUTTON_PRESS] in
   let _ = grew_window#graph_view_bottom#event#connect#button_press ~callback: (contextual_menu Bottom) in
 
+  grew_window#vpaned_corpus#set_position 200;
+
   (* Really start the gui *)
   grew_window#check_widgets ();
   grew_window#toplevel#show ();
@@ -929,8 +967,8 @@ let init () =
   Resources.current_grs_file := !Grew_args.grs;
   load_grs ~strat:!Grew_args.strat ();
 
-  Resources.current_gr_file := !Grew_args.gr;
-  load_gr ();
+  Resources.current_corpus_file := !Grew_args.input_data;
+  load_corpus ();
 
   refresh_btn_run ();
   refresh_error ();

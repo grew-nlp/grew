@@ -34,20 +34,28 @@ let handle fct () =
     | Libgrew.Bug msg ->             fail (sprintf "Libgrew.bug, please report: %s" msg)
     | exc ->                         fail (sprintf "Uncaught exception, please report: %s" (Printexc.to_string exc))
 
+let array_assoc key array =
+  let exception Found of int in
+  try
+    Array.iteri (fun i (k,_) -> if k = key then raise (Found i)) array;
+    None
+  with Found i -> Some i
+
+
+
+
 (* -------------------------------------------------------------------------------- *)
 let transform () =
   handle (fun () ->
-    if !Grew_args.input_data = ""
-    then (Log.message "No input data specified: use -i option"; exit 1);
-
     match (!Grew_args.grs, !Grew_args.input_data, !Grew_args.output_file) with
       | (None,_,_) -> Log.message "No grs filespecified: use -grs option"; exit 1
-      | (_,"",_) -> Log.message "No input data specified: use -i option"; exit 1
+      | (_,None,_) -> Log.message "No input data specified: use -i option"; exit 1
       | (_,_,None) -> Log.message "No output specified: use -f option"; exit 1
-      | (Some grs_file, input, Some output_file) ->
+      | (Some grs_file, Some input, Some output_file) ->
       let out_ch = open_out output_file in
       let grs = Grs.load grs_file in
       let domain = Grs.domain grs in
+
 
     (* get the list of files to rewrite *)
     let graph_array = Corpus.get_graphs ?domain input in
@@ -73,10 +81,10 @@ let transform () =
   let grep () = handle
     (fun () ->
       match (!Grew_args.input_data, !Grew_args.pattern, !Grew_args.node_id) with
-      | ("",_,_) -> Log.message "No input data specified: use -i option"; exit 1
+      | (None,_,_) -> Log.message "No input data specified: use -i option"; exit 1
       | (_,None,_) -> Log.message "No pattern file specified: use -pattern option"; exit 1;
       | (_,_,None) -> Log.message "No node_id specified: use -node_id option"; exit 1;
-      | (data_file, Some pattern_file, Some node_id) ->
+      | (Some data_file, Some pattern_file, Some node_id) ->
 
       let domain = match !Grew_args.grs with
       | None -> None

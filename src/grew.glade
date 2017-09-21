@@ -489,10 +489,9 @@
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <child>
-                  <widget class="GtkViewport" id="viewport_corpus">
+                  <widget class="GtkVBox" id="vbox_corpus">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="resize_mode">queue</property>
                     <child>
                       <placeholder/>
                     </child>
@@ -620,7 +619,7 @@
                                       <widget class="GtkHScale" id="grs_zoom">
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
-                                        <property name="adjustment">100 30 310 1 10 10</property>
+                                        <property name="adjustment">80 30 310 1 10 10</property>
                                         <property name="round_digits">0</property>
                                         <property name="digits">0</property>
                                         <property name="value_pos">right</property>
@@ -811,7 +810,7 @@
                                           <widget class="GtkHScale" id="module_zoom">
                                             <property name="visible">True</property>
                                             <property name="can_focus">True</property>
-                                            <property name="adjustment">100 30 310 1 10 10</property>
+                                            <property name="adjustment">80 30 310 1 10 10</property>
                                             <property name="round_digits">0</property>
                                             <property name="digits">0</property>
                                             <property name="value_pos">right</property>
