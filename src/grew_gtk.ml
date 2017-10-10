@@ -964,6 +964,13 @@ let init () =
   grew_window#check_widgets ();
   grew_window#toplevel#show ();
 
+  if !Grew_args.fullscreen
+  then
+    begin
+      grew_window#toplevel#fullscreen ();
+      grew_window#vpaned#set_position 550;
+    end;
+
   (* startup load of grs files (which implies loading of the gr file) *)
   Resources.current_grs_file := !Grew_args.grs;
   load_grs ~strat:!Grew_args.strat ();

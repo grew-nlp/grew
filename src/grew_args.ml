@@ -24,6 +24,7 @@ module Grew_args = struct
 
   let grs = ref None
   let gui_doc = ref false
+  let fullscreen = ref false
   let old_grs = ref false
 
   let input_data = ref None
@@ -81,6 +82,7 @@ module Grew_args = struct
     "-debug_loop", Unit (fun () -> Rewrite.set_debug_loop ()),  "                 enable loop debug mode\n\nOptions for GUI mode";
 
     (* options for GUI mode *)
+    "-fullscreen", Unit (fun () -> fullscreen := true), "                        fullscreen";
     "-doc", Unit (fun () -> gui_doc := true), "                        force to build the GRS doc\n\nOptions for corpus, det and cluster modes";
 
     (* options for corpus, det and cluster mode *)
