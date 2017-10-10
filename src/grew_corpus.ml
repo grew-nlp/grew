@@ -34,15 +34,6 @@ let handle fct () =
     | Libgrew.Bug msg ->             fail (sprintf "Libgrew.bug, please report: %s" msg)
     | exc ->                         fail (sprintf "Uncaught exception, please report: %s" (Printexc.to_string exc))
 
-let array_assoc key array =
-  let exception Found of int in
-  try
-    Array.iteri (fun i (k,_) -> if k = key then raise (Found i)) array;
-    None
-  with Found i -> Some i
-
-
-
 
 (* -------------------------------------------------------------------------------- *)
 let transform () =
