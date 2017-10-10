@@ -53,7 +53,7 @@ let transform () =
       | (_,_,None) -> Log.message "No output specified: use -f option"; exit 1
       | (Some grs_file, Some input, Some output_file) ->
       let out_ch = open_out output_file in
-      let grs = Grs.load grs_file in
+      let grs = (if !Grew_args.old_grs then Grs.load_old grs_file else Grs.load grs_file) in
       let domain = Grs.domain grs in
 
 
