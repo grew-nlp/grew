@@ -307,6 +307,20 @@ module Grew_rew_display = struct
       while true do
 	let line = input_line in_ch in
 
+(* ------------------- Hack for bugfix ------------------- *)
+(* see: https://gitlab.inria.fr/grew/grew/issues/3         *)
+(* output of Graphviz changes in 2.40 and the next lines make it "like" 2.38 output ! *)
+  let fix_line =
+    if Str.string_match (Str.regexp "<g id=\".*\" class=\".*\">") line 0
+    then line ^ (input_line in_ch)
+    else line in
+
+  let line = fix_line
+  |> (Str.global_replace (Str.regexp_string "#000000") "black")
+  |> (Str.global_replace (Str.regexp_string "#ffffff") "white") in
+(* ---------------- end "Hack for bugfix" ---------------- *)
+
+
 	match !graph_line_counter with
 	  | 0 -> (* matching de la premiere ligne pour un graphe (<!-- GXX -->) *)
 	    if (Str.string_match init line 0)

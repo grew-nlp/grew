@@ -1,3 +1,6 @@
+## 0.45.1 (2017/12/07)
+Bugfix: [#3](https://gitlab.inria.fr/grew/grew/issues/3) (Bug in GUI with graphviz 2.40)
+
 # 0.45.0 (2017/10/10)
 The version number is aligned of the version number of `libcaml-grew` (hence, the jump from 33 to 45!)
   * `-old_grs` option
