@@ -104,15 +104,15 @@ module List_ = struct
 
   let rec opt_map fct = function
     | [] -> []
-    | h::t -> 
+    | h::t ->
   match (fct h) with
   | Some x -> x::(opt_map fct t)
   | None -> opt_map fct t
 
-  let opt_mapi fct = 
-    let rec loop i = function 
+  let opt_mapi fct =
+    let rec loop i = function
       | [] -> []
-      | h::t -> 
+      | h::t ->
     match fct i h with
     | Some x -> x::(loop (i+1) t)
     | None -> loop (i+1) t
@@ -220,7 +220,7 @@ module Corpus = struct
           (fun file acc ->
             if Filename.check_suffix file ".gr"
             then (Filename.chop_extension file, Graph.load ?domain (Filename.concat source file)) :: acc
-            else if Filename.check_suffix file ".conll"
+            else if (Filename.check_suffix file ".conll" || Filename.check_suffix file ".conllu")
             then
               let conll = Conll.load (Filename.concat source file) in
               let graph = Graph.of_conll ?domain conll in
@@ -236,6 +236,8 @@ module Corpus = struct
       | Some s when String_.contains "conll" s -> load_conll ?domain source
       | Some s when String_.contains "melt" s -> load_brown ?domain source
       | Some s when String_.contains "brown" s -> load_brown ?domain source
+      | Some s when String_.contains "gr" s -> [| (source, Graph.load ?domain source) |]
+
       | _ ->
         Log.fwarning "Unknown suffix for file \"%s\", trying to guess format..." source;
         try load_conll ?domain source
