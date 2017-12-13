@@ -17,11 +17,6 @@ module Grew_args = struct
   type mode = Gui | Transform | Grep | Test
   let mode = ref Gui
 
-  type html_mode =
-    | No         (* only stat file is produced *)
-    | Html       (* html an png files are produced only when rewriting history is not empty *)
-    | Full_html  (* html an png files are always produced *)
-
   let grs = ref None
   let gui_doc = ref false
   let fullscreen = ref false
@@ -31,10 +26,7 @@ module Grew_args = struct
   let output_dir = ref None
   let output_file = ref None
   let strat = ref "main"
-  let no_init = ref false
   let quiet = ref false
-  let html = ref No
-  let dot = ref false
   let out_gr = ref false
   let out_conll = ref false
   let features = ref None
@@ -92,13 +84,9 @@ module Grew_args = struct
 
     (* options for corpus and cluster mode *)
     "-title", String (fun t -> title := Some t),               "                      set the title for the generated page of statistics";
-    "-html", Unit (fun () -> html := Html),         "                       generate html files for each rewritten sentence";
-    "-full_html", Unit (fun () -> html := Full_html),         "                  generate html files for each sentence of the corpus";
-    "-dot", Unit (fun () -> dot := true), "                        use dot to draw solutions, requires html of full_html (default is dep2pict)";
     "-q", Unit (fun () -> quiet := true), "                          do not print progression percent (for jenkins scripts)";
     "-out_gr",  Unit (fun () -> out_gr := true),         "                     generate gr output files for each rewriting normal form of the corpus";
-    "-out_conll",  Unit (fun () -> out_conll := true),         "                  generate conll output files for each rewriting normal form of the corpus";
-    "-no_init", Unit (fun () -> no_init := true), "                    do not display initial graph (requires html of full_html)\n\nOptions for grep mode";
+    "-out_conll",  Unit (fun () -> out_conll := true),         "                  generate conll output files for each rewriting normal form of the corpus\n\nOptions for grep mode";
 
     (* options for grep mode *)
     "-pattern",  String (fun t -> pattern := Some t),              "<file>              choose the pattern file";

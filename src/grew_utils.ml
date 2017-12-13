@@ -121,37 +121,6 @@ module List_ = struct
 end (* module List_ *)
 
 (* ================================================================================ *)
-module Html = struct
-  let build_header prev_opt next_opt =
-    match prev_opt, next_opt with
-      | None, None -> ""
-      | Some p, None -> sprintf "<a href=\"%s.html\">Previous</a>" p;
-      | None, Some n -> sprintf "<a href=\"%s.html\">Next</a>" n;
-      | Some p, Some n -> sprintf "<a href=\"%s.html\">Previous</a> -- <a href=\"%s.html\">Next</a>" p n
-
-
-  let write_error ?domain ?(header="") ~html ?init basename msg =
-    let stat_file = sprintf "%s.stat" basename in
-
-    let out_ch = open_out stat_file in
-    fprintf out_ch "ERROR\n";
-    fprintf out_ch "%s" msg;
-    close_out out_ch;
-
-    if html
-    then Rewrite.error_html
-      ?domain
-      ~no_init: !Grew_args.no_init
-      ?main_feat: !Grew_args.main_feat
-      ~dot: !Grew_args.dot
-      ~header
-      msg
-      ?init
-      basename
-end (* module Html *)
-
-
-(* ================================================================================ *)
 module Pdf = struct
   let dot_to_file dot output_file =
     let temp_file_name,out_ch = Filename.open_temp_file ~mode:[Open_rdonly;Open_wronly;Open_text] "grew_" ".dot" in
