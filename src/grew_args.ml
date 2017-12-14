@@ -106,6 +106,7 @@ module Grew_args = struct
   | "-max_depth_non_det" :: i :: args -> Log.warning "max_depth_non_det not implemented, skip the arg"; loop args
 
   | "-quiet" :: args -> quiet := true; loop args
+  | "-old_grs" :: args -> old_grs := true; loop args
 
   | "-debug" :: args -> libgrew_debug_mode (); loop args
   | "-debug_loop" :: args -> Rewrite.set_debug_loop ()
