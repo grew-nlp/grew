@@ -14,86 +14,116 @@ open Libgrew
 
 module Grew_args = struct
 
-  type mode = Gui | Transform | Grep | Test
-  let mode = ref Gui
+  type mode = Undefined | Gui of string | Transform | Grep | Test
+  let mode = ref Undefined
 
   let grs = ref None
   let gui_doc = ref false
-  let fullscreen = ref false
   let old_grs = ref false
 
-  let input_data = ref None
-  let output_dir = ref None
-  let output_file = ref None
+  let (input_data : string option ref) = ref None
+  let (output_dir : string option ref) = ref None
+  let (output_file : string option ref) = ref None
   let strat = ref "main"
   let quiet = ref false
-  let out_gr = ref false
-  let out_conll = ref false
-  let features = ref None
-  let main_feat = ref None
   let timeout = ref None
-  let title = ref None
-  let pattern = ref None
-  let node_id = ref None
+  let (pattern : string option ref) = ref None
+  let (node_id : string option ref) = ref None
 
-  let usage =
-    "grew has 3 running modes:\n"^
-    "  * GUI MODE: a Gtk interface (this is the default mode)\n"^
-    "  * CORPUS MODE: runs rewriting on all graphs of a directory\n"^
-    "  * DET MODE: runs a deterministic grs on all graphs of a directory\n"^
-    "\n"^
-    "Options for mode selection:"
-
-  let dump_version () =
-    Printf.printf "grew:    %s\n" VERSION;
-    Printf.printf "libgrew: %s\n" (Libgrew.get_version ())
-
-  let obsolote mode = failwith (Printf.sprintf "The mode %s was removed, sorry!" mode)
-
-  let args = [
-    "-corpus", Unit (fun () -> obsolote "corpus"),      "                     enable corpus mode";
-    "-det", Unit (fun () -> mode := Transform),         "                        enable det mode: rewrite a corpus with a deterministric grs";
-    "-full", Unit (fun () -> obsolote "full"),         "                       [REMOVED] enable full mode: rewrite a corpus (conll output)";
-    "-filter", Unit (fun () -> obsolote "filter"),         "                     [REMOVED] enable filter mode";
-    "-grep", Unit (fun () -> mode := Grep),         "                       enable grep mode";
-    "-test", Unit (fun () -> mode := Test),         "                       enable test mode";
-
-    "-version", Unit (fun () -> dump_version(); exit 0),         "                       gives versions of code and libraries\n\nOptions for all modes";
-
-    (* options for all modes *)
-    "-grs", String (fun s -> grs := Some s),          "<grs_file>              chose the grs file to load";
-    "-old_grs", Unit (fun () -> old_grs := true), "                       Use old grs parser";
-    "-strat", String (fun s -> strat := s),                   "<strat>                 set the module strategy to use";
-    "-seq", String (fun s -> strat := s),                   "<strat>                 [DEPRECATED] replaced by -strat option";
-    "-timeout", Float (fun f -> timeout := Some f; Rewrite.set_timeout (Some f)),                   "<float>             set a timeout on rewriting";
-    "-max_depth_det", Int (fun v -> Rewrite.set_max_depth_det v),                   "<int>         set the maximum depth of rewriting in a module in deterministric rewriting (default: 2000)";
-    "-max_depth_non_det", Int (fun v -> Rewrite.set_max_depth_non_det v),                   "<int>     set the maximum depth of rewriting in a module in non-deterministric rewriting (default: 100)";
-    "-features", String (fun s -> features := Some (Str.split (Str.regexp "; *") s)),            "<feat_name_list>   set the list of feature names to printf in dep format";
-    "-main_feat", String (fun s -> main_feat := Some s),       "<feat_name_list>  set the list of feature names used in dep format to set the \"main word\"";
-    "-debug", Unit (fun () -> libgrew_debug_mode ()),  "                      enable debug mode";
-    "-debug_loop", Unit (fun () -> Rewrite.set_debug_loop ()),  "                 enable loop debug mode\n\nOptions for GUI mode";
-
-    (* options for GUI mode *)
-    "-fullscreen", Unit (fun () -> fullscreen := true), "                        fullscreen";
-    "-doc", Unit (fun () -> gui_doc := true), "                        force to build the GRS doc\n\nOptions for corpus, det and cluster modes";
-
-    (* options for corpus, det and cluster mode *)
-    "-i", String (fun file -> input_data := Some file),  "<input_data>              set the input data (file or directory) where to find graph files (.gr or .conll) in corpus or det mode";
-    "-f", String (fun file -> output_file := Some file), "<output_file>             set the output file where to put generate data (used with det and conll)";
-    "-o", String (fun dir -> output_dir := Some dir), "<output_dir>              set the output dir where to generate files: normal forms graphs and/or documentation\n\nOptions for corpus and cluster modes";
-
-    (* options for corpus and cluster mode *)
-    "-title", String (fun t -> title := Some t),               "                      set the title for the generated page of statistics";
-    "-q", Unit (fun () -> quiet := true), "                          do not print progression percent (for jenkins scripts)";
-    "-out_gr",  Unit (fun () -> out_gr := true),         "                     generate gr output files for each rewriting normal form of the corpus";
-    "-out_conll",  Unit (fun () -> out_conll := true),         "                  generate conll output files for each rewriting normal form of the corpus\n\nOptions for grep mode";
-
-    (* options for grep mode *)
-    "-pattern",  String (fun t -> pattern := Some t),              "<file>              choose the pattern file";
-    "-node_id",  String (fun t -> node_id := Some t),              "<node_id>           choose the main node of the pattern";
+  let help () = List.iter (fun x -> Printf.printf "%s\n" x) [
+    "----------------------------------------------------------";
+    "usage: grew <subcommand> [<args>]";
+    "";
+    "subcommands are:";
+    "  transform  Apply a GRS on a corpus";
+    "  gui        Run the Gtk interface";
+    "  grep       Search for a pattern in a corpus";
+    "  version    Print current version number";
+    "  help <sub> Print help for the given subcommand";
+    "";
+    "see subcommands help for args";
+    "For additional information, see http://grew.loria.fr";
+    "----------------------------------------------------------";
   ]
 
-  let parse () =
-    Arg.parse args (fun s -> Printf.printf "%s" s) usage
+  let help_gui () = List.iter (fun x -> Printf.printf "%s\n" x) [
+    "----------------------------------------------------------";
+    "usage: grew gui [<args>]";
+    "";
+    "This subcommand runs the GTK interface for Grew.";
+    "It supposes that the opam package \"grew_gui\" is installed.";
+    "";
+    "args are optionnal and can be change in the GUI:";
+    "  -grs <file>    The Graph Rewriting System to load";
+    "  -i <file>      The input data (a graph or a corpus)";
+    "  -strat <name>  The stategy used by default";
+    "";
+    "For additional information, see http://grew.loria.fr";
+    "----------------------------------------------------------";
+  ]
 
+  let help_grep () = List.iter (fun x -> Printf.printf "%s\n" x) [
+    "----------------------------------------------------------";
+    "usage: grew grep [<args>]";
+    "";
+    "This subcommand search for a patten in a corpus.";
+    "";
+    "args are optionnal and can be change in the GUI:";
+    "  -pattern <pat>   The pattern to search for";
+    "  -i <corp>        The input data";
+    "  -node_id <id>    One of the node of the pattern";
+    "";
+    "For additional information, see http://grew.loria.fr";
+    "----------------------------------------------------------";
+  ]
+
+  let help_transform () = List.iter (fun x -> Printf.printf "%s\n" x) [
+    "----------------------------------------------------------";
+    "usage: grew transform [<args>]";
+    "";
+    "This subcommand apply grs to a graph or a corpus.";
+    "";
+    "args are optionnal and can be change in the GUI:";
+    "  -grs <file>    The Graph Rewriting System to load";
+    "  -i <file>      The input data (a graph or a corpus)";
+    "  -f <file>      The output file";
+    "  -strat <name>  The stategy used by default";
+    "";
+    "For additional information, see http://grew.loria.fr";
+    "----------------------------------------------------------";
+  ]
+
+  let rec loop = function
+  | "-grs" :: file :: args -> grs := Some file; loop args
+  | "-i" :: file :: args -> input_data := Some file
+  | "-o" :: file :: args -> output_file := Some file
+  | "-strat" :: s :: args -> strat := s; loop args
+  | "-pattern" :: file :: args -> pattern := Some file; loop args
+  | "-node_id" :: id :: args -> node_id := Some id; loop args
+
+  | "-timeout" :: f :: args -> timeout := Some (float_of_string f); Rewrite.set_timeout (Some (float_of_string f))
+  | "-max_depth_det" :: i :: args -> Log.warning "max_depth_det not implemented, skip the arg"; loop args
+  | "-max_depth_non_det" :: i :: args -> Log.warning "max_depth_non_det not implemented, skip the arg"; loop args
+
+  | "-quiet" :: args -> quiet := true; loop args
+
+  | "-debug" :: args -> libgrew_debug_mode (); loop args
+  | "-debug_loop" :: args -> Rewrite.set_debug_loop ()
+
+  | x -> Log.fwarning "Ignored arguments: %s" (String.concat " " x)
+
+  let parse () =
+    match Array.to_list Sys.argv with
+    | [] -> failwith "bug: Empty argv"
+    | _ :: "gui" :: args -> mode := Gui (String.concat " " args)
+    | _ :: "transform" :: args -> mode := Transform; loop args
+    | _ :: "grep" :: args -> mode := Grep; loop args
+    | _ :: "version" :: _ -> Printf.printf "%s\n" VERSION;
+    | _ :: "help" :: "gui" :: _ -> help_gui ()
+    | _ :: "help" :: "transform" :: _ -> help_transform ()
+    | _ :: "help" :: "grep" :: _ -> help_grep ()
+    | _ :: "help" :: "help" :: _ -> Printf.printf "Such a complex feature is still in development!\n"
+    | [_] -> help ()
+    | _ :: "help" :: _ -> help ()
+    | _ :: cmd :: _ -> Log.fwarning "Unknown command \"%s\"" cmd; help()
 end
