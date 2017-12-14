@@ -22,7 +22,6 @@ module Grew_args = struct
   let old_grs = ref false
 
   let (input_data : string option ref) = ref None
-  let (output_dir : string option ref) = ref None
   let (output_file : string option ref) = ref None
   let strat = ref "main"
   let quiet = ref false

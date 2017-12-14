@@ -1,3 +1,6 @@
+## 0.46.1 (2017/12/14)
+  * remove all code refering to Dep2pict
+
 # 0.46.0 (2017/12/14)
   * Remove GUI (now available in a different opam package `grew_gui`)
   * New command line parsing of arguments, see `grew help`

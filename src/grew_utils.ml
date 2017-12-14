@@ -13,8 +13,6 @@ open Log
 open Conll
 open Libgrew
 
-open Dep2pict
-
 open Grew_args
 
 (* ================================================================================ *)
@@ -128,29 +126,6 @@ module Pdf = struct
     close_out out_ch;
     ignore (Sys.command(sprintf "dot -Tpdf -o %s %s " output_file temp_file_name))
 end (* module Pdf *)
-
-(* ================================================================================ *)
-module Svg = struct
-  let dot_to_tmp dot =
-    let temp_file_name,out_ch = Filename.open_temp_file ~mode:[Open_rdonly;Open_wronly;Open_text] "grew_" ".dot" in
-    fprintf out_ch "%s" dot;
-    close_out out_ch;
-    let svg_file_name = Str.global_replace (Str.regexp ".dot") ".svg" temp_file_name in
-    ignore (Sys.command(sprintf "dot -Tsvg -o %s %s " svg_file_name temp_file_name));
-    svg_file_name
-
-  let dot_to_file dot output_file =
-    let temp_file_name,out_ch = Filename.open_temp_file ~mode:[Open_rdonly;Open_wronly;Open_text] "grew_" ".dot" in
-    fprintf out_ch "%s" dot;
-    close_out out_ch;
-    ignore (Sys.command(sprintf "dot -Tsvg -o %s %s " output_file temp_file_name))
-
-  let dep_to_tmp dep =
-    let temp_file_name = Filename.temp_file "grew_" ".svg" in
-    let d2p = Dep2pict.from_dep ~dep in
-    let () = Dep2pict.save_svg ~filename:temp_file_name d2p in
-    temp_file_name
-end (* module Svg *)
 
 (* ================================================================================ *)
 module Corpus = struct
