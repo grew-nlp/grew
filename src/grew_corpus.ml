@@ -40,7 +40,7 @@ let transform () =
     match (!Grew_args.grs, !Grew_args.input_data, !Grew_args.output_file) with
       | (None,_,_) -> Log.message "No grs filespecified: use -grs option"; exit 1
       | (_,None,_) -> Log.message "No input data specified: use -i option"; exit 1
-      | (_,_,None) -> Log.message "No output specified: use -f option"; exit 1
+      | (_,_,None) -> Log.message "No output specified: use -o option"; exit 1
       | (Some grs_file, Some input, Some output_file) ->
       let out_ch = open_out output_file in
       let grs = (if !Grew_args.old_grs then Grs.load_old grs_file else Grs.load grs_file) in

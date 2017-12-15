@@ -82,25 +82,28 @@ module Grew_args = struct
     "";
     "This subcommand apply grs to a graph or a corpus.";
     "";
-    "args are optionnal and can be change in the GUI:";
+    "Required arguments:";
     "  -grs <file>    The Graph Rewriting System to load";
     "  -i <file>      The input data (a graph or a corpus)";
-    "  -f <file>      The output file";
-    "  -strat <name>  The stategy used by default";
+    "  -o <file>      The output file";
+    "";
+    "Optionnal arguments:";
+    "  -strat <name>  The stategy used in transformation (default=\"main\")";
     "";
     "For additional information, see http://grew.loria.fr";
     "----------------------------------------------------------";
   ]
 
   let rec loop = function
+  | [] -> ()
   | "-grs" :: file :: args -> grs := Some file; loop args
-  | "-i" :: file :: args -> input_data := Some file
-  | "-o" :: file :: args -> output_file := Some file
+  | "-i" :: file :: args -> input_data := Some file; loop args
+  | "-o" :: file :: args -> output_file := Some file; loop args
   | "-strat" :: s :: args -> strat := s; loop args
   | "-pattern" :: file :: args -> pattern := Some file; loop args
   | "-node_id" :: id :: args -> node_id := Some id; loop args
 
-  | "-timeout" :: f :: args -> timeout := Some (float_of_string f); Rewrite.set_timeout (Some (float_of_string f))
+  | "-timeout" :: f :: args -> timeout := Some (float_of_string f); Rewrite.set_timeout (Some (float_of_string f)); loop args
   | "-max_depth_det" :: i :: args -> Log.warning "max_depth_det not implemented, skip the arg"; loop args
   | "-max_depth_non_det" :: i :: args -> Log.warning "max_depth_non_det not implemented, skip the arg"; loop args
 
