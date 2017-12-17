@@ -1,10 +1,13 @@
+## 0.46.2 (2017/12/17)
+  * Fix doc and dev call to gui
+
 ## 0.46.1 (2017/12/14)
   * remove all code refering to Dep2pict
 
 # 0.46.0 (2017/12/14)
   * Remove GUI (now available in a different opam package `grew_gui`)
   * New command line parsing of arguments, see `grew help`
-  
+
 ## 0.45.1 (2017/12/07)
 Bugfix: [#3](https://gitlab.inria.fr/grew/grew/issues/3) (Bug in GUI with graphviz 2.40)
 
