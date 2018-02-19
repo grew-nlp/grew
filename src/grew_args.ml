@@ -111,6 +111,7 @@ module Grew_args = struct
   | "-quiet" :: args -> quiet := true; loop args
   | "-old_grs" :: args -> old_grs := true; loop args
 
+  | "-safe_commands" :: args -> Libgrew.set_safe_commands true; loop args
   | "-debug" :: args -> Libgrew.set_debug_mode true; loop args
   | "-debug_loop" :: args -> Rewrite.set_debug_loop ()
   | "-dep_dir" :: dir :: args -> dep_dir := Some dir
