@@ -20,6 +20,7 @@ module Grew_args = struct
   let grs = ref None
   let gui_doc = ref false
   let old_grs = ref false
+  let dep_dir = ref None
 
   let (input_data : string option ref) = ref None
   let (output_file : string option ref) = ref None
@@ -112,6 +113,7 @@ module Grew_args = struct
 
   | "-debug" :: args -> libgrew_debug_mode (); loop args
   | "-debug_loop" :: args -> Rewrite.set_debug_loop ()
+  | "-dep_dir" :: dir :: args -> dep_dir := Some dir
 
   | x -> Log.fwarning "Ignored arguments: %s" (String.concat " " x)
 
