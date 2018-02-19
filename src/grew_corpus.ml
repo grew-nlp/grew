@@ -56,10 +56,10 @@ let transform () =
       (fun index (id, gr) ->
         Counter.print index len id;
         match Rewrite.simple_rewrite ~gr ~grs ~strat:!Grew_args.strat with
-        | [one] -> fprintf out_ch "%s\n" (Graph.to_conll_string ?domain one)
+        | [one] -> fprintf out_ch "%s\n" (Graph.to_conll_string one)
         | l ->
           List.iteri (fun i gr ->
-            let conll = Graph.to_conll ?domain gr in
+            let conll = Graph.to_conll gr in
             let conll_new_id = Conll.set_sentid (sprintf "%s_%d" id i) conll in
             fprintf out_ch "%s\n" (Conll.to_string conll_new_id)
             ) l
