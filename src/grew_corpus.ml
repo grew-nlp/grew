@@ -26,6 +26,7 @@ let fail msg =
 let handle fct () =
   try fct ()
   with
+    | Conll_types.Error json ->      fail (Yojson.Basic.pretty_to_string json)
     | Libgrew.Error msg ->           fail msg
     | Corpus.File_not_found file ->  fail (sprintf "File not found: \"%s\"" file)
     | Corpus.Fail msg ->             fail msg
