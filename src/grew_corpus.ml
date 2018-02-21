@@ -71,21 +71,16 @@ let transform () =
 (* -------------------------------------------------------------------------------- *)
   let grep () = handle
     (fun () ->
-      match (!Grew_args.input_data, !Grew_args.pattern, !Grew_args.node_id) with
-      | (None,_,_) -> Log.message "No input data specified: use -i option"; exit 1
-      | (_,None,_) -> Log.message "No pattern file specified: use -pattern option"; exit 1;
-      | (_,_,None) -> Log.message "No node_id specified: use -node_id option"; exit 1;
-      | (Some data_file, Some pattern_file, Some node_id) ->
+      match (!Grew_args.input_data, !Grew_args.pattern) with
+      | (None,_) -> Log.message "No input data specified: use -i option"; exit 1
+      | (_,None) -> Log.message "No pattern file specified: use -pattern option"; exit 1;
+      | (Some data_file, Some pattern_file) ->
 
       let domain = match !Grew_args.grs with
       | None -> None
       | Some file -> Grs.domain (if !Grew_args.old_grs then Grs.load_old file else Grs.load file) in
 
       let pattern = Pattern.load ?domain pattern_file in
-
-      if not (List.mem node_id (Pattern.pid_name_list pattern))
-      then (Log.fmessage "The requested node_id \"%s\" is not defined in the pattern" node_id; exit 1)
-      else
 
       (* get the array of graphs to explore *)
       let graph_array = Corpus.get_graphs ?domain data_file in
@@ -97,30 +92,49 @@ let transform () =
       (* printf "%s\n" (String.concat "_" (Pattern.pid_name_list pattern)); *)
       let pattern_ids = Pattern.pid_name_list pattern in
 
-      Array.iter
-        (fun (name,graph) ->
-          let matchings = Graph.search_pattern ?domain pattern graph in
-            List.iter
-              (fun matching ->
-                let node_matching = Graph.node_matching pattern graph matching in
-                let graph_node_ids = List.map snd node_matching in
-                let deco = Deco.build pattern matching in
-                let html = Graph.to_sentence ~deco graph in
-                let id = sprintf "%s__%s"
-                  name
-                  (String.concat "_" (List.map2 (sprintf "%s:%g") pattern_ids graph_node_ids)) in
-                (* let graph_node_id = List.assoc node_id node_matching in *)
-                (* printf "%s\t%g\n" name graph_node_id; *)
-                printf "%s@@%s\n" id html;
-                (match !Grew_args.dep_dir with
-                | None -> ()
-                | Some dir ->
-                  let dep = Graph.to_dep ~deco graph in
-                  let filename = sprintf "%s.dep" id in
-                  let out_ch = open_out (Filename.concat dir filename) in
-                  fprintf out_ch "%s" dep;
-                  close_out out_ch
-                )
-              ) matchings
-        ) graph_array
+      let final_json =
+        Array.fold_left
+          (fun acc (name,graph) ->
+            let matchings = Graph.search_pattern ?domain pattern graph in
+              List.fold_left
+                (fun acc2 matching ->
+                  let node_matching = Graph.node_matching pattern graph matching in
+                  let graph_node_ids = List.map snd node_matching in
+                  let deco = Deco.build pattern matching in
+
+                  (* write the dep file if needed *)
+                  let dep_file =
+                    match !Grew_args.dep_dir with
+                    | None -> None
+                    | Some dir ->
+                      let id = sprintf "%s__%s"
+                        name
+                        (String.concat "_" (List.map2 (sprintf "%s:%g") pattern_ids graph_node_ids)) in
+                      let dep = Graph.to_dep ~deco graph in
+                      let filename = Filename.concat dir (sprintf "%s.dep" id) in
+                      let out_ch = open_out filename in
+                      fprintf out_ch "%s" dep;
+                      close_out out_ch;
+                    Some filename in
+
+                  let json_matching = `Assoc (List.map2 (fun pid gid -> (pid, `String (sprintf "%g" gid))) pattern_ids graph_node_ids) in
+                  let opt_list = [
+                    Some ("sent_id", `String name);
+                    Some ("matching", json_matching);
+                    (
+                      if !Grew_args.html
+                      then Some ("html", `String (Graph.to_sentence ~deco graph))
+                      else None
+                    );
+                    (
+                      match dep_file with
+                      | None -> None
+                      | Some f -> Some ("dep_file", `String f)
+                    )
+                  ] in
+                  let json = `Assoc (CCList.filter_map (fun x -> x) opt_list) in
+                  json :: acc2
+                ) acc matchings
+          ) [] graph_array in
+      Printf.printf "%s\n" (Yojson.pretty_to_string (`List final_json))
     ) ()

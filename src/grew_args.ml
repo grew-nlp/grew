@@ -28,7 +28,7 @@ module Grew_args = struct
   let quiet = ref false
   let timeout = ref None
   let (pattern : string option ref) = ref None
-  let (node_id : string option ref) = ref None
+  let html = ref false
 
   let help () = List.iter (fun x -> Printf.printf "%s\n" x) [
     "----------------------------------------------------------";
@@ -66,12 +66,11 @@ module Grew_args = struct
     "----------------------------------------------------------";
     "usage: grew grep [<args>]";
     "";
-    "This subcommand search for a patten in a corpus.";
+    "This subcommand search for a pattern in a corpus.";
     "";
     "args are optionnal and can be change in the GUI:";
     "  -pattern <pat>   The pattern to search for";
     "  -i <corp>        The input data";
-    "  -node_id <id>    One of the node of the pattern";
     "";
     "For additional information, see http://grew.loria.fr";
     "----------------------------------------------------------";
@@ -102,7 +101,7 @@ module Grew_args = struct
   | "-o" :: file :: args -> output_file := Some file; loop args
   | "-strat" :: s :: args -> strat := s; loop args
   | "-pattern" :: file :: args -> pattern := Some file; loop args
-  | "-node_id" :: id :: args -> node_id := Some id; loop args
+  | "-html" :: args -> html := true; loop args
 
   | "-timeout" :: f :: args -> timeout := Some (float_of_string f); Rewrite.set_timeout (Some (float_of_string f)); loop args
   | "-max_depth_det" :: i :: args -> Log.warning "max_depth_det not implemented, skip the arg"; loop args
@@ -113,8 +112,8 @@ module Grew_args = struct
 
   | "-safe_commands" :: args -> Libgrew.set_safe_commands true; loop args
   | "-debug" :: args -> Libgrew.set_debug_mode true; loop args
-  | "-debug_loop" :: args -> Rewrite.set_debug_loop ()
-  | "-dep_dir" :: dir :: args -> dep_dir := Some dir
+  | "-debug_loop" :: args -> Rewrite.set_debug_loop (); loop args
+  | "-dep_dir" :: dir :: args -> dep_dir := Some dir; loop args
 
   | x -> Log.fwarning "Ignored arguments: %s" (String.concat " " x)
 
