@@ -152,7 +152,10 @@ module Corpus = struct
   (** [load source] loads a corpus; [source] can be:
       - a folder, the corpus is the set of graphs (files matching *.gr or *.conll) in the folder
       - a conll file *)
-  let get_graphs ?domain source =
+  let get_graphs ?domain source_list =
+    match source_list with
+    | [source] ->
+    begin
     if not (Sys.file_exists source)
     then raise (File_not_found source);
     if Sys.is_directory source
@@ -176,6 +179,7 @@ module Corpus = struct
           Array.of_list graph_list
       end
     else (* if [source] is a file *)
+
       match File.get_suffix source with
       | Some s when String_.contains "conll" s -> load_conll ?domain source
       | Some s when String_.contains "melt" s -> load_brown ?domain source
@@ -188,6 +192,12 @@ module Corpus = struct
           with _ ->
           try load_brown ?domain source
           with _ -> raise (Fail (sprintf "Cannot load file \"%s\", unknown format" source))
+
+    end
+    | [] -> raise (Fail ( "Empty input list\n%!"))
+    | _ ->
+      let conll_corpus = Conll_corpus.load_list source_list in
+      Array.map (fun (sentid, conll) -> (sentid, Graph.of_conll ?domain conll)) conll_corpus
 end (* module Corpus *)
 
 (* ==================================================================================================== *)

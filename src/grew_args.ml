@@ -22,7 +22,7 @@ module Grew_args = struct
   let old_grs = ref false
   let dep_dir = ref None
 
-  let (input_data : string option ref) = ref None
+  let (input_data : string list ref) = ref []
   let (output_file : string option ref) = ref None
   let strat = ref "main"
   let quiet = ref false
@@ -97,7 +97,8 @@ module Grew_args = struct
   let rec loop = function
   | [] -> ()
   | "-grs" :: file :: args -> grs := Some file; loop args
-  | "-i" :: file :: args -> input_data := Some file; loop args
+  | "-i" :: files :: args ->
+      input_data := (Str.split (Str.regexp " ") files) @ !input_data; loop args
   | "-o" :: file :: args -> output_file := Some file; loop args
   | "-strat" :: s :: args -> strat := s; loop args
   | "-pattern" :: file :: args -> pattern := Some file; loop args

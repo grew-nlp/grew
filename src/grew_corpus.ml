@@ -40,16 +40,16 @@ let transform () =
   handle (fun () ->
     match (!Grew_args.grs, !Grew_args.input_data, !Grew_args.output_file) with
       | (None,_,_) -> Log.message "No grs filespecified: use -grs option"; exit 1
-      | (_,None,_) -> Log.message "No input data specified: use -i option"; exit 1
+      | (_,[],_) -> Log.message "No input data specified: use -i option"; exit 1
       | (_,_,None) -> Log.message "No output specified: use -o option"; exit 1
-      | (Some grs_file, Some input, Some output_file) ->
+      | (Some grs_file, input_list, Some output_file) ->
       let out_ch = open_out output_file in
       let grs = (if !Grew_args.old_grs then Grs.load_old grs_file else Grs.load grs_file) in
       let domain = Grs.domain grs in
 
 
     (* get the list of files to rewrite *)
-    let graph_array = Corpus.get_graphs ?domain input in
+    let graph_array = Corpus.get_graphs ?domain input_list in
     let len = Array.length graph_array in
 
     Array.iteri
@@ -72,9 +72,9 @@ let transform () =
   let grep () = handle
     (fun () ->
       match (!Grew_args.input_data, !Grew_args.pattern) with
-      | (None,_) -> Log.message "No input data specified: use -i option"; exit 1
+      | ([],_) -> Log.message "No input data specified: use -i option"; exit 1
       | (_,None) -> Log.message "No pattern file specified: use -pattern option"; exit 1;
-      | (Some data_file, Some pattern_file) ->
+      | (file_list, Some pattern_file) ->
 
       let domain = match !Grew_args.grs with
       | None -> None
@@ -83,7 +83,7 @@ let transform () =
       let pattern = Pattern.load ?domain pattern_file in
 
       (* get the array of graphs to explore *)
-      let graph_array = Corpus.get_graphs ?domain data_file in
+      let graph_array = Corpus.get_graphs ?domain file_list in
 
       (match !Grew_args.dep_dir with
       | None -> ()
