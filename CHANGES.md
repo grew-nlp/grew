@@ -1,3 +1,8 @@
+## 0.47.0 (2018/03/18)
+  * Adapt to libcaml-grew 0.47
+  * new json output for grep mode
+  * -safe_commands option
+
 ## 0.46.2 (2017/12/17)
   * Fix doc and dev call to gui
 
