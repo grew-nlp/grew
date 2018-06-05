@@ -66,7 +66,7 @@ module Grew_args = struct
     "----------------------------------------------------------";
     "usage: grew grep [<args>]";
     "";
-    "This subcommand search for a pattern in a corpus.";
+    "This subcommand searches for a pattern in a corpus.";
     "";
     "args are optionnal and can be change in the GUI:";
     "  -pattern <pat>   The pattern to search for";
@@ -80,7 +80,7 @@ module Grew_args = struct
     "----------------------------------------------------------";
     "usage: grew transform [<args>]";
     "";
-    "This subcommand apply grs to a graph or a corpus.";
+    "This subcommand applies a grs to a graph or a corpus.";
     "";
     "Required arguments:";
     "  -grs <file>    The Graph Rewriting System to load";

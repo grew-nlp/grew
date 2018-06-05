@@ -1,3 +1,6 @@
+## 0.48.0 (2018/06/05)
+  * Follow libcaml-grew versioning
+
 ## 0.47.0 (2018/03/18)
   * Adapt to libcaml-grew 0.47
   * new json output for grep mode
