@@ -1,3 +1,6 @@
+## 0.49.0 (2018/07/05)
+  * Follow libcaml-grew versioning
+
 ## 0.48.0 (2018/06/05)
   * Follow libcaml-grew versioning
 
