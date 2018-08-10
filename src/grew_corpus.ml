@@ -98,8 +98,8 @@ let transform () =
             let matchings = Graph.search_pattern ?domain pattern graph in
               List.fold_left
                 (fun acc2 matching ->
-                  let node_matching = Graph.node_matching pattern graph matching in
-                  let graph_node_ids = List.map snd node_matching in
+                  let assoc_nodes = Matching.nodes pattern graph matching in
+                  let graph_node_names = List.map snd assoc_nodes in
                   let deco = Deco.build pattern matching in
 
                   (* write the dep file if needed *)
@@ -109,7 +109,7 @@ let transform () =
                     | Some dir ->
                       let id = sprintf "%s__%s"
                         name
-                        (String.concat "_" (List.map2 (sprintf "%s:%g") pattern_ids graph_node_ids)) in
+                        (String.concat "_" (List.map2 (sprintf "%s:%s") pattern_ids graph_node_names)) in
                       let dep = Graph.to_dep ~deco graph in
                       let filename = Filename.concat dir (sprintf "%s.dep" id) in
                       let out_ch = open_out filename in
@@ -117,7 +117,7 @@ let transform () =
                       close_out out_ch;
                     Some filename in
 
-                  let json_matching = `Assoc (List.map2 (fun pid gid -> (pid, `String (sprintf "%g" gid))) pattern_ids graph_node_ids) in
+                  let json_matching = `Assoc (List.map2 (fun pid g_name -> (pid, `String g_name)) pattern_ids graph_node_names) in
                   let opt_list = [
                     Some ("sent_id", `String name);
                     Some ("matching", json_matching);
@@ -132,9 +132,8 @@ let transform () =
                       | Some f -> Some ("dep_file", `String f)
                     )
                   ] in
-                  let json = `Assoc (CCList.filter_map (fun x -> x) opt_list) in
-                  json :: acc2
+                  (CCList.filter_map CCFun.id opt_list) @ acc2
                 ) acc matchings
           ) [] graph_array in
-      Printf.printf "%s\n" (Yojson.pretty_to_string (`List final_json))
+      Printf.printf "%s\n" (Yojson.Basic.pretty_to_string (`Assoc final_json))
     ) ()
