@@ -19,7 +19,6 @@ module Grew_args = struct
 
   let grs = ref None
   let gui_doc = ref false
-  let old_grs = ref false
   let dep_dir = ref None
 
   let (input_data : string list ref) = ref []
@@ -109,7 +108,6 @@ module Grew_args = struct
   | "-max_depth_non_det" :: i :: args -> Log.warning "max_depth_non_det not implemented, skip the arg"; loop args
 
   | "-quiet" :: args -> quiet := true; loop args
-  | "-old_grs" :: args -> old_grs := true; loop args
 
   | "-safe_commands" :: args -> Libgrew.set_safe_commands true; loop args
   | "-debug" :: args -> Libgrew.set_debug_mode true; loop args
