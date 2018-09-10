@@ -113,7 +113,6 @@ module Grew_args = struct
 
   | "-safe_commands" :: args -> Libgrew.set_safe_commands true; loop args
   | "-debug" :: args -> Libgrew.set_debug_mode true; loop args
-  | "-debug_loop" :: args -> Rewrite.set_debug_loop (); loop args
   | "-dep_dir" :: dir :: args -> dep_dir := Some dir; loop args
 
   | x :: args -> Log.fwarning "Invalid argument: %s, it is ignored!" x; loop args
