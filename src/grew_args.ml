@@ -117,7 +117,7 @@ module Grew_args = struct
   | "-debug_loop" :: args -> Rewrite.set_debug_loop (); loop args
   | "-dep_dir" :: dir :: args -> dep_dir := Some dir; loop args
 
-  | x -> Log.fwarning "Ignored arguments: %s" (String.concat " " x)
+  | x :: args -> Log.fwarning "Invalid argument: %s, it is ignored!" x; loop args
 
   let parse () =
     match Array.to_list Sys.argv with

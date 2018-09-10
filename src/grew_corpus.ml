@@ -19,9 +19,7 @@ open Grew_args
 
 (* -------------------------------------------------------------------------------- *)
 
-let fail msg =
-  let rule = String.make (String.length msg) '=' in
-  Log.fwarning "\n%s\n%s\n%s" rule msg rule; exit 2
+let fail msg = Log.fmessage "%s" msg; exit 2
 
 let handle fct () =
   try fct ()

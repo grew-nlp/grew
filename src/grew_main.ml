@@ -31,8 +31,7 @@ let _ =
   | Grew_args.Gui args ->
     let gui_exec = if Sys.argv.(0) = "grew_dev" then "grew_gui_dev" else "grew_gui" in
     match Unix.system (gui_exec ^ " " ^ args) with
-    | Unix.WEXITED i when i <> 0 ->
-      Log.warning "It seems that grew_gui is not installed on your system. Try to run \"opam install grew_gui\""
+    | Unix.WEXITED 127 -> Log.message "It seems that grew_gui is not installed on your system. See [http://grew.fr/gtk] for more information"
     | _ -> ()
 
 
