@@ -3,7 +3,7 @@
 (*                                                                     *)
 (*    Copyright 2011-2013 Inria, Université de Lorraine                *)
 (*                                                                     *)
-(*    Webpage: http://grew.loria.fr                                    *)
+(*    Webpage: http://grew.fr                                          *)
 (*    License: CeCILL (see LICENSE folder or "http://www.cecill.info") *)
 (*    Authors: see AUTHORS file                                        *)
 (***********************************************************************)
@@ -42,7 +42,7 @@ module Grew_args = struct
     "  help <sub> Print help for the given subcommand";
     "";
     "see subcommands help for args";
-    "For additional information, see http://grew.loria.fr";
+    "For additional information, see http://grew.fr";
     "----------------------------------------------------------";
   ]
 
@@ -58,7 +58,7 @@ module Grew_args = struct
     "  -i <file>      The input data (a graph or a corpus)";
     "  -strat <name>  The stategy used by default";
     "";
-    "For additional information, see http://grew.loria.fr";
+    "For additional information, see http://grew.fr";
     "----------------------------------------------------------";
   ]
 
@@ -72,7 +72,7 @@ module Grew_args = struct
     "  -pattern <pat>   The pattern to search for";
     "  -i <corp>        The input data";
     "";
-    "For additional information, see http://grew.loria.fr";
+    "For additional information, see http://grew.fr";
     "----------------------------------------------------------";
   ]
 
@@ -91,7 +91,7 @@ module Grew_args = struct
     "  -strat <name>  The stategy used in transformation (default=\"main\")";
     "  -cupt          If the option is present, a 11-column CoNLL format is produced";
     "";
-    "For additional information, see http://grew.loria.fr";
+    "For additional information, see http://grew.fr";
     "----------------------------------------------------------";
   ]
 

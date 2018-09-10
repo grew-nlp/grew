@@ -3,7 +3,7 @@
 (*                                                                     *)
 (*    Copyright 2011-2013 Inria, Université de Lorraine                *)
 (*                                                                     *)
-(*    Webpage: http://grew.loria.fr                                    *)
+(*    Webpage: http://grew.fr                                          *)
 (*    License: CeCILL (see LICENSE folder or "http://www.cecill.info") *)
 (*    Authors: see AUTHORS file                                        *)
 (***********************************************************************)
