@@ -106,8 +106,7 @@ module Grew_args = struct
   | "-html" :: args -> html := true; loop args
 
   | "-timeout" :: f :: args -> timeout := Some (float_of_string f); Rewrite.set_timeout (Some (float_of_string f)); loop args
-  | "-max_depth_det" :: i :: args -> Log.warning "max_depth_det not implemented, skip the arg"; loop args
-  | "-max_depth_non_det" :: i :: args -> Log.warning "max_depth_non_det not implemented, skip the arg"; loop args
+  | "-max_rules" :: i :: args -> Rewrite.set_max_rules (int_of_string i); loop args
 
   | "-quiet" :: args -> quiet := true; loop args
   | "-cupt" :: args -> cupt := true; loop args
