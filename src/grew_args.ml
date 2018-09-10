@@ -20,6 +20,7 @@ module Grew_args = struct
   let grs = ref None
   let gui_doc = ref false
   let dep_dir = ref None
+  let cupt = ref false
 
   let (input_data : string list ref) = ref []
   let (output_file : string option ref) = ref None
@@ -88,6 +89,7 @@ module Grew_args = struct
     "";
     "Optionnal arguments:";
     "  -strat <name>  The stategy used in transformation (default=\"main\")";
+    "  -cupt          If the option is present, a 11-column CoNLL format is produced";
     "";
     "For additional information, see http://grew.loria.fr";
     "----------------------------------------------------------";
@@ -108,6 +110,7 @@ module Grew_args = struct
   | "-max_depth_non_det" :: i :: args -> Log.warning "max_depth_non_det not implemented, skip the arg"; loop args
 
   | "-quiet" :: args -> quiet := true; loop args
+  | "-cupt" :: args -> cupt := true; loop args
 
   | "-safe_commands" :: args -> Libgrew.set_safe_commands true; loop args
   | "-debug" :: args -> Libgrew.set_debug_mode true; loop args

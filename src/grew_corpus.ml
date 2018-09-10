@@ -56,7 +56,7 @@ let transform () =
       (fun index (id, gr) ->
         Counter.print index len id;
         match Rewrite.simple_rewrite ~gr ~grs ~strat:!Grew_args.strat with
-        | [one] -> fprintf out_ch "%s\n" (Graph.to_conll_string one)
+        | [one] -> fprintf out_ch "%s\n" (Graph.to_conll_string ~cupt:!Grew_args.cupt one)
         | l ->
           List.iteri (fun i gr ->
             let conll = Graph.to_conll gr in
