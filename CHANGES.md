@@ -1,3 +1,7 @@
+# 1.0.0 (2018/09/10)
+  * Add parseme handling of column 11 (MWE/NE)
+  * Fix https://gitlab.inria.fr/grew/grew/issues/5
+
 ## 0.49.0 (2018/07/05)
   * Follow libcaml-grew versioning
 
