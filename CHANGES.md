@@ -1,3 +1,6 @@
+## 1.0.1 (2018/09/16)
+  * Fix invalid JSON output in “grew grep”
+
 # 1.0.0 (2018/09/10)
   * Add parseme handling of column 11 (MWE/NE)
   * Fix https://gitlab.inria.fr/grew/grew/issues/5

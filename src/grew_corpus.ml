@@ -130,8 +130,9 @@ let transform () =
                       | Some f -> Some ("dep_file", `String f)
                     )
                   ] in
-                  (CCList.filter_map CCFun.id opt_list) @ acc2
+                    let json = `Assoc (CCList.filter_map (fun x -> x) opt_list) in
+                    json :: acc2
                 ) acc matchings
           ) [] graph_array in
-      Printf.printf "%s\n" (Yojson.Basic.pretty_to_string (`Assoc final_json))
+      Printf.printf "%s\n" (Yojson.pretty_to_string (`List final_json))
     ) ()
