@@ -119,15 +119,6 @@ module List_ = struct
 end (* module List_ *)
 
 (* ================================================================================ *)
-module Pdf = struct
-  let dot_to_file dot output_file =
-    let temp_file_name,out_ch = Filename.open_temp_file ~mode:[Open_rdonly;Open_wronly;Open_text] "grew_" ".dot" in
-    fprintf out_ch "%s" dot;
-    close_out out_ch;
-    ignore (Sys.command(sprintf "dot -Tpdf -o %s %s " output_file temp_file_name))
-end (* module Pdf *)
-
-(* ================================================================================ *)
 module Corpus = struct
 
   exception Fail of string
