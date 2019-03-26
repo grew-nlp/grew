@@ -1,3 +1,6 @@
+## 1.1.1 (2019/03/26)
+  * move to opam2
+
 ## 1.1.0 (2018/11/23)
   * Follow libcaml-grew versioning
 
