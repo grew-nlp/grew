@@ -90,6 +90,7 @@ module Grew_args = struct
     "Optionnal arguments:";
     "  -strat <name>  The stategy used in transformation (default=\"main\")";
     "  -cupt          If the option is present, a 11-column CoNLL format is produced";
+    "  -track_rules   If the option is present, data about the rules applied are given in output";
     "";
     "For additional information, see http://grew.fr";
     "----------------------------------------------------------";
@@ -112,6 +113,7 @@ module Grew_args = struct
   | "-cupt" :: args -> cupt := true; loop args
 
   | "-safe_commands" :: args -> Libgrew.set_safe_commands true; loop args
+  | "-track_rules" :: args -> Libgrew.set_track_rules true; loop args
   | "-debug" :: args -> Libgrew.set_debug_mode true; loop args
   | "-dep_dir" :: dir :: args -> dep_dir := Some dir; loop args
 
