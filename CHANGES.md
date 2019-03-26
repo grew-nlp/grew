@@ -1,3 +1,7 @@
+# 1.2.0 (2019/03/26)
+  * Follow libcaml-grew versioning
+  * Add -track_rules argument
+
 ## 1.1.1 (2019/03/26)
   * move to opam2
 
