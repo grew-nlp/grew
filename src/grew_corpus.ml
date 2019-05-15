@@ -41,29 +41,27 @@ let transform () =
       | (_,[],_) -> Log.message "No input data specified: use -i option"; exit 1
       | (_,_,None) -> Log.message "No output specified: use -o option"; exit 1
       | (Some grs_file, input_list, Some output_file) ->
-      let out_ch = open_out output_file in
       let grs = Grs.load grs_file in
       let domain = Grs.domain grs in
 
+      let graph_array = Corpus.get_graphs ?domain input_list in
+      let len = Array.length graph_array in
 
-    (* get the list of files to rewrite *)
-    let graph_array = Corpus.get_graphs ?domain input_list in
-    let len = Array.length graph_array in
-
-    Array.iteri
-      (fun index (id, gr) ->
-        Counter.print index len id;
-        match Rewrite.simple_rewrite ~gr ~grs ~strat:!Grew_args.strat with
-        | [one] -> fprintf out_ch "%s\n" (Graph.to_conll_string ~cupt:!Grew_args.cupt one)
-        | l ->
-          List.iteri (fun i gr ->
-            let conll = Graph.to_conll gr in
-            let conll_new_id = Conll.set_sentid (sprintf "%s_%d" id i) conll in
-            fprintf out_ch "%s\n" (Conll.to_string conll_new_id)
-            ) l
-      ) graph_array;
-    close_out out_ch;
-    Counter.finish ()
+      let out_ch = open_out output_file in
+      Array.iteri
+        (fun index (id, gr) ->
+          Counter.print index len id;
+          match Rewrite.simple_rewrite ~gr ~grs ~strat:!Grew_args.strat with
+          | [one] -> fprintf out_ch "%s\n" (Graph.to_conll_string ~cupt:!Grew_args.cupt one)
+          | l ->
+            List.iteri (fun i gr ->
+              let conll = Graph.to_conll gr in
+              let conll_new_id = Conll.set_sentid (sprintf "%s_%d" id i) conll in
+              fprintf out_ch "%s\n" (Conll.to_string conll_new_id)
+              ) l
+        ) graph_array;
+      close_out out_ch;
+      Counter.finish ()
   ) ()
 
 (* -------------------------------------------------------------------------------- *)
