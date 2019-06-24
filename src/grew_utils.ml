@@ -44,24 +44,29 @@ module Counter = struct
 
   let print value total text =
     if not !Grew_args.quiet
-    then printf "%s%.2f%% (%s)%!" back (((float value) /. (float total))*. 100. ) text
+    then eprintf "%s%.2f%% (%s)%!" back (((float value) /. (float total))*. 100. ) text
 
-  let finish () = if not !Grew_args.quiet then printf "%s100.00%%\n%!" back
+  let finish () = if not !Grew_args.quiet then eprintf "%s100.00%%\n%!" back
 end (* module Counter *)
 
 (* ================================================================================ *)
 module File = struct
-  let read file =
+  let read_rev file =
     let in_ch = open_in file in
-    (* if the input file contains an UTF-8 byte order mark (EF BB BF), skip 3 bytes, else get back to 0 *)
-    (match input_byte in_ch with 0xEF -> seek_in in_ch 3 | _ -> seek_in in_ch 0);
-
+    let line_num = ref 0 in
     let res = ref [] in
     try
-      while true
-      do res := (input_line in_ch) :: !res
+
+      (* if the input file contains an UTF-8 byte order mark (EF BB BF), skip 3 bytes, else get back to 0 *)
+      (match input_byte in_ch with 0xEF -> seek_in in_ch 3 | _ -> seek_in in_ch 0);
+
+      while true do
+        incr line_num;
+        res := (!line_num, input_line in_ch) :: !res
       done; assert false
-    with End_of_file -> close_in in_ch; List.rev !res
+    with End_of_file -> close_in in_ch; !res
+
+  let read file = List.rev (read_rev file)
 
   exception Found of int
   let get_suffix file_name =
@@ -74,6 +79,17 @@ module File = struct
       None
     with
     | Found i -> Some (String.sub file_name i (len-i))
+
+  let read_stdin () =
+    let cpt = ref 0 in
+    let res = ref [] in
+    try
+      while true do
+        incr cpt;
+        res := (!cpt, input_line stdin) :: !res
+      done;
+    assert false
+  with End_of_file -> List.rev !res
 
 end (* module File *)
 
@@ -128,17 +144,21 @@ module Corpus = struct
     let conll_corpus = Conll_corpus.load file in
     Array.map (fun (sentid, conll) -> (sentid, Graph.of_conll ?domain conll)) conll_corpus
 
-  let load_brown ?domain file =
-    let lines = File.read file in
+  let brown_form_lines ?domain lines =
     let brown_list =
-      List_.opt_mapi
-        (fun i line -> match Str.split (Str.regexp "#") line with
+      List_.opt_map
+        (fun (i,line) -> match Str.split (Str.regexp "#") line with
           | [] -> None
           | [line] -> let sentid = sprintf "%05d" i in Some (sentid, Graph.of_brown ?domain ~sentid line)
           | [sentid; line] -> Some (sentid, Graph.of_brown ?domain ~sentid line)
-          | _ -> raise (Fail (sprintf "[file %s, line %d] Illegal Brown line >>>%s<<<<\n%!" file i line))
+          | _ -> raise (Fail (sprintf "[line %d] Illegal Brown line >>>%s<<<<\n%!" i line))
         ) lines in
       Array.of_list brown_list
+
+  let load_brown ?domain file =
+    let lines = File.read file in
+    try brown_form_lines ?domain lines
+    with Fail msg -> raise (Fail (sprintf "[file %s] %s" file msg))
 
   (** [load source] loads a corpus; [source] can be:
       - a folder, the corpus is the set of graphs (files matching *.gr or *.conll) in the folder
@@ -189,6 +209,19 @@ module Corpus = struct
     | _ ->
       let conll_corpus = Conll_corpus.load_list source_list in
       Array.map (fun (sentid, conll) -> (sentid, Graph.of_conll ?domain conll)) conll_corpus
+
+  let from_stdin () =
+    let lines = File.read_stdin () in
+    try
+      let conll_corpus = Conll_corpus.from_lines ~basename: "stdin" lines in
+      Array.map (fun (sentid, conll) -> (sentid, Graph.of_conll conll)) conll_corpus
+    with _ -> brown_form_lines lines
+
+  let input ?domain () =
+    match !Grew_args.input_data with
+    | [] -> from_stdin ()
+    | input_list -> get_graphs ?domain input_list
+
 end (* module Corpus *)
 
 (* ==================================================================================================== *)

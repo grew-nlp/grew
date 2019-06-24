@@ -36,50 +36,46 @@ let handle fct () =
 (* -------------------------------------------------------------------------------- *)
 let transform () =
   handle (fun () ->
-    match (!Grew_args.grs, !Grew_args.input_data, !Grew_args.output_file) with
-      | (None,_,_) -> Log.message "No grs filespecified: use -grs option"; exit 1
-      | (_,[],_) -> Log.message "No input data specified: use -i option"; exit 1
-      | (_,_,None) -> Log.message "No output specified: use -o option"; exit 1
-      | (Some grs_file, input_list, Some output_file) ->
-      let grs = Grs.load grs_file in
-      let domain = Grs.domain grs in
+    let grs = !Grew_args.grs in
+    let domain = Grs.domain grs in
 
-      let graph_array = Corpus.get_graphs ?domain input_list in
-      let len = Array.length graph_array in
+    let graph_array = Corpus.input ?domain () in
+    let len = Array.length graph_array in
 
-      let out_ch = open_out output_file in
-      Array.iteri
-        (fun index (id, gr) ->
-          Counter.print index len id;
-          match Rewrite.simple_rewrite ~gr ~grs ~strat:!Grew_args.strat with
-          | [one] -> fprintf out_ch "%s\n" (Graph.to_conll_string ~cupt:!Grew_args.cupt one)
-          | l ->
-            List.iteri (fun i gr ->
-              let conll = Graph.to_conll gr in
-              let conll_new_id = Conll.set_sentid (sprintf "%s_%d" id i) conll in
-              fprintf out_ch "%s\n" (Conll.to_string conll_new_id)
-              ) l
-        ) graph_array;
-      close_out out_ch;
-      Counter.finish ()
+    let out_ch = match !Grew_args.output_file with
+      | Some output_file -> open_out output_file
+      | None -> stdout in
+    Array.iteri
+      (fun index (id, gr) ->
+        Counter.print index len id;
+        match Rewrite.simple_rewrite ~gr ~grs ~strat:!Grew_args.strat with
+        | [one] -> fprintf out_ch "%s\n" (Graph.to_conll_string ~cupt:!Grew_args.cupt one)
+        | l ->
+          List.iteri (fun i gr ->
+            let conll = Graph.to_conll gr in
+            let conll_new_id = Conll.set_sentid (sprintf "%s_%d" id i) conll in
+            fprintf out_ch "%s\n" (Conll.to_string conll_new_id)
+          ) l
+      ) graph_array;
+    match !Grew_args.output_file with
+      | Some output_file -> close_out out_ch
+      | None -> ();
+    Counter.finish ()
   ) ()
 
 (* -------------------------------------------------------------------------------- *)
   let grep () = handle
     (fun () ->
-      match (!Grew_args.input_data, !Grew_args.pattern) with
-      | ([],_) -> Log.message "No input data specified: use -i option"; exit 1
-      | (_,None) -> Log.message "No pattern file specified: use -pattern option"; exit 1;
-      | (file_list, Some pattern_file) ->
+      match !Grew_args.pattern with
+      | None -> Log.message "No pattern file specified: use -pattern option"; exit 1;
+      | Some pattern_file ->
 
-      let domain = match !Grew_args.grs with
-      | None -> None
-      | Some file -> Grs.domain (Grs.load file) in
+      let domain = Grs.domain !Grew_args.grs in
 
       let pattern = Pattern.load ?domain pattern_file in
 
       (* get the array of graphs to explore *)
-      let graph_array = Corpus.get_graphs ?domain file_list in
+      let graph_array = Corpus.input ?domain () in
 
       (match !Grew_args.dep_dir with
       | None -> ()

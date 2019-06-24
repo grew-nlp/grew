@@ -17,8 +17,7 @@ module Grew_args = struct
   type mode = Undefined | Gui of string | Transform | Grep | Test
   let mode = ref Undefined
 
-  let grs = ref None
-  let gui_doc = ref false
+  let grs = ref Grs.empty
   let dep_dir = ref None
   let cupt = ref false
 
@@ -98,7 +97,7 @@ module Grew_args = struct
 
   let rec loop = function
   | [] -> ()
-  | "-grs" :: file :: args -> grs := Some file; loop args
+  | "-grs" :: file :: args -> grs := Grs.load file; loop args
   | "-i" :: files :: args ->
       input_data := (Str.split (Str.regexp " ") files) @ !input_data; loop args
   | "-o" :: file :: args -> output_file := Some file; loop args
