@@ -45,11 +45,22 @@ let transform () =
     let out_ch = match !Grew_args.output_file with
       | Some output_file -> open_out output_file
       | None -> stdout in
+
+    let out_graph ?new_sent_id graph = match (!Grew_args.output, new_sent_id) with
+    | (Grew_args.Conll,None) -> fprintf out_ch "%s\n" (Graph.to_conll_string graph)
+    | (Grew_args.Conll,Some nsi) -> fprintf out_ch "%s\n" (graph |> Graph.to_conll |> Conll.set_sentid nsi |> Conll.to_string)
+    | (Grew_args.Cupt, None) -> fprintf out_ch "%s\n" (Graph.to_conll_string ~cupt:true graph)
+    | (Grew_args.Cupt,Some nsi) -> fprintf out_ch "%s\n" (graph |> Graph.to_conll |> Conll.set_sentid nsi |> Conll.to_string ~cupt:true)
+    | (Grew_args.Gr, None) -> fprintf out_ch "%s\n" (Graph.to_gr graph)
+    | (Grew_args.Gr, Some nsi) -> fprintf out_ch "# sent_id = %s\n%s\n" nsi (Graph.to_gr graph)
+    | (Grew_args.Dot, None) -> fprintf out_ch "%s\n" (Graph.to_dot graph)
+    | (Grew_args.Dot, Some nsi) -> fprintf out_ch "# sent_id = %s\n%s\n" nsi (Graph.to_dot graph) in
+
     Array.iteri
       (fun index (id, gr) ->
         Counter.print index len id;
         match Rewrite.simple_rewrite ~gr ~grs ~strat:!Grew_args.strat with
-        | [one] -> fprintf out_ch "%s\n" (Graph.to_conll_string ~cupt:!Grew_args.cupt one)
+        | [one] -> out_graph one
         | l ->
           List.iteri (fun i gr ->
             let conll = Graph.to_conll gr in
@@ -57,10 +68,10 @@ let transform () =
             fprintf out_ch "%s\n" (Conll.to_string conll_new_id)
           ) l
       ) graph_array;
+    Counter.finish ();
     match !Grew_args.output_file with
       | Some output_file -> close_out out_ch
-      | None -> ();
-    Counter.finish ()
+      | None -> ()
   ) ()
 
 (* -------------------------------------------------------------------------------- *)

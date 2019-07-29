@@ -19,7 +19,9 @@ module Grew_args = struct
 
   let grs = ref Grs.empty
   let dep_dir = ref None
-  let cupt = ref false
+
+  type output = Conll | Cupt | Gr | Dot
+  let output = ref Conll
 
   let (input_data : string list ref) = ref []
   let (output_file : string option ref) = ref None
@@ -89,6 +91,7 @@ module Grew_args = struct
     "Optionnal arguments:";
     "  -strat <name>  The stategy used in transformation (default=\"main\")";
     "  -cupt          If the option is present, a 11-column CoNLL format is produced";
+    "  -gr            If the option is present, the gr output format is produced";
     "  -track_rules   If the option is present, data about the rules applied are given in output";
     "";
     "For additional information, see http://grew.fr";
@@ -109,7 +112,9 @@ module Grew_args = struct
   | "-max_rules" :: i :: args -> Rewrite.set_max_rules (int_of_string i); loop args
 
   | "-quiet" :: args -> quiet := true; loop args
-  | "-cupt" :: args -> cupt := true; loop args
+  | "-cupt" :: args -> output := Cupt; loop args
+  | "-gr" :: args -> output := Gr; loop args
+  | "-dot" :: args -> output := Dot; loop args
 
   | "-safe_commands" :: args -> Libgrew.set_safe_commands true; loop args
   | "-track_rules" :: args -> Libgrew.set_track_rules true; loop args
