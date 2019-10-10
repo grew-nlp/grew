@@ -125,7 +125,8 @@ let transform () =
                       close_out out_ch;
                     Some filename in
 
-                  let json_matching = `Assoc (List.map2 (fun pid g_name -> (pid, `String g_name)) pattern_ids graph_node_names) in
+                  let json_matching = Matching.to_json pattern graph matching in
+
                   let opt_list = [
                     Some ("sent_id", `String name);
                     Some ("matching", json_matching);
@@ -144,5 +145,5 @@ let transform () =
                     json :: acc2
                 ) acc matchings
           ) [] graph_array in
-      Printf.printf "%s\n" (Yojson.pretty_to_string (`List final_json))
+      Printf.printf "%s\n" (Yojson.Basic.pretty_to_string (`List final_json))
     ) ()
