@@ -24,7 +24,7 @@ let fail msg = Log.fmessage "%s" msg; exit 2
 let handle fct () =
   try fct ()
   with
-    | Conll_error json ->      fail (Yojson.Basic.pretty_to_string json)
+    | Conll_error json ->            fail (Yojson.Basic.pretty_to_string json)
     | Libgrew.Error msg ->           fail msg
     | Corpus.File_not_found file ->  fail (sprintf "File not found: \"%s\"" file)
     | Corpus.Fail msg ->             fail msg
@@ -36,7 +36,10 @@ let handle fct () =
 (* -------------------------------------------------------------------------------- *)
 let transform () =
   handle (fun () ->
-    let grs = !Grew_args.grs in
+    let grs = match !Grew_args.grs with
+    | None -> Grs.empty
+    | Some file -> Grs.load file in
+
     let domain = Grs.domain grs in
 
     let graph_array = Corpus.input ?domain () in
@@ -81,7 +84,9 @@ let transform () =
       | None -> Log.message "No pattern file specified: use -pattern option"; exit 1;
       | Some pattern_file ->
 
-      let domain = Grs.domain !Grew_args.grs in
+      let domain = match !Grew_args.grs with
+      | None -> None
+      | Some file -> Grs.domain (Grs.load file) in
 
       let pattern = Pattern.load ?domain pattern_file in
 
