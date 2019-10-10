@@ -193,6 +193,7 @@ module Corpus = struct
 
       match File.get_suffix source with
       | Some s when String_.contains "conll" s -> load_conll ?domain source
+      | Some s when String_.contains "cupt" s -> load_conll ?domain source
       | Some s when String_.contains "melt" s -> load_brown ?domain source
       | Some s when String_.contains "brown" s -> load_brown ?domain source
       | Some s when String_.contains "gr" s -> [| (source, Graph.load ?domain source) |]
