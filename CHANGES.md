@@ -1,3 +1,7 @@
+## 1.3.1 (2020/01/18)
+  * /!\ change output of grep command (see http://grew.fr/run#grep-mode)
+  * remove Pervasives deprecated ocaml lib
+
 # 1.3.0 (2019/06/24)
   * Usage of stdin/stdout for data handling
   * Empty GRS by default

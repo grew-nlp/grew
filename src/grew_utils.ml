@@ -229,7 +229,7 @@ end (* module Corpus *)
 module Int =
   struct
     type t = int
-    let compare = Pervasives.compare
+    let compare = Stdlib.compare
   end
 
 module Int_set = Set.Make (Int)
