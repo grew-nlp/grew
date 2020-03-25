@@ -19,7 +19,11 @@ open Grew_args
 
 (* -------------------------------------------------------------------------------- *)
 
-let fail msg = Log.fmessage "%s" msg; exit 2
+let fail msg =
+  Log.fmessage "-------------------------------------";
+  Log.fmessage "%s" msg;
+  Log.fmessage "-------------------------------------";
+  exit 2
 
 let handle fct () =
   try fct ()
@@ -28,7 +32,7 @@ let handle fct () =
     | Libgrew.Error msg ->           fail msg
     | Corpus.File_not_found file ->  fail (sprintf "File not found: \"%s\"" file)
     | Corpus.Fail msg ->             fail msg
-
+    | Sys_error msg ->               fail (sprintf "System error: %s" msg)
     | Libgrew.Bug msg ->             fail (sprintf "Libgrew.bug, please report: %s" msg)
     | exc ->                         fail (sprintf "Uncaught exception, please report: %s" (Printexc.to_string exc))
 
