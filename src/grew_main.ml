@@ -84,9 +84,8 @@ let transform () =
 (* -------------------------------------------------------------------------------- *)
 let grep () = handle
     (fun () ->
-       match !Grew_args.pattern with
-       | None -> Log.message "No pattern file specified: use -pattern option"; exit 1;
-       | Some pattern_file ->
+       match !Grew_args.patterns with
+       | [pattern_file] ->
 
          let domain = match !Grew_args.grs with
            | None -> None
@@ -150,23 +149,65 @@ let grep () = handle
                   ) acc matchings
              ) [] graph_array in
          Printf.printf "%s\n" (Yojson.Basic.pretty_to_string (`List final_json))
+       | l -> Log.fmessage "1 pattern expected for grep mode (%d given)" (List.length l); exit 1;
+
     ) ()
 
 
+(* -------------------------------------------------------------------------------- *)
 let compile () =
   handle
     (fun () ->
        List.iter (Corpus.compile ?grew_match:!Grew_args.grew_match) !Grew_args.input_data
     ) ()
 
+(* -------------------------------------------------------------------------------- *)
 let clean () =
   handle
     (fun () ->
        List.iter Corpus.clean !Grew_args.input_data
     ) ()
 
+(* -------------------------------------------------------------------------------- *)
+let count () =
+  let conf_files = !Grew_args.input_data in
+  match !Grew_args.patterns with
+  | [] -> Log.fwarning "No pattern given (use option -patterns)"
+  | l ->
+    printf "Corpus\t# sentences";
+    List.iter (fun p -> printf "\t%s" (p |> Filename.basename |> Filename.chop_extension)) l;
+    printf "\n";
 
+    let patterns = List.map Pattern.load l in
+    List.iter (
+      fun conf_file ->
+        let conf = Corpus.load_json conf_file in
+        List.iter
+          (fun corpus_desc (*{Corpus.kind; id; dom_file; directory; urls_opt; files}*) ->
+             let id = Corpus.get_id corpus_desc in
+             let directory = Corpus.get_directory corpus_desc in
+             let marshal_file = (Filename.concat directory id) ^ ".marshal" in
+             let in_ch = open_in_bin marshal_file in
+             let data = (Marshal.from_channel in_ch : Corpus.t) in
+             let _ = close_in in_ch in
 
+             printf "%s\t" (Filename.basename directory);
+             printf "%d\t" (Corpus.size data);
+
+             List.iter
+               (fun pattern ->
+                  let count =
+                    Corpus.fold_left (fun acc graph ->
+                        acc + (List.length (Graph.search_pattern pattern graph))
+                      ) 0 data in
+                  printf "%d\t" count
+               ) patterns;
+             printf "\n%!"
+          ) conf
+    ) conf_files
+
+(* -------------------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------------- *)
 let _ =
   Printexc.record_backtrace true;
   Log.set_active_levels [`INFO; `MESSAGE; `WARNING];
@@ -178,6 +219,7 @@ let _ =
   match !Grew_args.mode with
   | Grew_args.Undefined -> ()
   | Grew_args.Transform -> transform ()
+  | Grew_args.Count-> count ()
   | Grew_args.Compile -> compile ()
   | Grew_args.Clean -> clean ()
   | Grew_args.Grep -> grep ()
