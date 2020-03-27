@@ -135,7 +135,8 @@ module List_ = struct
 end (* module List_ *)
 
 (* ================================================================================ *)
-module Corpus = struct
+(* TODO: merge with code in libcaml-grew for corpus hanlding *)
+module Corpus_ = struct
 
   exception Fail of string
   exception File_not_found of string

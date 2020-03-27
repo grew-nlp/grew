@@ -14,7 +14,7 @@ open Libgrew
 
 module Grew_args = struct
 
-  type mode = Undefined | Gui of string | Transform | Grep | Test
+  type mode = Undefined | Gui of string | Transform | Grep | Compile | Clean | Test
   let mode = ref Undefined
 
   let grs = ref None
@@ -30,6 +30,8 @@ module Grew_args = struct
   let timeout = ref None
   let (pattern : string option ref) = ref None
   let html = ref false
+
+  let grew_match = ref None
 
   let help () = List.iter (fun x -> Printf.printf "%s\n" x) [
     "----------------------------------------------------------";
@@ -116,6 +118,8 @@ module Grew_args = struct
   | "-gr" :: args -> output := Gr; loop args
   | "-dot" :: args -> output := Dot; loop args
 
+  | "-grew_match" :: dir :: args -> grew_match := Some dir; loop args
+
   | "-safe_commands" :: args -> Libgrew.set_safe_commands true; loop args
   | "-track_rules" :: args -> Libgrew.set_track_rules true; loop args
   | "-debug" :: args -> Libgrew.set_debug_mode true; loop args
@@ -129,7 +133,10 @@ module Grew_args = struct
     | _ :: "gui" :: args -> mode := Gui (String.concat " " args)
     | _ :: "transform" :: args -> mode := Transform; loop args
     | _ :: "grep" :: args -> mode := Grep; loop args
+    | _ :: "compile" :: args -> mode := Compile; loop args
+    | _ :: "clean" :: args -> mode := Clean; loop args
     | _ :: "version" :: _ -> Printf.printf "%s\n" VERSION;
+    | _ :: "test" :: args -> mode := Test; loop args
     | _ :: "help" :: "gui" :: _ -> help_gui ()
     | _ :: "help" :: "transform" :: _ -> help_transform ()
     | _ :: "help" :: "grep" :: _ -> help_grep ()
