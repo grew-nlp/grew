@@ -14,7 +14,7 @@ open Libgrew
 
 module Grew_args = struct
 
-  type mode = Undefined | Gui of string | Transform | Grep | Compile | Clean | Test
+  type mode = Undefined | Gui of string | Transform | Grep | Count | Valid | Compile | Clean | Test
   let mode = ref Undefined
 
   let grs = ref None
@@ -28,10 +28,10 @@ module Grew_args = struct
   let strat = ref "main"
   let quiet = ref false
   let timeout = ref None
-  let (pattern : string option ref) = ref None
+  let (patterns : string list ref) = ref []
   let html = ref false
 
-  let grew_match = ref None
+  let grew_match_server = ref None
 
   let help () = List.iter (fun x -> Printf.printf "%s\n" x) [
     "----------------------------------------------------------";
@@ -107,7 +107,9 @@ module Grew_args = struct
       input_data := (Str.split (Str.regexp " ") files) @ !input_data; loop args
   | "-o" :: file :: args -> output_file := Some file; loop args
   | "-strat" :: s :: args -> strat := s; loop args
-  | "-pattern" :: file :: args -> pattern := Some file; loop args
+  | "-pattern" :: files :: args -> patterns := (Str.split (Str.regexp " ") files); loop args
+  | "-patterns" :: files :: args ->
+      patterns := (Str.split (Str.regexp " ") files) @ !patterns; loop args
   | "-html" :: args -> html := true; loop args
 
   | "-timeout" :: f :: args -> timeout := Some (float_of_string f); Rewrite.set_timeout (Some (float_of_string f)); loop args
@@ -118,7 +120,7 @@ module Grew_args = struct
   | "-gr" :: args -> output := Gr; loop args
   | "-dot" :: args -> output := Dot; loop args
 
-  | "-grew_match" :: dir :: args -> grew_match := Some dir; loop args
+  | "-grew_match_server" :: dir :: args -> grew_match_server := Some dir; loop args
 
   | "-safe_commands" :: args -> Libgrew.set_safe_commands true; loop args
   | "-track_rules" :: args -> Libgrew.set_track_rules true; loop args
@@ -133,6 +135,8 @@ module Grew_args = struct
     | _ :: "gui" :: args -> mode := Gui (String.concat " " args)
     | _ :: "transform" :: args -> mode := Transform; loop args
     | _ :: "grep" :: args -> mode := Grep; loop args
+    | _ :: "count" :: args -> mode := Count; loop args
+    | _ :: "valid" :: args -> mode := Valid; loop args
     | _ :: "compile" :: args -> mode := Compile; loop args
     | _ :: "clean" :: args -> mode := Clean; loop args
     | _ :: "version" :: _ -> Printf.printf "%s\n" VERSION;

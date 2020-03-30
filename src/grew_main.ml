@@ -34,6 +34,7 @@ let handle fct () =
   | Corpus_.Fail msg ->            fail msg
   | Sys_error msg ->               fail (sprintf "System error: %s" msg)
   | Yojson.Json_error msg ->       fail (sprintf "Json error: %s" msg)
+  | Validation.Error msg ->         fail (sprintf "Validation error: %s" msg)
   | Libgrew.Bug msg ->             fail (sprintf "Libgrew.bug, please report: %s" msg)
   | exc ->                         fail (sprintf "Uncaught exception, please report: %s" (Printexc.to_string exc))
 
@@ -158,19 +159,35 @@ let grep () = handle
 let compile () =
   handle
     (fun () ->
-       List.iter (Corpus.compile ?grew_match:!Grew_args.grew_match) !Grew_args.input_data
+       let grew_match = match !Grew_args.grew_match_server with
+         | Some dir -> Some (Filename.concat dir "_meta")
+         | None -> None in
+       List.iter
+         (fun json_file ->
+            let corpus_desc_list = Corpus_desc.load_json json_file in
+            List.iter
+              (fun corpus_desc ->
+                 Corpus_desc.compile ?grew_match corpus_desc
+              ) corpus_desc_list
+         ) !Grew_args.input_data
     ) ()
 
 (* -------------------------------------------------------------------------------- *)
 let clean () =
   handle
     (fun () ->
-       List.iter Corpus.clean !Grew_args.input_data
+       List.iter
+         (fun json_file ->
+            let corpus_desc_list = Corpus_desc.load_json json_file in
+            List.iter
+              (fun corpus_desc ->
+                 Corpus_desc.clean corpus_desc
+              ) corpus_desc_list
+         ) !Grew_args.input_data
     ) ()
 
 (* -------------------------------------------------------------------------------- *)
 let count () =
-  let conf_files = !Grew_args.input_data in
   match !Grew_args.patterns with
   | [] -> Log.fwarning "No pattern given (use option -patterns)"
   | l ->
@@ -181,11 +198,11 @@ let count () =
     let patterns = List.map Pattern.load l in
     List.iter (
       fun conf_file ->
-        let conf = Corpus.load_json conf_file in
+        let conf = Corpus_desc.load_json conf_file in
         List.iter
-          (fun corpus_desc (*{Corpus.kind; id; dom_file; directory; urls_opt; files}*) ->
-             let id = Corpus.get_id corpus_desc in
-             let directory = Corpus.get_directory corpus_desc in
+          (fun corpus_desc ->
+             let id = Corpus_desc.get_id corpus_desc in
+             let directory = Corpus_desc.get_directory corpus_desc in
              let marshal_file = (Filename.concat directory id) ^ ".marshal" in
              let in_ch = open_in_bin marshal_file in
              let data = (Marshal.from_channel in_ch : Corpus.t) in
@@ -204,7 +221,19 @@ let count () =
                ) patterns;
              printf "\n%!"
           ) conf
-    ) conf_files
+    ) (!Grew_args.input_data)
+
+(* -------------------------------------------------------------------------------- *)
+let valid () =
+  let validator_list = List.map Validation.load_json !Grew_args.patterns in
+  List.iter
+    (fun conf_file ->
+       List.iter
+         (fun corpus_desc ->
+            Validation.check validator_list corpus_desc
+         ) (Corpus_desc.load_json conf_file)
+    ) !Grew_args.input_data
+
 
 (* -------------------------------------------------------------------------------- *)
 (* -------------------------------------------------------------------------------- *)
@@ -220,6 +249,7 @@ let _ =
   | Grew_args.Undefined -> ()
   | Grew_args.Transform -> transform ()
   | Grew_args.Count-> count ()
+  | Grew_args.Valid-> valid ()
   | Grew_args.Compile -> compile ()
   | Grew_args.Clean -> clean ()
   | Grew_args.Grep -> grep ()

@@ -70,7 +70,7 @@ module File = struct
 
   exception Found of int
   let get_suffix file_name =
-  let len = String.length file_name in
+    let len = String.length file_name in
     try
       for i = len-1 downto 0 do
         if file_name.[i] = '.'
@@ -88,8 +88,8 @@ module File = struct
         incr cpt;
         res := (!cpt, input_line stdin) :: !res
       done;
-    assert false
-  with End_of_file -> List.rev !res
+      assert false
+    with End_of_file -> List.rev !res
 
 end (* module File *)
 
@@ -119,17 +119,17 @@ module List_ = struct
   let rec opt_map fct = function
     | [] -> []
     | h::t ->
-  match (fct h) with
-  | Some x -> x::(opt_map fct t)
-  | None -> opt_map fct t
+      match (fct h) with
+      | Some x -> x::(opt_map fct t)
+      | None -> opt_map fct t
 
   let opt_mapi fct =
     let rec loop i = function
       | [] -> []
       | h::t ->
-    match fct i h with
-    | Some x -> x::(loop (i+1) t)
-    | None -> loop (i+1) t
+        match fct i h with
+        | Some x -> x::(loop (i+1) t)
+        | None -> loop (i+1) t
     in loop 0
 
 end (* module List_ *)
@@ -149,12 +149,12 @@ module Corpus_ = struct
     let brown_list =
       List_.opt_map
         (fun (i,line) -> match Str.split (Str.regexp "#") line with
-          | [] -> None
-          | [line] -> let sentid = sprintf "%05d" i in Some (sentid, Graph.of_brown ?domain ~sentid line)
-          | [sentid; line] -> Some (sentid, Graph.of_brown ?domain ~sentid line)
-          | _ -> raise (Fail (sprintf "[line %d] Illegal Brown line >>>%s<<<<\n%!" i line))
+           | [] -> None
+           | [line] -> let sentid = sprintf "%05d" i in Some (sentid, Graph.of_brown ?domain ~sentid line)
+           | [sentid; line] -> Some (sentid, Graph.of_brown ?domain ~sentid line)
+           | _ -> raise (Fail (sprintf "[line %d] Illegal Brown line >>>%s<<<<\n%!" i line))
         ) lines in
-      Array.of_list brown_list
+    Array.of_list brown_list
 
   let load_brown ?domain file =
     let lines = File.read file in
@@ -167,46 +167,46 @@ module Corpus_ = struct
   let get_graphs ?domain source_list =
     match source_list with
     | [source] ->
-    begin
-    if not (Sys.file_exists source)
-    then raise (File_not_found source);
-    if Sys.is_directory source
-    then (* if [source] is a folder *)
       begin
-        let files_array = Sys.readdir source in
-        let graph_list =
-        Array.fold_right
-          (fun file acc ->
-            if Filename.check_suffix file ".gr"
-            then (Filename.chop_extension file, Graph.load ?domain (Filename.concat source file)) :: acc
-            else if (Filename.check_suffix file ".conll" || Filename.check_suffix file ".conllu")
-            then
-              let conll = Conll.load (Filename.concat source file) in
-              let graph = Graph.of_conll ?domain conll in
-              match Conll.get_sentid conll with
-              | Some sentid -> (sentid, graph) :: acc
-              | None -> (file, graph) :: acc
-            else acc
-          ) files_array [] in
-          Array.of_list graph_list
+        if not (Sys.file_exists source)
+        then raise (File_not_found source);
+        if Sys.is_directory source
+        then (* if [source] is a folder *)
+          begin
+            let files_array = Sys.readdir source in
+            let graph_list =
+              Array.fold_right
+                (fun file acc ->
+                   if Filename.check_suffix file ".gr"
+                   then (Filename.chop_extension file, Graph.load ?domain (Filename.concat source file)) :: acc
+                   else if (Filename.check_suffix file ".conll" || Filename.check_suffix file ".conllu")
+                   then
+                     let conll = Conll.load (Filename.concat source file) in
+                     let graph = Graph.of_conll ?domain conll in
+                     match Conll.get_sentid conll with
+                     | Some sentid -> (sentid, graph) :: acc
+                     | None -> (file, graph) :: acc
+                   else acc
+                ) files_array [] in
+            Array.of_list graph_list
+          end
+        else (* if [source] is a file *)
+
+          match File.get_suffix source with
+          | Some s when String_.contains "conll" s -> load_conll ?domain source
+          | Some s when String_.contains "cupt" s -> load_conll ?domain source
+          | Some s when String_.contains "melt" s -> load_brown ?domain source
+          | Some s when String_.contains "brown" s -> load_brown ?domain source
+          | Some s when String_.contains "gr" s -> [| (source, Graph.load ?domain source) |]
+
+          | _ ->
+            Log.fwarning "Unknown suffix for file \"%s\", trying to guess format..." source;
+            try load_conll ?domain source
+            with _ ->
+            try load_brown ?domain source
+            with _ -> raise (Fail (sprintf "Cannot load file \"%s\", unknown format" source))
+
       end
-    else (* if [source] is a file *)
-
-      match File.get_suffix source with
-      | Some s when String_.contains "conll" s -> load_conll ?domain source
-      | Some s when String_.contains "cupt" s -> load_conll ?domain source
-      | Some s when String_.contains "melt" s -> load_brown ?domain source
-      | Some s when String_.contains "brown" s -> load_brown ?domain source
-      | Some s when String_.contains "gr" s -> [| (source, Graph.load ?domain source) |]
-
-      | _ ->
-        Log.fwarning "Unknown suffix for file \"%s\", trying to guess format..." source;
-        try load_conll ?domain source
-          with _ ->
-          try load_brown ?domain source
-          with _ -> raise (Fail (sprintf "Cannot load file \"%s\", unknown format" source))
-
-    end
     | [] -> raise (Fail ( "Empty input list\n%!"))
     | _ ->
       let conll_corpus = Conll_corpus.load_list source_list in
@@ -228,10 +228,10 @@ end (* module Corpus *)
 
 (* ==================================================================================================== *)
 module Int =
-  struct
-    type t = int
-    let compare = Stdlib.compare
-  end
+struct
+  type t = int
+  let compare = Stdlib.compare
+end
 
 module Int_set = Set.Make (Int)
 module Int_map = Map.Make (Int)
@@ -259,4 +259,90 @@ module Timer = struct
     let diff = current_time.Unix.tms_utime -. (Int_map.find timer !table) in
     table := Int_map.remove !cpt !table;
     diff
+end
+
+(* ==================================================================================================== *)
+module Validation = struct
+  exception Error of string
+
+  type item = {
+    pattern: string list;
+    description: string;
+  }
+
+  type modul = {
+    title: string;
+    items: item list
+  }
+
+  let load_json json_file =
+    let open Yojson.Basic.Util in
+
+    let json = Yojson.Basic.from_file json_file in
+
+    let parse_one json =
+      let pattern =
+        try json |> member "pattern" |> to_string |> (fun x -> [x])
+        with Type_error _ ->
+        try json
+            |> member "pattern"
+            |> to_list
+            |> (List.map to_string)
+        with Type_error _ -> raise (Error (sprintf "[Validation.load_json, file \"%s\"] \"pattern\" field is mandatory and must be a string or a list of strings" json_file)) in
+      let description =
+        try json |> member "description" |> to_string
+        with Type_error _ -> "No description" in
+      { pattern; description } in
+
+    let title =
+      try json |> member "title" |> to_string
+      with Type_error _ -> raise (Error (sprintf "[Validation.load_json, file \"%s\"] \"title\"_desc field is mandatory and must be a string" json_file)) in
+
+    let items = List.map parse_one (json |> member "items" |> to_list) in
+
+    { title; items }
+
+
+  let check modul_list (corpus_desc:Corpus_desc.t) =
+    let corpus = Corpus_desc.build_corpus corpus_desc in
+
+    let date =
+      let tm = Unix.localtime (Unix.time ()) in
+      sprintf "%d/%02d/%02d - %02d:%02d"
+        (tm.Unix.tm_year + 1900) (tm.Unix.tm_mon + 1) tm.Unix.tm_mday
+        tm.Unix.tm_hour tm.Unix.tm_min in
+
+    let modules =
+      `List
+        (List.map
+           (fun modul ->
+              let (out_items : Yojson.Basic.t) =
+                `List
+                  (List.map
+                     (fun item ->
+                        let grew_pattern = Pattern.parse (String.concat " " item.pattern) in
+                        let count =
+                          Corpus.fold_left (fun acc graph ->
+                              acc + (List.length (Graph.search_pattern grew_pattern graph))
+                            ) 0 corpus in
+                        `Assoc [
+                          "count", `Int count;
+                          "pattern", `List (List.map (fun x -> `String x) item.pattern);
+                          "description", `String item.description
+                        ]
+                     ) modul.items) in
+              `Assoc ["title", `String modul.title; "items", out_items]
+           ) modul_list) in
+
+
+    let json = `Assoc [
+        "corpus", `String (Corpus_desc.get_id corpus_desc);
+        "date", `String date;
+        "modules", modules
+      ] in
+    printf "%s\n" (Yojson.Basic.pretty_to_string json)
+
+
+
+
 end
