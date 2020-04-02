@@ -15,6 +15,35 @@ open Libgrew
 
 open Grew_args
 
+
+exception Error of Yojson.Basic.t
+
+let error_ ?file ?line ?fct ?data msg =
+  let opt_list = [
+    Some ("error", `String msg);
+    (CCOpt.map (fun x -> ("file", `String x)) file);
+    (CCOpt.map (fun x -> ("line", `Int x)) line);
+    (CCOpt.map (fun x -> ("function", `String x)) fct);
+    (CCOpt.map (fun x -> ("data", x)) data);
+  ] in
+  let json = `Assoc (CCList.filter_map (fun x->x) opt_list) in
+  raise (Error json)
+
+let error ?file ?line ?fct ?data = Printf.ksprintf (error_ ?file ?line ?fct ?data)
+
+
+(* ---------------------------------------------------------------------------------------------------- *)
+let ensure_dir dir =
+  try (* catch if dir does not exist *)
+    match Unix.stat dir with
+    | { Unix.st_kind = Unix.S_DIR } -> None
+    | _ ->  Some (sprintf "grew_match option ignored: %s already exists and is not directory" dir)
+  with Unix.Unix_error (Unix.ENOENT,_,_) ->
+    begin (* dir does not exist -> try to create it *)
+      try Unix.mkdir dir 0o755; None
+      with exc -> Some (sprintf "grew_match option ignored: cannot create dir %s (%s)" dir (Printexc.to_string exc))
+    end
+
 (* ================================================================================ *)
 module StringMap = Map.Make (String)
 
@@ -263,8 +292,6 @@ end
 
 (* ==================================================================================================== *)
 module Validation = struct
-  exception Error of string
-
   type item = {
     pattern: string list;
     description: string;
@@ -275,10 +302,13 @@ module Validation = struct
     items: item list
   }
 
+  (* -------------------------------------------------------------------------------- *)
   let load_json json_file =
     let open Yojson.Basic.Util in
 
-    let json = Yojson.Basic.from_file json_file in
+    let json =
+      try Yojson.Basic.from_file json_file
+      with Yojson.Json_error msg -> error ~fct:"Validation.load_json" ~file:json_file "%s" msg in
 
     let parse_one json =
       let pattern =
@@ -288,7 +318,11 @@ module Validation = struct
             |> member "pattern"
             |> to_list
             |> (List.map to_string)
-        with Type_error _ -> raise (Error (sprintf "[Validation.load_json, file \"%s\"] \"pattern\" field is mandatory and must be a string or a list of strings" json_file)) in
+        with Type_error (json_error,_) ->
+          error
+            ~fct:"Validation.load_json"
+            ~file: json_file
+            "\"pattern\" field is mandatory and must be a string or a list of strings (%s)" json_error in
       let description =
         try json |> member "description" |> to_string
         with Type_error _ -> "No description" in
@@ -296,14 +330,18 @@ module Validation = struct
 
     let title =
       try json |> member "title" |> to_string
-      with Type_error _ -> raise (Error (sprintf "[Validation.load_json, file \"%s\"] \"title\"_desc field is mandatory and must be a string" json_file)) in
-
+      with Type_error (json_error,_) ->
+        error
+          ~fct:"Validation.load_json"
+          ~file: json_file
+          "\"title\" field is mandatory and must be a string or a list of strings (%s)" json_error in
     let items = List.map parse_one (json |> member "items" |> to_list) in
 
     { title; items }
 
 
-  let check modul_list (corpus_desc:Corpus_desc.t) =
+  (* -------------------------------------------------------------------------------- *)
+  let check ?dir modul_list (corpus_desc:Corpus_desc.t) =
     let corpus = Corpus_desc.build_corpus corpus_desc in
 
     let date =
@@ -320,7 +358,14 @@ module Validation = struct
                 `List
                   (List.map
                      (fun item ->
-                        let grew_pattern = Pattern.parse (String.concat " " item.pattern) in
+                        let grew_pattern =
+                          try Pattern.parse (String.concat " " item.pattern)
+                          with Libgrew.Error msg ->
+                            error
+                              ~fct:"Validation.check"
+                              ~data:(`String (String.concat " " item.pattern))
+                              "cannot parse pattern associated with desc: %s" item.description
+                        in
                         let count =
                           Corpus.fold_left (fun acc graph ->
                               acc + (List.length (Graph.search_pattern grew_pattern graph))
@@ -334,15 +379,16 @@ module Validation = struct
               `Assoc ["title", `String modul.title; "items", out_items]
            ) modul_list) in
 
-
     let json = `Assoc [
         "corpus", `String (Corpus_desc.get_id corpus_desc);
         "date", `String date;
         "modules", modules
       ] in
-    printf "%s\n" (Yojson.Basic.pretty_to_string json)
 
-
-
+    match dir with
+    | None -> printf "%s\n" (Yojson.Basic.pretty_to_string json)
+    | Some dir ->
+      let out_file = Filename.concat dir ((Corpus_desc.get_id corpus_desc) ^ ".json") in
+      CCIO.with_out out_file (fun out_ch -> fprintf out_ch "%s\n" (Yojson.Basic.pretty_to_string json))
 
 end

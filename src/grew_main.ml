@@ -19,22 +19,18 @@ open Grew_args
 
 (* -------------------------------------------------------------------------------- *)
 
-let fail msg =
-  Log.fmessage "-------------------------------------";
-  Log.fmessage "%s" msg;
-  Log.fmessage "-------------------------------------";
-  exit 2
+let fail msg = Log.fmessage "%s" msg; exit 2
 
 let handle fct () =
   try fct ()
   with
+  | Error json ->                  fail (Yojson.Basic.pretty_to_string json)
   | Conll_error json ->            fail (Yojson.Basic.pretty_to_string json)
   | Libgrew.Error msg ->           fail msg
   | Corpus_.File_not_found file -> fail (sprintf "File not found: \"%s\"" file)
   | Corpus_.Fail msg ->            fail msg
   | Sys_error msg ->               fail (sprintf "System error: %s" msg)
   | Yojson.Json_error msg ->       fail (sprintf "Json error: %s" msg)
-  | Validation.Error msg ->         fail (sprintf "Validation error: %s" msg)
   | Libgrew.Bug msg ->             fail (sprintf "Libgrew.bug, please report: %s" msg)
   | exc ->                         fail (sprintf "Uncaught exception, please report: %s" (Printexc.to_string exc))
 
@@ -50,7 +46,7 @@ let transform () =
       let graph_array = Corpus_.input ?domain () in
       let len = Array.length graph_array in
 
-      let out_ch = match !Grew_args.output_file with
+      let out_ch = match !Grew_args.output_data with
         | Some output_file -> open_out output_file
         | None -> stdout in
 
@@ -77,7 +73,7 @@ let transform () =
                ) l
         ) graph_array;
       Counter.finish ();
-      match !Grew_args.output_file with
+      match !Grew_args.output_data with
       | Some output_file -> close_out out_ch
       | None -> ()
     ) ()
@@ -188,51 +184,63 @@ let clean () =
 
 (* -------------------------------------------------------------------------------- *)
 let count () =
-  match !Grew_args.patterns with
-  | [] -> Log.fwarning "No pattern given (use option -patterns)"
-  | l ->
-    printf "Corpus\t# sentences";
-    List.iter (fun p -> printf "\t%s" (p |> Filename.basename |> Filename.chop_extension)) l;
-    printf "\n";
+  handle
+    (fun () ->
+       match !Grew_args.patterns with
+       | [] -> Log.fwarning "No pattern given (use option -patterns)"
+       | l ->
+         printf "Corpus\t# sentences";
+         List.iter (fun p -> printf "\t%s" (p |> Filename.basename |> Filename.chop_extension)) l;
+         printf "\n";
 
-    let patterns = List.map Pattern.load l in
-    List.iter (
-      fun conf_file ->
-        let conf = Corpus_desc.load_json conf_file in
-        List.iter
-          (fun corpus_desc ->
-             let id = Corpus_desc.get_id corpus_desc in
-             let directory = Corpus_desc.get_directory corpus_desc in
-             let marshal_file = (Filename.concat directory id) ^ ".marshal" in
-             let in_ch = open_in_bin marshal_file in
-             let data = (Marshal.from_channel in_ch : Corpus.t) in
-             let _ = close_in in_ch in
-
-             printf "%s\t" (Filename.basename directory);
-             printf "%d\t" (Corpus.size data);
-
+         let patterns = List.map Pattern.load l in
+         List.iter (
+           fun conf_file ->
+             let conf = Corpus_desc.load_json conf_file in
              List.iter
-               (fun pattern ->
-                  let count =
-                    Corpus.fold_left (fun acc graph ->
-                        acc + (List.length (Graph.search_pattern pattern graph))
-                      ) 0 data in
-                  printf "%d\t" count
-               ) patterns;
-             printf "\n%!"
-          ) conf
-    ) (!Grew_args.input_data)
+               (fun corpus_desc ->
+                  let id = Corpus_desc.get_id corpus_desc in
+                  let directory = Corpus_desc.get_directory corpus_desc in
+                  let marshal_file = (Filename.concat directory id) ^ ".marshal" in
+                  let in_ch = open_in_bin marshal_file in
+                  let data = (Marshal.from_channel in_ch : Corpus.t) in
+                  let _ = close_in in_ch in
+
+                  printf "%s\t" (Filename.basename directory);
+                  printf "%d\t" (Corpus.size data);
+
+                  List.iter
+                    (fun pattern ->
+                       let count =
+                         Corpus.fold_left (fun acc graph ->
+                             acc + (List.length (Graph.search_pattern pattern graph))
+                           ) 0 data in
+                       printf "%d\t" count
+                    ) patterns;
+                  printf "\n%!"
+               ) conf
+         ) (!Grew_args.input_data)
+    ) ()
 
 (* -------------------------------------------------------------------------------- *)
 let valid () =
-  let validator_list = List.map Validation.load_json !Grew_args.patterns in
-  List.iter
-    (fun conf_file ->
-       List.iter
-         (fun corpus_desc ->
-            Validation.check validator_list corpus_desc
-         ) (Corpus_desc.load_json conf_file)
-    ) !Grew_args.input_data
+  handle
+    (fun () ->
+       match !Grew_args.output_data with
+       | None -> error ~fct:"valid" "and output directory is required (use -i option)"
+       | Some dir ->
+         match ensure_dir dir with
+         | Some pble -> error ~fct:"valid" "%s" pble
+         | None ->
+           let validator_list = List.map Validation.load_json !Grew_args.patterns in
+           List.iter
+             (fun conf_file ->
+                List.iter
+                  (fun corpus_desc ->
+                     Validation.check ~dir validator_list corpus_desc
+                  ) (Corpus_desc.load_json conf_file)
+             ) !Grew_args.input_data
+    ) ()
 
 
 (* -------------------------------------------------------------------------------- *)
