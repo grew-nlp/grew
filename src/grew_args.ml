@@ -103,13 +103,11 @@ module Grew_args = struct
   let rec loop = function
   | [] -> ()
   | "-grs" :: file :: args -> grs := Some file; loop args
-  | "-i" :: files :: args ->
-      input_data := (Str.split (Str.regexp " ") files) @ !input_data; loop args
+  | "-i" :: files :: args -> input_data := !input_data @ (Str.split (Str.regexp " ") files); loop args
   | "-o" :: file :: args -> output_data := Some file; loop args
   | "-strat" :: s :: args -> strat := s; loop args
-  | "-pattern" :: files :: args -> patterns := (Str.split (Str.regexp " ") files); loop args
-  | "-patterns" :: files :: args ->
-      patterns := (Str.split (Str.regexp " ") files) @ !patterns; loop args
+  | "-pattern" :: files :: args
+  | "-patterns" :: files :: args -> patterns := !patterns @ (Str.split (Str.regexp " ") files); loop args
   | "-html" :: args -> html := true; loop args
 
   | "-timeout" :: f :: args -> timeout := Some (float_of_string f); Rewrite.set_timeout (Some (float_of_string f)); loop args
