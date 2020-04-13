@@ -41,7 +41,7 @@ let transform () =
         | None -> Grs.empty
         | Some file -> Grs.load file in
 
-      let domain = Grs.domain grs in
+      let domain = Grs.domain_opt grs in
 
       let graph_array = Corpus_.input ?domain () in
       let len = Array.length graph_array in
@@ -86,7 +86,7 @@ let grep () = handle
 
          let domain = match !Grew_args.grs with
            | None -> None
-           | Some file -> Grs.domain (Grs.load file) in
+           | Some file -> Grs.domain_opt (Grs.load file) in
 
          let pattern = Pattern.load ?domain pattern_file in
 
