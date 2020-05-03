@@ -295,6 +295,7 @@ module Validation = struct
   type item = {
     pattern: string list;
     description: string;
+    level: string;
   }
 
   type modul = {
@@ -326,7 +327,11 @@ module Validation = struct
       let description =
         try json |> member "description" |> to_string
         with Type_error _ -> "No description" in
-      { pattern; description } in
+      let level =
+        try json |> member "level" |> to_string
+        with Type_error _ -> "No level" in
+
+      { pattern; description; level } in
 
     let title =
       try json |> member "title" |> to_string
@@ -373,7 +378,8 @@ module Validation = struct
                         `Assoc [
                           "count", `Int count;
                           "pattern", `List (List.map (fun x -> `String x) item.pattern);
-                          "description", `String item.description
+                          "description", `String item.description;
+                          "level", `String item.level
                         ]
                      ) modul.items) in
               `Assoc ["title", `String modul.title; "items", out_items]
