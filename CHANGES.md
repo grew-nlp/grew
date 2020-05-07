@@ -1,3 +1,6 @@
+## 1.3.2 (2020/05/07)
+  * fix multiple graph output with "-gr" option
+
 ## 1.3.1 (2020/01/18)
   * /!\ change output of grep command (see http://grew.fr/run#grep-mode)
   * remove Pervasives deprecated ocaml lib
