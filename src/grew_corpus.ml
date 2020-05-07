@@ -64,18 +64,20 @@ let transform () =
         Counter.print index len id;
         match Rewrite.simple_rewrite ~gr ~grs ~strat:!Grew_args.strat with
         | [one] -> out_graph one
-        | l ->
+        | l when !Grew_args.output = Grew_args.Conll || !Grew_args.output = Grew_args.Cupt ->
           List.iteri (fun i gr ->
             let conll = Graph.to_conll gr in
             let conll_new_id = Conll.set_sentid (sprintf "%s_%d" id i) conll in
             fprintf out_ch "%s\n" (Conll.to_string conll_new_id)
           ) l
+        | l -> List.iter out_graph l
       ) graph_array;
     Counter.finish ();
     match !Grew_args.output_file with
       | Some output_file -> close_out out_ch
       | None -> ()
   ) ()
+
 
 (* -------------------------------------------------------------------------------- *)
   let grep () = handle
