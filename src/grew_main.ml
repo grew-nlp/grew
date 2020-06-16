@@ -63,7 +63,7 @@ let transform () =
       Array.iteri
         (fun index (id, gr) ->
            Counter.print index len id;
-           match Rewrite.simple_rewrite ~gr ~grs ~strat:!Grew_args.strat with
+           match Rewrite.simple_rewrite gr grs !Grew_args.strat with
            | [one] -> out_graph one
            | l ->
              List.iteri (fun i gr ->
