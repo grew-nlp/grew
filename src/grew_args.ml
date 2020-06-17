@@ -125,6 +125,8 @@ module Grew_args = struct
   | "-debug" :: args -> Libgrew.set_debug_mode true; loop args
   | "-dep_dir" :: dir :: args -> dep_dir := Some dir; loop args
 
+  | "-config" :: value :: args -> Libgrew.update_config value; loop args
+
   | x :: args -> Log.fwarning "Invalid argument: %s, it is ignored!" x; loop args
 
   let parse () =
