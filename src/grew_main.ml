@@ -10,7 +10,7 @@
 
 open Printf
 open Log
-open Conll
+open Conllx
 open Libgrew
 
 open Grew_utils
@@ -25,73 +25,111 @@ let handle fct () =
   try fct ()
   with
   | Error json ->                  fail (Yojson.Basic.pretty_to_string json)
-  | Conll_error json ->            fail (Yojson.Basic.pretty_to_string json)
+  | Conllx_error json ->           fail (Yojson.Basic.pretty_to_string json)
   | Libgrew.Error msg ->           fail msg
-  | Corpus_.File_not_found file -> fail (sprintf "File not found: \"%s\"" file)
-  | Corpus_.Fail msg ->            fail msg
   | Sys_error msg ->               fail (sprintf "System error: %s" msg)
   | Yojson.Json_error msg ->       fail (sprintf "Json error: %s" msg)
   | Libgrew.Bug msg ->             fail (sprintf "Libgrew.bug, please report: %s" msg)
   | exc ->                         fail (sprintf "Uncaught exception, please report: %s" (Printexc.to_string exc))
 
 (* -------------------------------------------------------------------------------- *)
+let load_corpus () =
+  let config = !Grew_args.config in
+  match !Grew_args.input_data with
+  | [] -> Corpus.from_stdin ~config ()
+  | [one] ->
+    begin
+      try
+        match Unix.stat one with
+        | { Unix.st_kind = Unix.S_DIR } -> Corpus.from_dir ~config one
+        | _ -> Corpus.from_file ~config one
+      with Unix.Unix_error _ -> fail (sprintf "File not found `%s`" one)
+    end
+  | files ->
+    let sub_corpora =
+      List.fold_left
+        (fun acc file ->
+           try
+             let subcorpus = Corpus.from_file ~config file in
+             subcorpus :: acc
+           with
+           | _ -> failwith "Unknown"
+        ) [] files in
+    Corpus.merge sub_corpora
+
+(* -------------------------------------------------------------------------------- *)
 let transform () =
-  handle (fun () ->
-      let grs = match !Grew_args.grs with
-        | None -> Grs.empty
-        | Some file -> Grs.load file in
+  handle
+    (fun () ->
+       let config = !Grew_args.config in
+       let grs = match !Grew_args.grs with
+         | None -> Grs.empty
+         | Some file -> Grs.load ~config file in
 
-      let domain = Grs.domain_opt grs in
+       (* let domain = Grs.domain_opt grs in *)
 
-      let graph_array = Corpus_.input ?domain () in
-      let len = Array.length graph_array in
+       let corpus = load_corpus () in
+       let len = Corpus.size corpus in
 
-      let out_ch = match !Grew_args.output_data with
-        | Some output_file -> open_out output_file
-        | None -> stdout in
+       let out_ch = match !Grew_args.output_data with
+         | Some output_file -> open_out output_file
+         | None -> stdout in
 
-      let out_graph ?new_sent_id graph = match (!Grew_args.output, new_sent_id) with
-        | (Grew_args.Conll,None) -> fprintf out_ch "%s\n" (Graph.to_conll_string graph)
-        | (Grew_args.Conll,Some nsi) -> fprintf out_ch "%s\n" (graph |> Graph.to_conll |> Conll.set_sentid nsi |> Conll.to_string)
-        | (Grew_args.Cupt, None) -> fprintf out_ch "%s\n" (Graph.to_conll_string ~cupt:true graph)
-        | (Grew_args.Cupt,Some nsi) -> fprintf out_ch "%s\n" (graph |> Graph.to_conll |> Conll.set_sentid nsi |> Conll.to_string ~cupt:true)
-        | (Grew_args.Gr, None) -> fprintf out_ch "%s\n" (Graph.to_gr graph)
-        | (Grew_args.Gr, Some nsi) -> fprintf out_ch "# sent_id = %s\n%s\n" nsi (Graph.to_gr graph)
-        | (Grew_args.Dot, None) -> fprintf out_ch "%s\n" (Graph.to_dot graph)
-        | (Grew_args.Dot, Some nsi) -> fprintf out_ch "# sent_id = %s\n%s\n" nsi (Graph.to_dot graph) in
+       let out_graph ?new_sent_id graph = match (!Grew_args.output, new_sent_id) with
+         | (Grew_args.Conllx,None) ->
+           fprintf out_ch "%s\n" (graph |> Graph.to_grew_json |> Conllx.of_json |> Conllx.to_string ~config)
+         | (Grew_args.Conllx,Some nsi) ->
+           fprintf out_ch "%s\n" (graph |> Graph.to_grew_json |> Conllx.of_json |> Conllx.set_sent_id nsi |> Conllx.to_string ~config)
+         | (Grew_args.Cupt, None) ->
+           fprintf out_ch "%s\n" (graph |> Graph.to_grew_json |> Conllx.of_json |> Conllx.to_string ~config ~columns:Conllx_columns.cupt)
+         | (Grew_args.Cupt,Some nsi) ->
+           fprintf out_ch "%s\n" (graph |> Graph.to_grew_json |> Conllx.of_json |> Conllx.set_sent_id nsi |> Conllx.to_string ~config ~columns:Conllx_columns.cupt)
+         | (Grew_args.Semcor, None) ->
+           fprintf out_ch "%s\n" (graph |> Graph.to_grew_json |> Conllx.of_json |> Conllx.to_string ~config ~columns:Conllx_columns.frsemcor)
+         | (Grew_args.Semcor,Some nsi) ->
+           fprintf out_ch "%s\n" (graph |> Graph.to_grew_json |> Conllx.of_json |> Conllx.set_sent_id nsi |> Conllx.to_string ~config ~columns:Conllx_columns.frsemcor)
+         | (Grew_args.Gr, None) -> fprintf out_ch "%s\n" (Graph.to_gr ~config graph)
+         | (Grew_args.Gr, Some nsi) -> fprintf out_ch "# sent_id = %s\n%s\n" nsi (Graph.to_gr ~config graph)
+         | (Grew_args.Dot, None) -> fprintf out_ch "%s\n" (Graph.to_dot ~config graph)
+         | (Grew_args.Dot, Some nsi) -> fprintf out_ch "# sent_id = %s\n%s\n" nsi (Graph.to_dot ~config graph) in
 
-      Array.iteri
-        (fun index (id, gr) ->
-           Counter.print index len id;
-           match Rewrite.simple_rewrite gr grs !Grew_args.strat with
-           | [one] -> out_graph one
-           | l ->
-             List.iteri (fun i gr ->
-                 let conll = Graph.to_conll gr in
-                 let conll_new_id = Conll.set_sentid (sprintf "%s_%d" id i) conll in
-                 fprintf out_ch "%s\n" (Conll.to_string conll_new_id)
-               ) l
-        ) graph_array;
-      Counter.finish ();
-      match !Grew_args.output_data with
-      | Some output_file -> close_out out_ch
-      | None -> ()
+       Corpus.iteri
+         (fun index id gr ->
+            Counter.print index len id;
+            match Rewrite.simple_rewrite ~config gr grs !Grew_args.strat with
+            | [one] -> out_graph one
+            | l ->
+              List.iteri
+                (fun i graph ->
+                  graph
+                  |> Graph.to_grew_json
+                  |> Conllx.of_json
+                  |> Conllx.set_sent_id (sprintf "%s_%d" id i)
+                  |> Conllx.to_string ~config
+                  |> fprintf out_ch "%s\n"
+                ) l
+         ) corpus;
+       Counter.finish ();
+       match !Grew_args.output_data with
+       | Some output_file -> close_out out_ch
+       | None -> ()
     ) ()
 
 (* -------------------------------------------------------------------------------- *)
 let grep () = handle
     (fun () ->
+       let config = !Grew_args.config in
        match !Grew_args.patterns with
        | [pattern_file] ->
 
          let domain = match !Grew_args.grs with
            | None -> None
-           | Some file -> Grs.domain_opt (Grs.load file) in
+           | Some file -> Grs.domain_opt (Grs.load ~config file) in
 
-         let pattern = Pattern.load ?domain pattern_file in
+         let pattern = Pattern.load ?domain ~config pattern_file in
 
          (* get the array of graphs to explore *)
-         let graph_array = Corpus_.input ?domain () in
+         let corpus = load_corpus () in
 
          (match !Grew_args.dep_dir with
           | None -> ()
@@ -101,9 +139,9 @@ let grep () = handle
          let pattern_ids = Pattern.pid_name_list pattern in
 
          let final_json =
-           Array.fold_left
-             (fun acc (name,graph) ->
-                let matchings = Graph.search_pattern ?domain pattern graph in
+           Corpus.fold_left
+             (fun acc name graph ->
+                let matchings = Graph.search_pattern ?domain ~config pattern graph in
                 List.fold_left
                   (fun acc2 matching ->
                      let assoc_nodes = Matching.nodes pattern graph matching in
@@ -118,7 +156,7 @@ let grep () = handle
                          let id = sprintf "%s__%s"
                              name
                              (String.concat "_" (List.map2 (sprintf "%s:%s") pattern_ids graph_node_names)) in
-                         let dep = Graph.to_dep ~deco graph in
+                         let dep = Graph.to_dep ~config ~deco graph in
                          let filename = Filename.concat dir (sprintf "%s.dep" id) in
                          let out_ch = open_out filename in
                          fprintf out_ch "%s" dep;
@@ -144,7 +182,7 @@ let grep () = handle
                      let json = `Assoc (CCList.filter_map (fun x -> x) opt_list) in
                      json :: acc2
                   ) acc matchings
-             ) [] graph_array in
+             ) [] corpus in
          Printf.printf "%s\n" (Yojson.Basic.pretty_to_string (`List final_json))
        | l -> Log.fmessage "1 pattern expected for grep mode (%d given)" (List.length l); exit 1;
 
@@ -193,12 +231,13 @@ let count () =
          List.iter (fun p -> printf "\t%s" (p |> Filename.basename |> Filename.chop_extension)) l;
          printf "\n";
 
-         let patterns = List.map Pattern.load l in
          List.iter (
-           fun conf_file ->
-             let conf = Corpus_desc.load_json conf_file in
+           fun json_file ->
+             let corpus_desc_list = Corpus_desc.load_json json_file in
              List.iter
                (fun corpus_desc ->
+                  let config = Corpus_desc.get_config corpus_desc in
+                  let patterns = List.map (Pattern.load ~config) l in
                   let id = Corpus_desc.get_id corpus_desc in
                   let directory = Corpus_desc.get_directory corpus_desc in
                   let marshal_file = (Filename.concat directory id) ^ ".marshal" in
@@ -212,13 +251,13 @@ let count () =
                   List.iter
                     (fun pattern ->
                        let count =
-                         Corpus.fold_left (fun acc graph ->
-                             acc + (List.length (Graph.search_pattern pattern graph))
+                         Corpus.fold_left (fun acc _ graph ->
+                             acc + (List.length (Graph.search_pattern ~config pattern graph))
                            ) 0 data in
                        printf "%d\t" count
                     ) patterns;
                   printf "\n%!"
-               ) conf
+               ) corpus_desc_list
          ) (!Grew_args.input_data)
     ) ()
 
@@ -227,7 +266,7 @@ let valid () =
   handle
     (fun () ->
        match !Grew_args.output_data with
-       | None -> error ~fct:"valid" "and output directory is required (use -i option)"
+       | None -> error ~fct:"valid" "an output directory is required (use -i option)"
        | Some dir ->
          match ensure_dir dir with
          | Some pble -> error ~fct:"valid" "%s" pble

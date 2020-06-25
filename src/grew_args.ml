@@ -10,6 +10,7 @@
 
 open Arg
 open Log
+open Conllx
 open Libgrew
 
 module Grew_args = struct
@@ -20,8 +21,8 @@ module Grew_args = struct
   let grs = ref None
   let dep_dir = ref None
 
-  type output = Conll | Cupt | Gr | Dot
-  let output = ref Conll
+  type output = Conllx | Cupt | Semcor | Gr | Dot
+  let output = ref Conllx
 
   let (input_data : string list ref) = ref []
   let (output_data : string option ref) = ref None
@@ -30,6 +31,8 @@ module Grew_args = struct
   let timeout = ref None
   let (patterns : string list ref) = ref []
   let html = ref false
+
+  let config = ref (Conllx_config.build "ud")  (* "ud" is used as default value. *)
 
   let grew_match_server = ref None
 
@@ -115,6 +118,7 @@ module Grew_args = struct
 
   | "-quiet" :: args -> quiet := true; loop args
   | "-cupt" :: args -> output := Cupt; loop args
+  | "-semcor" :: args -> output := Semcor; loop args
   | "-gr" :: args -> output := Gr; loop args
   | "-dot" :: args -> output := Dot; loop args
 
@@ -125,7 +129,7 @@ module Grew_args = struct
   | "-debug" :: args -> Libgrew.set_debug_mode true; loop args
   | "-dep_dir" :: dir :: args -> dep_dir := Some dir; loop args
 
-  | "-config" :: value :: args -> Libgrew.update_config value; loop args
+  | "-config" :: value :: args -> config := Conllx_config.build value; loop args
 
   | x :: args -> Log.fwarning "Invalid argument: %s, it is ignored!" x; loop args
 

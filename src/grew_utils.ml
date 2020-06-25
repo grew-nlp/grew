@@ -10,12 +10,17 @@
 
 open Printf
 open Log
-open Conll
+open Conllx
 open Libgrew
 
 open Grew_args
 
+(* ==================================================================================================== *)
+module Int_set = Set.Make (Int)
+module Int_map = Map.Make (Int)
 
+
+(* ==================================================================================================== *)
 exception Error of Yojson.Basic.t
 
 let error_ ?file ?line ?fct ?data msg =
@@ -163,107 +168,6 @@ module List_ = struct
 
 end (* module List_ *)
 
-(* ================================================================================ *)
-(* TODO: merge with code in libcaml-grew for corpus hanlding *)
-module Corpus_ = struct
-
-  exception Fail of string
-  exception File_not_found of string
-
-  let load_conll ?domain file =
-    let conll_corpus = Conll_corpus.load file in
-    Array.map (fun (sentid, conll) -> (sentid, Graph.of_conll ?domain conll)) conll_corpus
-
-  let brown_form_lines ?domain lines =
-    let brown_list =
-      List_.opt_map
-        (fun (i,line) -> match Str.split (Str.regexp "#") line with
-           | [] -> None
-           | [line] -> let sentid = sprintf "%05d" i in Some (sentid, Graph.of_brown ?domain ~sentid line)
-           | [sentid; line] -> Some (sentid, Graph.of_brown ?domain ~sentid line)
-           | _ -> raise (Fail (sprintf "[line %d] Illegal Brown line >>>%s<<<<\n%!" i line))
-        ) lines in
-    Array.of_list brown_list
-
-  let load_brown ?domain file =
-    let lines = File.read file in
-    try brown_form_lines ?domain lines
-    with Fail msg -> raise (Fail (sprintf "[file %s] %s" file msg))
-
-  (** [load source] loads a corpus; [source] can be:
-      - a folder, the corpus is the set of graphs (files matching *.gr or *.conll) in the folder
-      - a conll file *)
-  let get_graphs ?domain source_list =
-    match source_list with
-    | [source] ->
-      begin
-        if not (Sys.file_exists source)
-        then raise (File_not_found source);
-        if Sys.is_directory source
-        then (* if [source] is a folder *)
-          begin
-            let files_array = Sys.readdir source in
-            let graph_list =
-              Array.fold_right
-                (fun file acc ->
-                   if Filename.check_suffix file ".gr"
-                   then (Filename.chop_extension file, Graph.load ?domain (Filename.concat source file)) :: acc
-                   else if (Filename.check_suffix file ".conll" || Filename.check_suffix file ".conllu")
-                   then
-                     let conll = Conll.load (Filename.concat source file) in
-                     let graph = Graph.of_conll ?domain conll in
-                     match Conll.get_sentid conll with
-                     | Some sentid -> (sentid, graph) :: acc
-                     | None -> (file, graph) :: acc
-                   else acc
-                ) files_array [] in
-            Array.of_list graph_list
-          end
-        else (* if [source] is a file *)
-
-          match File.get_suffix source with
-          | Some s when String_.contains "conll" s -> load_conll ?domain source
-          | Some s when String_.contains "cupt" s -> load_conll ?domain source
-          | Some s when String_.contains "melt" s -> load_brown ?domain source
-          | Some s when String_.contains "brown" s -> load_brown ?domain source
-          | Some s when String_.contains "gr" s -> [| (source, Graph.load ?domain source) |]
-
-          | _ ->
-            Log.fwarning "Unknown suffix for file \"%s\", trying to guess format..." source;
-            try load_conll ?domain source
-            with _ ->
-            try load_brown ?domain source
-            with _ -> raise (Fail (sprintf "Cannot load file \"%s\", unknown format" source))
-
-      end
-    | [] -> raise (Fail ( "Empty input list\n%!"))
-    | _ ->
-      let conll_corpus = Conll_corpus.load_list source_list in
-      Array.map (fun (sentid, conll) -> (sentid, Graph.of_conll ?domain conll)) conll_corpus
-
-  let from_stdin () =
-    let lines = File.read_stdin () in
-    try
-      let conll_corpus = Conll_corpus.from_lines ~basename: "stdin" lines in
-      Array.map (fun (sentid, conll) -> (sentid, Graph.of_conll conll)) conll_corpus
-    with _ -> brown_form_lines lines
-
-  let input ?domain () =
-    match !Grew_args.input_data with
-    | [] -> from_stdin ()
-    | input_list -> get_graphs ?domain input_list
-
-end (* module Corpus *)
-
-(* ==================================================================================================== *)
-module Int =
-struct
-  type t = int
-  let compare = Stdlib.compare
-end
-
-module Int_set = Set.Make (Int)
-module Int_map = Map.Make (Int)
 
 (* ==================================================================================================== *)
 module Timer = struct
@@ -348,6 +252,7 @@ module Validation = struct
   (* -------------------------------------------------------------------------------- *)
   let check ?dir modul_list (corpus_desc:Corpus_desc.t) =
     let corpus = Corpus_desc.build_corpus corpus_desc in
+    let config = Corpus_desc.get_config corpus_desc in
 
     let date =
       let tm = Unix.localtime (Unix.time ()) in
@@ -364,7 +269,7 @@ module Validation = struct
                   (List.map
                      (fun item ->
                         let grew_pattern =
-                          try Pattern.parse (String.concat " " item.pattern)
+                          try Pattern.parse ~config (String.concat " " item.pattern)
                           with Libgrew.Error msg ->
                             error
                               ~fct:"Validation.check"
@@ -372,8 +277,8 @@ module Validation = struct
                               "cannot parse pattern associated with desc: %s" item.description
                         in
                         let count =
-                          Corpus.fold_left (fun acc graph ->
-                              acc + (List.length (Graph.search_pattern grew_pattern graph))
+                          Corpus.fold_left (fun acc _ graph ->
+                              acc + (List.length (Graph.search_pattern ~config grew_pattern graph))
                             ) 0 corpus in
                         `Assoc [
                           "count", `Int count;
