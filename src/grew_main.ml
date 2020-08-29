@@ -93,6 +93,16 @@ let transform () =
          | (Grew_args.Dot, None) -> fprintf out_ch "%s\n" (Graph.to_dot ~config graph)
          | (Grew_args.Dot, Some nsi) -> fprintf out_ch "# sent_id = %s\n%s\n" nsi (Graph.to_dot ~config graph) in
 
+
+       begin
+         match !Grew_args.output with
+         | Conllx -> fprintf out_ch "%s\n" (Conllx_columns.to_string Conllx_columns.default)
+         | Cupt -> fprintf out_ch "%s\n" (Conllx_columns.to_string Conllx_columns.cupt)
+         | Semcor -> fprintf out_ch "%s\n" (Conllx_columns.to_string Conllx_columns.frsemcor)
+         | Gr
+         | Dot -> ()
+       end;
+
        Corpus.iteri
          (fun index id gr ->
             Counter.print index len id;
@@ -101,12 +111,12 @@ let transform () =
             | l ->
               List.iteri
                 (fun i graph ->
-                  graph
-                  |> Graph.to_grew_json
-                  |> Conllx.of_json
-                  |> Conllx.set_sent_id (sprintf "%s_%d" id i)
-                  |> Conllx.to_string ~config
-                  |> fprintf out_ch "%s\n"
+                   graph
+                   |> Graph.to_grew_json
+                   |> Conllx.of_json
+                   |> Conllx.set_sent_id (sprintf "%s_%d" id i)
+                   |> Conllx.to_string ~config
+                   |> fprintf out_ch "%s\n"
                 ) l
          ) corpus;
        Counter.finish ();
@@ -276,6 +286,7 @@ let valid () =
              (fun conf_file ->
                 List.iter
                   (fun corpus_desc ->
+                     if not !Grew_args.quiet then printf "%s\n" (Corpus_desc.get_id corpus_desc);
                      Validation.check ~dir validator_list corpus_desc
                   ) (Corpus_desc.load_json conf_file)
              ) !Grew_args.input_data
