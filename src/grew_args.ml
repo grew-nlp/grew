@@ -143,7 +143,9 @@ module Grew_args = struct
     | _ :: "valid" :: args -> mode := Valid; loop args
     | _ :: "compile" :: args -> mode := Compile; loop args
     | _ :: "clean" :: args -> mode := Clean; loop args
-    | _ :: "version" :: _ -> Printf.printf "%s\n" VERSION;
+    | _ :: "version" :: _ ->
+      Printf.printf "libgrew: %s\n" (Libgrew.get_version ());
+      Printf.printf "grew: %s\n" VERSION;
     | _ :: "test" :: args -> mode := Test; loop args
     | _ :: "help" :: "gui" :: _ -> help_gui ()
     | _ :: "help" :: "transform" :: _ -> help_transform ()
