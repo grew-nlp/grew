@@ -255,8 +255,8 @@ let count () =
                   let data = (Marshal.from_channel in_ch : Corpus.t) in
                   let _ = close_in in_ch in
 
-                  printf "%s\t" (Filename.basename directory);
-                  printf "%d\t" (Corpus.size data);
+                  printf "%s" (Filename.basename directory);
+                  printf "\t%d" (Corpus.size data);
 
                   List.iter
                     (fun pattern ->
@@ -264,7 +264,7 @@ let count () =
                          Corpus.fold_left (fun acc _ graph ->
                              acc + (List.length (Graph.search_pattern ~config pattern graph))
                            ) 0 data in
-                       printf "%d\t" count
+                       printf "\t%d" count
                     ) patterns;
                   printf "\n%!"
                ) corpus_desc_list
