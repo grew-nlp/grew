@@ -13,12 +13,11 @@ open Log
 open Conllx
 open Libgrew
 
-open Grew_args
-
 (* ==================================================================================================== *)
 module Int_set = Set.Make (Int)
 module Int_map = Map.Make (Int)
 
+let quiet = ref false
 
 (* ==================================================================================================== *)
 exception Error of Yojson.Basic.t
@@ -36,6 +35,20 @@ let error_ ?file ?line ?fct ?data msg =
 
 let error ?file ?line ?fct ?data = Printf.ksprintf (error_ ?file ?line ?fct ?data)
 
+(* -------------------------------------------------------------------------------- *)
+
+let fail msg = Log.fmessage "%s" msg; exit 2
+
+let handle fct () =
+  try fct ()
+  with
+  | Error json ->                  fail (Yojson.Basic.pretty_to_string json)
+  | Conllx_error json ->           fail (Yojson.Basic.pretty_to_string json)
+  | Libgrew.Error msg ->           fail msg
+  | Sys_error msg ->               fail (sprintf "System error: %s" msg)
+  | Yojson.Json_error msg ->       fail (sprintf "Json error: %s" msg)
+  | Libgrew.Bug msg ->             fail (sprintf "Libgrew.bug, please report: %s" msg)
+  | exc ->                         fail (sprintf "Uncaught exception, please report: %s" (Printexc.to_string exc))
 
 (* ---------------------------------------------------------------------------------------------------- *)
 let ensure_dir dir =
@@ -77,10 +90,10 @@ module Counter = struct
   let back = sprintf "\r%s\r" (String.make 100 ' ')
 
   let print value total text =
-    if not !Grew_args.quiet
+    if not !quiet
     then eprintf "%s%.2f%% (%s)%!" back (((float value) /. (float total))*. 100. ) text
 
-  let finish () = if not !Grew_args.quiet then eprintf "%s100.00%%\n%!" back
+  let finish () = if not !quiet then eprintf "%s100.00%%\n%!" back
 end (* module Counter *)
 
 (* ================================================================================ *)

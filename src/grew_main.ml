@@ -16,22 +16,6 @@ open Libgrew
 open Grew_utils
 open Grew_args
 
-
-(* -------------------------------------------------------------------------------- *)
-
-let fail msg = Log.fmessage "%s" msg; exit 2
-
-let handle fct () =
-  try fct ()
-  with
-  | Error json ->                  fail (Yojson.Basic.pretty_to_string json)
-  | Conllx_error json ->           fail (Yojson.Basic.pretty_to_string json)
-  | Libgrew.Error msg ->           fail msg
-  | Sys_error msg ->               fail (sprintf "System error: %s" msg)
-  | Yojson.Json_error msg ->       fail (sprintf "Json error: %s" msg)
-  | Libgrew.Bug msg ->             fail (sprintf "Libgrew.bug, please report: %s" msg)
-  | exc ->                         fail (sprintf "Uncaught exception, please report: %s" (Printexc.to_string exc))
-
 (* -------------------------------------------------------------------------------- *)
 let load_file f =
   if Filename.check_suffix f ".json"
@@ -296,7 +280,7 @@ let valid () =
              (fun conf_file ->
                 List.iter
                   (fun corpus_desc ->
-                     if not !Grew_args.quiet then printf "%s\n" (Corpus_desc.get_id corpus_desc);
+                     if not !quiet then printf "%s\n" (Corpus_desc.get_id corpus_desc);
                      Validation.check ~dir validator_list corpus_desc
                   ) (Corpus_desc.load_json conf_file)
              ) !Grew_args.input_data

@@ -13,6 +13,8 @@ open Log
 open Conllx
 open Libgrew
 
+open Grew_utils
+
 module Grew_args = struct
 
   type mode = Undefined | Gui of string | Transform | Grep | Count | Valid | Compile | Clean | Test
@@ -27,7 +29,6 @@ module Grew_args = struct
   let (input_data : string list ref) = ref []
   let (output_data : string option ref) = ref None
   let strat = ref "main"
-  let quiet = ref false
   let timeout = ref None
   let (patterns : string list ref) = ref []
   let html = ref false
@@ -130,7 +131,7 @@ module Grew_args = struct
   | "-debug" :: args -> Libgrew.set_debug_mode true; loop args
   | "-dep_dir" :: dir :: args -> dep_dir := Some dir; loop args
 
-  | "-config" :: value :: args -> config := Conllx_config.build value; loop args
+  | "-config" :: value :: args -> config := handle (fun () -> Conllx_config.build value) (); loop args
 
   | x :: args -> Log.fwarning "Invalid argument: %s, it is ignored!" x; loop args
 
