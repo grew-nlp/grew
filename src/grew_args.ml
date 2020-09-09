@@ -21,7 +21,7 @@ module Grew_args = struct
   let grs = ref None
   let dep_dir = ref None
 
-  type output = Conllx | Cupt | Semcor | Gr | Dot
+  type output = Conllx | Cupt | Semcor | Gr | Dot | Json
   let output = ref Conllx
 
   let (input_data : string list ref) = ref []
@@ -121,6 +121,7 @@ module Grew_args = struct
   | "-semcor" :: args -> output := Semcor; loop args
   | "-gr" :: args -> output := Gr; loop args
   | "-dot" :: args -> output := Dot; loop args
+  | "-json" :: args -> output := Json; loop args
 
   | "-grew_match_server" :: dir :: args -> grew_match_server := Some dir; loop args
 
