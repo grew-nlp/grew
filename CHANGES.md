@@ -1,3 +1,7 @@
+## 1.4.0 (2020/10/xx)
+  * new subcommands `compile`, `clean`, `valid` and `count`
+  * add options `-config`, `-json`
+
 ## 1.3.2 (2020/05/07)
   * fix multiple graph output with "-gr" option
 
