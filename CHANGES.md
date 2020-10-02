@@ -1,4 +1,4 @@
-## 1.4.0 (2020/10/xx)
+## 1.4.0 (2020/10/02)
   * new subcommands `compile`, `clean`, `valid` and `count`
   * add options `-config`, `-json`
 
