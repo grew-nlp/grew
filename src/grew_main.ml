@@ -57,8 +57,6 @@ let transform () =
          | None -> Grs.empty
          | Some file -> Grs.load ~config file in
 
-       (* let domain = Grs.domain_opt grs in *)
-
        let corpus = load_corpus () in
        let len = Corpus.size corpus in
 
@@ -125,11 +123,7 @@ let grep () = handle
        match !Grew_args.patterns with
        | [pattern_file] ->
 
-         let domain = match !Grew_args.grs with
-           | None -> None
-           | Some file -> Grs.domain_opt (Grs.load ~config file) in
-
-         let pattern = Pattern.load ?domain ~config pattern_file in
+         let pattern = Pattern.load ~config pattern_file in
 
          (* get the array of graphs to explore *)
          let corpus = load_corpus () in
@@ -144,7 +138,7 @@ let grep () = handle
          let final_json =
            Corpus.fold_left
              (fun acc name graph ->
-                let matchings = Graph.search_pattern ?domain ~config pattern graph in
+                let matchings = Graph.search_pattern ~config pattern graph in
                 List.fold_left
                   (fun acc2 matching ->
                      let assoc_nodes = Matching.nodes pattern graph matching in
