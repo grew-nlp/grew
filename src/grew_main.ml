@@ -44,8 +44,7 @@ let load_corpus () =
            try
              let subcorpus = Corpus.from_file ~config file in
              subcorpus :: acc
-           with
-           | _ -> failwith "Unknown"
+           with Unix.Unix_error _ -> fail (sprintf "File not found `%s`" file)
         ) [] files in
     Corpus.merge sub_corpora
 
@@ -103,14 +102,14 @@ let transform () =
             | l ->
               List.iteri
                 (fun i graph ->
-                  let new_sent_id = sprintf "%s_%d" id i in
-                  out_graph ~new_sent_id graph
+                   let new_sent_id = sprintf "%s_%d" id i in
+                   out_graph ~new_sent_id graph
                    (* graph
-                   |> Graph.to_json
-                   |> Conllx.of_json
-                   |> Conllx.set_sent_id (sprintf "%s_%d" id i)
-                   |> Conllx.to_string ~config
-                   |> fprintf out_ch "%s\n" *)
+                      |> Graph.to_json
+                      |> Conllx.of_json
+                      |> Conllx.set_sent_id (sprintf "%s_%d" id i)
+                      |> Conllx.to_string ~config
+                      |> fprintf out_ch "%s\n" *)
                 ) l
          ) corpus;
        Counter.finish ();
