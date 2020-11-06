@@ -133,6 +133,8 @@ module Grew_args = struct
 
   | "-config" :: value :: args -> config := handle (fun () -> Conllx_config.build value) (); loop args
 
+  | "-rff" :: value :: args -> config := Conllx_config.remove_from_feats value !config; loop args
+
   | x :: args -> Log.fwarning "Invalid argument: %s, it is ignored!" x; loop args
 
   let parse () =
