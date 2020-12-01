@@ -78,7 +78,7 @@ let transform () =
          | (Grew_args.Semcor,Some nsi) ->
            fprintf out_ch "%s\n" (graph |> Graph.to_json |> Conllx.of_json |> Conllx.set_sent_id nsi |> Conllx.to_string ~config ~columns:Conllx_columns.frsemcor)
          | (Grew_args.Gr, None) -> fprintf out_ch "%s\n" (Graph.to_gr ~config graph)
-         | (Grew_args.Gr, Some nsi) -> fprintf out_ch "# sent_id = %s\n%s\n" nsi (Graph.to_gr ~config graph)
+         | (Grew_args.Gr, Some nsi) -> fprintf out_ch "%s\n" (Graph.to_gr ~config (Graph.set_meta "sent_id" nsi graph))
          | (Grew_args.Dot, None) -> fprintf out_ch "%s\n" (Graph.to_dot ~config graph)
          | (Grew_args.Dot, Some nsi) -> fprintf out_ch "# sent_id = %s\n%s\n" nsi (Graph.to_dot ~config graph)
          | (Grew_args.Json, None) -> fprintf out_ch "%s\n" (graph |> Graph.to_json |> Yojson.Basic.pretty_to_string)
