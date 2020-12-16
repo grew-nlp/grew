@@ -208,6 +208,34 @@ module Timer = struct
 end
 
 (* ==================================================================================================== *)
+module Stat = struct
+  type pat_desc = {
+    id: string;
+    desc: string;
+    code: string list;
+  }
+
+  type t = pat_desc list
+
+  let load_json json_file =
+    let open Yojson.Basic.Util in
+
+    let json =
+      try Yojson.Basic.from_file json_file
+      with Yojson.Json_error msg -> error ~fct:"Stat.load_json" ~file:json_file "%s" msg in
+
+      let parse_pattern (id, json) =
+        let assoc = json |> to_assoc in
+      { id;
+        desc = List.assoc "desc" assoc |> to_string;
+        code = List.assoc "code" assoc |> to_list |> List.map to_string;
+      } in
+
+      (json |> to_assoc |> List.map parse_pattern, json)
+end
+
+
+(* ==================================================================================================== *)
 module Validation = struct
   type item = {
     pattern: string list;

@@ -17,7 +17,7 @@ open Grew_utils
 
 module Grew_args = struct
 
-  type mode = Undefined | Gui of string | Transform | Grep | Count | Valid | Compile | Clean | Test
+  type mode = Undefined | Gui of string | Transform | Grep | Count | Valid | Stat | Compile | Clean | Test
   let mode = ref Undefined
 
   let grs = ref None
@@ -145,6 +145,7 @@ module Grew_args = struct
     | _ :: "grep" :: args -> mode := Grep; loop args
     | _ :: "count" :: args -> mode := Count; loop args
     | _ :: "valid" :: args -> mode := Valid; loop args
+    | _ :: "stat" :: args -> mode := Stat; loop args
     | _ :: "compile" :: args -> mode := Compile; loop args
     | _ :: "clean" :: args -> mode := Clean; loop args
     | _ :: "version" :: _ ->

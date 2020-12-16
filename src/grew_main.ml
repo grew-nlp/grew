@@ -257,11 +257,61 @@ let count () =
     ) ()
 
 (* -------------------------------------------------------------------------------- *)
+let stat () =
+  handle
+    (fun () ->
+       match !Grew_args.patterns with
+       | [] -> Log.fwarning "No pattern given (expected one json file with patterns)"
+       | _::_::_ -> Log.fwarning "Too much patterns given (expected one json file with patterns)"
+       | [one] ->
+         let (pat_descs, json) = Stat.load_json one in
+
+         let corpora =
+           List.fold_left
+             (fun acc conf_file ->
+                Corpus_desc.load_json conf_file @ acc
+             ) [] !Grew_args.input_data in
+
+         let lines =
+           List.map
+             (fun corpus_desc ->
+                let corpus = Corpus_desc.build_corpus corpus_desc in
+                let config = Corpus_desc.get_config corpus_desc in
+                `List (
+
+                  `String (Corpus_desc.get_id corpus_desc) ::
+                  List.map (
+                    fun pat_desc ->
+                      let pattern =
+                        try Pattern.parse ~config (String.concat " " pat_desc.Stat.code)
+                        with Libgrew.Error msg ->
+                          error
+                            ~fct:"Grew.stat"
+                            ~data:(`String (String.concat " " pat_desc.Stat.code))
+                            "cannot parse pattern associated with desc: %s" pat_desc.Stat.desc in
+                      let count =
+                        Corpus.fold_left (fun acc _ graph ->
+                            acc + (List.length (Graph.search_pattern ~config pattern graph))
+                          ) 0 corpus in
+                      `Int count
+                  ) pat_descs
+                )
+             ) corpora in
+         let final_json = `Assoc [
+             ("patterns", json);
+             ("stats", `List lines)
+           ] in
+         match !Grew_args.output_data with
+         | None -> printf "%s\n" (Yojson.Basic.pretty_to_string final_json)
+         | Some f -> Yojson.Basic.to_file f final_json
+    ) ()
+
+(* -------------------------------------------------------------------------------- *)
 let valid () =
   handle
     (fun () ->
        match !Grew_args.output_data with
-       | None -> error ~fct:"valid" "an output directory is required (use -i option)"
+       | None -> error ~fct:"valid" "an output directory is required (use -o option)"
        | Some dir ->
          match ensure_dir dir with
          | Some pble -> error ~fct:"valid" "%s" pble
@@ -293,6 +343,7 @@ let _ =
   | Grew_args.Transform -> transform ()
   | Grew_args.Count-> count ()
   | Grew_args.Valid-> valid ()
+  | Grew_args.Stat-> stat ()
   | Grew_args.Compile -> compile ()
   | Grew_args.Clean -> clean ()
   | Grew_args.Grep -> grep ()
