@@ -221,42 +221,39 @@ let clean () =
 let count () =
   handle
     (fun () ->
-       match !Grew_args.patterns with
-       | [] -> Log.fwarning "No pattern given (use option -patterns)"
-       | _ ->
-         printf "Corpus\t# sentences";
-         List.iter (fun p -> printf "\t%s" (p |> Filename.basename |> Filename.remove_extension)) !Grew_args.patterns;
-         printf "\n";
+       printf "Corpus\t# sentences";
+       List.iter (fun p -> printf "\t%s" (p |> Filename.basename |> Filename.remove_extension)) !Grew_args.patterns;
+       printf "\n";
 
-         List.iter (
-           fun json_file ->
-             let corpus_desc_list = Corpus_desc.load_json json_file in
-             List.iter
-               (fun corpus_desc ->
-                  let config = Corpus_desc.get_config corpus_desc in
-                  (* NB: pattern loading depends on the config -> reload for each corpus!  *)
-                  let patterns = List.map (Pattern.load ~config) !Grew_args.patterns in
-                  let id = Corpus_desc.get_id corpus_desc in
-                  let directory = Corpus_desc.get_directory corpus_desc in
-                  let marshal_file = (Filename.concat directory id) ^ ".marshal" in
-                  let in_ch = open_in_bin marshal_file in
-                  let data = (Marshal.from_channel in_ch : Corpus.t) in
-                  let _ = close_in in_ch in
+       List.iter (
+         fun json_file ->
+           let corpus_desc_list = Corpus_desc.load_json json_file in
+           List.iter
+             (fun corpus_desc ->
+                let config = Corpus_desc.get_config corpus_desc in
+                (* NB: pattern loading depends on the config -> reload for each corpus!  *)
+                let patterns = List.map (Pattern.load ~config) !Grew_args.patterns in
+                let id = Corpus_desc.get_id corpus_desc in
+                let directory = Corpus_desc.get_directory corpus_desc in
+                let marshal_file = (Filename.concat directory id) ^ ".marshal" in
+                let in_ch = open_in_bin marshal_file in
+                let data = (Marshal.from_channel in_ch : Corpus.t) in
+                let _ = close_in in_ch in
 
-                  printf "%s" (Filename.basename directory);
-                  printf "\t%d" (Corpus.size data);
+                printf "%s" (Filename.basename directory);
+                printf "\t%d" (Corpus.size data);
 
-                  List.iter
-                    (fun pattern ->
-                       let count =
-                         Corpus.fold_left (fun acc _ graph ->
-                             acc + (List.length (Graph.search_pattern ~config pattern graph))
-                           ) 0 data in
-                       printf "\t%d" count
-                    ) patterns;
-                  printf "\n%!"
-               ) corpus_desc_list
-         ) (!Grew_args.input_data)
+                List.iter
+                  (fun pattern ->
+                     let count =
+                       Corpus.fold_left (fun acc _ graph ->
+                           acc + (List.length (Graph.search_pattern ~config pattern graph))
+                         ) 0 data in
+                     printf "\t%d" count
+                  ) patterns;
+                printf "\n%!"
+             ) corpus_desc_list
+       ) (!Grew_args.input_data)
     ) ()
 
 (* -------------------------------------------------------------------------------- *)
