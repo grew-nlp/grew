@@ -17,14 +17,6 @@ open Grew_utils
 open Grew_args
 
 (* -------------------------------------------------------------------------------- *)
-let load_file f =
-  if Filename.check_suffix f ".json"
-  then Corpus.singleton (Graph.of_json (Yojson.Basic.from_file f))
-  else
-    let config = !Grew_args.config in
-    Corpus.from_file ~config f
-
-
 let load_corpus () =
   let config = !Grew_args.config in
   match !Grew_args.input_data with
@@ -218,6 +210,16 @@ let clean () =
     ) ()
 
 (* -------------------------------------------------------------------------------- *)
+let load_marshal corpus_desc =
+  let id = Corpus_desc.get_id corpus_desc in
+  let directory = Corpus_desc.get_directory corpus_desc in
+  let marshal_file = (Filename.concat directory id) ^ ".marshal" in
+  let in_ch = open_in_bin marshal_file in
+  let data = (Marshal.from_channel in_ch : Corpus.t) in
+  let _ = close_in in_ch in
+  data
+
+(* -------------------------------------------------------------------------------- *)
 let count () =
   handle
     (fun () ->
@@ -233,14 +235,8 @@ let count () =
                 let config = Corpus_desc.get_config corpus_desc in
                 (* NB: pattern loading depends on the config -> reload for each corpus!  *)
                 let patterns = List.map (Pattern.load ~config) !Grew_args.patterns in
-                let id = Corpus_desc.get_id corpus_desc in
-                let directory = Corpus_desc.get_directory corpus_desc in
-                let marshal_file = (Filename.concat directory id) ^ ".marshal" in
-                let in_ch = open_in_bin marshal_file in
-                let data = (Marshal.from_channel in_ch : Corpus.t) in
-                let _ = close_in in_ch in
-
-                printf "%s" (Filename.basename directory);
+                let data = load_marshal corpus_desc in
+                printf "%s" (Filename.basename (Corpus_desc.get_directory corpus_desc));
                 printf "\t%d" (Corpus.size data);
 
                 List.iter
@@ -275,7 +271,7 @@ let stat () =
          let lines =
            List.map
              (fun corpus_desc ->
-                let corpus = Corpus_desc.build_corpus corpus_desc in
+                let corpus = load_marshal corpus_desc in
                 let config = Corpus_desc.get_config corpus_desc in
                 `List (
 
