@@ -236,7 +236,7 @@ let count () =
                 (* NB: pattern loading depends on the config -> reload for each corpus!  *)
                 let patterns = List.map (Pattern.load ~config) !Grew_args.patterns in
                 let data = load_marshal corpus_desc in
-                printf "%s" (Filename.basename (Corpus_desc.get_directory corpus_desc));
+                printf "%s" (Corpus_desc.get_id corpus_desc);
                 printf "\t%d" (Corpus.size data);
 
                 List.iter
