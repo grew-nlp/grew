@@ -1,4 +1,7 @@
-## 1.4.0 (2020/10/02)
+## 1.4.1 (2021/02/24)
+  * stat mode
+
+# 1.4.0 (2020/10/02)
   * new subcommands `compile`, `clean`, `valid` and `count`
   * add options `-config`, `-json`
 
