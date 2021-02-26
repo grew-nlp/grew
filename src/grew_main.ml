@@ -344,11 +344,4 @@ let _ =
   | Grew_args.Clean -> clean ()
   | Grew_args.Grep -> grep ()
   | Grew_args.Test -> failwith "No test defined"
-  | Grew_args.Gui args ->
-    let gui_exec = if Sys.argv.(0) = "grew_dev" then "grew_gui_dev" else "grew_gui" in
-    match Unix.system (gui_exec ^ " " ^ args) with
-    | Unix.WEXITED 127 -> Log.message "It seems that grew_gui is not installed on your system. See [http://grew.fr/gtk] for more information"
-    | _ -> ()
-
-
 

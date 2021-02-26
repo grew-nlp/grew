@@ -17,7 +17,7 @@ open Grew_utils
 
 module Grew_args = struct
 
-  type mode = Undefined | Gui of string | Transform | Grep | Count | Valid | Stat | Compile | Clean | Test
+  type mode = Undefined | Transform | Grep | Count | Valid | Stat | Compile | Clean | Test
   let mode = ref Undefined
 
   let grs = ref None
@@ -44,28 +44,11 @@ module Grew_args = struct
     "";
     "subcommands are:";
     "  transform  Apply a GRS on a corpus";
-    "  gui        Run the Gtk interface";
     "  grep       Search for a pattern in a corpus";
     "  version    Print current version number";
     "  help <sub> Print help for the given subcommand";
     "";
     "see subcommands help for args";
-    "For additional information, see http://grew.fr";
-    "----------------------------------------------------------";
-  ]
-
-  let help_gui () = List.iter (fun x -> Printf.printf "%s\n" x) [
-    "----------------------------------------------------------";
-    "usage: grew gui [<args>]";
-    "";
-    "This subcommand runs the GTK interface for Grew.";
-    "It supposes that the opam package \"grew_gui\" is installed.";
-    "";
-    "args are optionnal and can be change in the GUI:";
-    "  -grs <file>    The Graph Rewriting System to load";
-    "  -i <file>      The input data (a graph or a corpus)";
-    "  -strat <name>  The stategy used by default";
-    "";
     "For additional information, see http://grew.fr";
     "----------------------------------------------------------";
   ]
@@ -142,7 +125,7 @@ module Grew_args = struct
   let parse () =
     match Array.to_list Sys.argv with
     | [] -> failwith "bug: Empty argv"
-    | _ :: "gui" :: args -> mode := Gui (String.concat " " args)
+    | _ :: "gui" :: _ -> Printf.printf "The gui mode is not longer supported"
     | _ :: "transform" :: args -> mode := Transform; loop args
     | _ :: "grep" :: args -> mode := Grep; loop args
     | _ :: "count" :: args -> mode := Count; loop args
@@ -154,7 +137,6 @@ module Grew_args = struct
       Printf.printf "libgrew: %s\n" (Libgrew.get_version ());
       Printf.printf "grew: %s\n" VERSION;
     | _ :: "test" :: args -> mode := Test; loop args
-    | _ :: "help" :: "gui" :: _ -> help_gui ()
     | _ :: "help" :: "transform" :: _ -> help_transform ()
     | _ :: "help" :: "grep" :: _ -> help_grep ()
     | _ :: "help" :: "help" :: _ -> Printf.printf "Such a complex feature is still in development!\n"
