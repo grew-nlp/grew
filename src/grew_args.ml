@@ -36,6 +36,7 @@ module Grew_args = struct
   let config = ref (Conllx_config.build "ud")  (* "ud" is used as default value. *)
 
   let grew_match_server = ref None
+  let force = ref false
 
   let help () = List.iter (fun x -> Printf.printf "%s\n" x) [
     "----------------------------------------------------------";
@@ -125,6 +126,7 @@ module Grew_args = struct
   | "-json" :: args -> output := Json; loop args
 
   | "-grew_match_server" :: dir :: args -> grew_match_server := Some dir; loop args
+  | "-force" :: args -> force := true; loop args
 
   | "-safe_commands" :: args -> Libgrew.set_safe_commands true; loop args
   | "-track_rules" :: args -> Libgrew.set_track_rules true; loop args

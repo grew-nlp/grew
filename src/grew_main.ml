@@ -190,7 +190,7 @@ let compile () =
             let corpus_desc_list = Corpus_desc.load_json json_file in
             List.iter
               (fun corpus_desc ->
-                 Corpus_desc.compile ?grew_match corpus_desc
+                 Corpus_desc.compile ~force:!Grew_args.force ?grew_match corpus_desc
               ) corpus_desc_list
          ) !Grew_args.input_data
     ) ()
