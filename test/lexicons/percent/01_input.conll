@@ -1,0 +1,5 @@
+# sent_id = fr-ud-train_05442
+# text = Les tables sont les unes sur les autres.
+1	Les	a	DET	_	Definite=Def|Gender=Fem|Number=Plur|PronType=Art	2	det	_	_
+2	tables	%	NOUN	_	Gender=Fem|Number=Plur	0	root	_	_
+

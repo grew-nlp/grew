@@ -1,0 +1,8 @@
+rule empty {
+  pattern {}
+  commands {}
+}
+
+strat r { empty }
+strat onf { Onf(empty) }
+strat iter { Iter(empty) }

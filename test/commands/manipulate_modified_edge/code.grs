@@ -1,0 +1,11 @@
+rule r {
+	pattern { e: A -[x]-> B; C[]; }
+	without { A -> C; }
+	commands {
+		e.2=y;
+		add_edge f: A -> C; f.label = e.label;
+		del_edge e;
+	}
+}
+
+strat main { Onf (r) }

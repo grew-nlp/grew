@@ -1,0 +1,15 @@
+rule r {
+  pattern { N[form=lex.form, !upos] }
+  commands { N.upos=lex.upos }
+}
+#BEGIN lex
+form	upos
+%------------
+la	DET
+la	NOUN
+la	PRON
+porte	NOUN
+porte	VERB
+#END
+
+strat main {  Iter (r) }

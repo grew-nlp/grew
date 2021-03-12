@@ -1,0 +1,7 @@
+rule r {
+  pattern { e:H -[2=obj]-> D; }
+  commands { del_feat e.2; }
+}
+
+strat main { Onf (r) }
+

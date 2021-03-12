@@ -4,3 +4,4 @@ grew_main.native
 DATA_DIR
 LOCAL
 install_dev
+__pycache__

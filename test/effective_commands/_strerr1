@@ -1,0 +1,1 @@
+ MESSAGE : More than 10000 rewriting steps: check for loops or increase max_rules value. Last rules are: […r1, r1, r1, r1, r1, r1, r1, r1, r1, r1]

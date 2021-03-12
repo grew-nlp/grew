@@ -1,0 +1,6 @@
+rule add {
+  pattern { X -[T]-> Y }
+  without { Y -> * }
+  commands { add_node Z :< Y; add_edge Y -[F]-> Z; Z.form="new_node"}
+}
+strat main { Onf (add) }

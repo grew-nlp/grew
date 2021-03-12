@@ -1,0 +1,7 @@
+rule comp_obj {
+  pattern { e:H -[1=case|mark|obj, !2]-> D; }
+  commands { e.2=obj; e.deep=x; }
+}
+
+strat main { Onf (comp_obj) }
+

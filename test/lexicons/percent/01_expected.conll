@@ -1,0 +1,6 @@
+# global.columns = ID FORM LEMMA UPOS XPOS FEATS HEAD DEPREL DEPS MISC
+# sent_id = fr-ud-train_05442
+# text = Les tables sont les unes sur les autres.
+1	Les	percent	DET	_	Definite=Def|Gender=Fem|Number=Plur|PronType=Art	2	det	_	_
+2	tables	percent	NOUN	_	Gender=Fem|Number=Plur	0	root	_	_
+

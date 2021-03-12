@@ -1,0 +1,4 @@
+# global.columns = ID FORM LEMMA UPOS XPOS FEATS HEAD DEPREL DEPS MISC
+1		_	_	_	label=W1	_	_	_	_
+2		_	_	_	label=W2	_	_	_	_
+

@@ -1,0 +1,12 @@
+rule r {
+  pattern { N [lemma = lex.old]}
+  commands { N.lemma = lex.new }
+}
+#BEGIN lex
+old	new
+%--------------
+a	%
+\%	percent
+#END
+
+strat main { Onf (r) }

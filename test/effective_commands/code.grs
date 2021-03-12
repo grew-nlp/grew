@@ -1,0 +1,20 @@
+rule r1 {
+  pattern { N[label="A"]; N -[X]-> M}
+  commands { add_edge N -[Y]-> M }
+}
+
+rule r2 {
+  pattern { N[label="A"]; N -[X]-> M}
+  commands {
+    N.label = "AA";
+    add_edge N -[Y]-> M
+  }
+}
+
+strat t01 { r1 }
+strat t02 { Onf(r1) }
+strat t03 { Iter(r1) }
+
+strat t04 { r2 }
+strat t05 { Onf(r2) }
+strat t06 { Iter(r2) }

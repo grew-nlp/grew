@@ -1,0 +1,228 @@
+package local {
+  rule fix2 {
+    pattern {
+      H[!ExtPos, lemma=lex.l0];
+      H -[fixed]-> F1; F1[lemma=lex.l1];
+    }
+    without { H -[fixed]-> F }
+    commands { H.ExtPos = lex.ExtPos; }
+  }
+#BEGIN lex
+l0	l1	ExtPos
+quant	à	ADP
+en	priorité	ADV
+en	général	ADV
+en	particulier	ADV
+de	ailleurs	ADV
+à	nouveau	ADV
+de	nouveau	ADV
+ainsi	que	CCONJ
+ou	bien	CCONJ
+un	peu	ADV
+à	peine	ADV
+de	plus	ADV
+en	effet	ADV
+en	outre	ADV
+tout	en	ADP
+sans	que	ADP
+après	que	ADP
+après	tout	ADV
+par	conséquent	ADV
+de	même	ADV
+peu	un	DET
+plein	de	DET
+beaucoup	de	DET
+autant	de	DET
+lors	de	ADP
+alors	que	ADP
+depuis	que	ADP
+bien	que	ADP
+pendant	que	ADP
+tandis	que	ADP
+pour	que	ADP
+dès	que	ADP
+parce	que	ADP
+au-dessus	de	ADP
+au-dessous	de	ADP
+à	travers	ADP
+au-delà	de	ADP
+vis-à-vis	de	ADP
+auprès	de	ADP
+autour	de	ADP
+près	de	ADP
+peu	après	ADP
+de	après	ADP
+avant	de	ADP
+loin	de	ADP
+hors	de	ADP
+de	par	ADP
+plus	de	ADV
+moins	de	ADV
+grâce	à	ADP
+tel	que	ADP
+face	à	ADP
+suite	à	ADP
+relatif	à	ADP
+comme	si	ADP
+y	comprendre	ADP
+afin	de	ADP
+en	outre	ADP
+de	le	DET
+entre	autre	ADV
+de	facto	ADV
+bien	entendre	ADV
+bien	sûr	ADV
+quelque	un	ADPRON
+de	abord	ADV
+quand	même	ADV
+par	ailleurs	ADV
+en	fait	ADV
+en	plus	ADV
+et	pas	CCONJ
+et	puis	CCONJ
+et	également	CCONJ
+mais	également	CCONJ
+et	caetera	CCONJ
+#END
+
+  rule fix3 {
+    pattern {
+      H[!ExtPos, lemma=lex.l0];
+      H -[fixed]-> F1; F1[lemma=lex.l1];
+      H -[fixed]-> F2; F2[lemma=lex.l2];
+    }
+    without { H -[fixed]-> F }
+    commands { H.ExtPos = lex.ExtPos }
+  }
+#BEGIN lex
+l0	l1	l2	ExtPos
+à	partir	de	ADP
+à	cause	de	ADP
+à	compter	de	ADP
+à	le	moins	ADV
+à	le	plus	ADV
+à	le	fois	ADV
+à	le	contraire	ADV
+en	ce	moment	ADV
+à	le	fond	ADV
+à	juste	titre	ADV
+ainsi	de	suite	ADV
+de	tout	façon	ADV
+bel	et	bien	ADV
+à	ce	point	ADV
+peu	à	peu	ADV
+en	plus	de	ADP
+de	sorte	que	ADP
+en	raison	de	ADP
+en	matière	de	ADP
+en	tant	que	ADP
+en	raison	de	ADP
+de	autant	que	ADP
+tout	de	abord	ADP
+tout	de	même	ADV
+le	plupart	de	ADV
+mettre	à	part	ADP
+un	peu	de	DET
+de	autre	part	ADV
+#END
+
+  rule fix4 {
+    pattern {
+      H[!ExtPos, lemma=lex.l0];
+      H -[fixed]-> F1; F1[lemma=lex.l1];
+      H -[fixed]-> F2; F2[lemma=lex.l2];
+      H -[fixed]-> F3; F3[lemma=lex.l3];
+    }
+    without { H -[fixed]-> F }
+    commands { H.ExtPos = lex.ExtPos }
+  }
+#BEGIN lex
+l0	l1	l2	l3	ExtPos
+à	le	sujet	de	ADP
+à	le	sein	de	ADP
+à	le	bout	de	ADP
+à	le	côté	de	ADP
+jusque	à	ce	que	ADP
+de	plus	en	plus	ADV
+on	ne	pouvoir	plus	ADV
+#END
+
+  rule fix5 {
+    pattern {
+      H[!ExtPos, lemma=lex.l0];
+      H -[fixed]-> F1; F1[lemma=lex.l1];
+      H -[fixed]-> F2; F2[lemma=lex.l2];
+      H -[fixed]-> F3; F3[lemma=lex.l3];
+      H -[fixed]-> F4; F4[lemma=lex.l4];
+    }
+    without { H -[fixed]-> F }
+    commands { H.ExtPos = lex.ExtPos }
+  }
+#BEGIN lex
+l0	l1	l2	l3	l4	ExtPos
+à	le	jour	le	jour	ADV
+#END
+}
+
+
+package external {
+  rule fix2 (lex from "lex/ExtPos2.lex") {
+    pattern {
+      H[!ExtPos, lemma=lex.l0];
+      H -[fixed]-> F1; F1[lemma=lex.l1];
+    }
+    without { H -[fixed]-> F }
+    commands { H.ExtPos = lex.ExtPos; }
+  }
+
+  rule fix3 (lex from "lex/ExtPos3.lex") {
+    pattern {
+      H[!ExtPos, lemma=lex.l0];
+      H -[fixed]-> F1; F1[lemma=lex.l1];
+      H -[fixed]-> F2; F2[lemma=lex.l2];
+    }
+    without { H -[fixed]-> F }
+    commands { H.ExtPos = lex.ExtPos }
+  }
+
+  rule fix4 (lex from "lex/ExtPos4.lex") {
+    pattern {
+      H[!ExtPos, lemma=lex.l0];
+      H -[fixed]-> F1; F1[lemma=lex.l1];
+      H -[fixed]-> F2; F2[lemma=lex.l2];
+      H -[fixed]-> F3; F3[lemma=lex.l3];
+    }
+    without { H -[fixed]-> F }
+    commands { H.ExtPos = lex.ExtPos }
+  }
+
+  rule fix5 {
+    pattern {
+      H[!ExtPos, lemma=lex.l0];
+      H -[fixed]-> F1; F1[lemma=lex.l1];
+      H -[fixed]-> F2; F2[lemma=lex.l2];
+      H -[fixed]-> F3; F3[lemma=lex.l3];
+      H -[fixed]-> F4; F4[lemma=lex.l4];
+    }
+    without { H -[fixed]-> F }
+    commands { H.ExtPos = lex.ExtPos }
+  }
+#BEGIN lex
+l0	l1	l2	l3	l4	ExtPos
+à	le	jour	le	jour	ADV
+#END
+}
+
+package nap {
+  rule r (lex from "lex/ExtPos2.lex") {
+    pattern {
+      N1 [!ExtPos]; N2[]; N1 < N2;
+    }
+    without {
+      N1[lemma=lex.l0]; N2[lemma=lex.l1];
+    }
+    commands {
+      N1.ExtPos = "None";
+    }
+  }
+}

@@ -1,0 +1,6 @@
+# global.columns = ID FORM LEMMA UPOS XPOS FEATS HEAD DEPREL DEPS MISC
+1	N1	_	_	_	_	0	root	_	_
+2	N2	_	_	_	_	1	T	_	_
+3	new_node	_	_	_	_	4	F	_	_
+4	N3	_	_	_	_	2	T	_	_
+

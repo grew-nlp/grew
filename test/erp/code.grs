@@ -1,0 +1,36 @@
+package p {
+  rule cross {
+    pattern { y: GY -[y]-> DY; x: GX -[x]-> DX; y >< x }
+    commands { x.deep = "cross" }
+  }
+
+  rule covered {
+    pattern { y: GY -[y]-> DY; x: GX -[x]-> DX; x << y }
+    commands { x.deep = "covered" }
+  }
+
+  rule cover {
+    pattern { y: GY -[y]-> DY; x: GX -[x]-> DX; x >> y }
+    commands { x.deep = "cover" }
+  }
+
+  rule disjoint {
+    pattern { y: GY -[y]-> DY; x: GX -[x]-> DX; x <> y }
+    commands { x.deep = "disjoint" }
+  }
+
+  rule under {
+    pattern { y: GY -[y]-> DY; X[!under_y]; X << y }
+    commands { X.under_y = Yes }
+  }
+
+  rule roof {
+    pattern { y: GY -[y]-> DY; X[!roof_y]; X << y }
+    without { x: GX -> DX; X << x; x << y }
+    without { x: GY -> DX; X << x; x << y }
+    commands { X.roof_y = Yes }
+  }
+
+}
+
+strat main { Onf (p) }

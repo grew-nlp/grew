@@ -1,0 +1,30 @@
+rule r_01 {
+  pattern { e:X -[1=comp]-> Y; }
+  commands { del_edge e }
+}
+
+rule r_02 {
+  pattern { e:X -[1=comp, 2=obl|aux]-> Y; }
+  commands { del_edge e }
+}
+
+rule r_03 {
+  pattern { e:X -[1=comp, 2<>obl|aux]-> Y; }
+  commands { del_edge e }
+}
+
+rule r_04 {
+  pattern { e:X -[1=comp, !deep]-> Y; }
+  commands { del_edge e }
+}
+
+rule r_05 {
+  pattern { e:X -[1=comp, 2=*]-> Y; }
+  commands { del_edge e }
+}
+
+rule r_06 {
+  pattern { e:X -[comp]-> Y; }
+  commands { del_edge e }
+}
+

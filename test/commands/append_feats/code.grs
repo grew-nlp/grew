@@ -1,0 +1,9 @@
+rule r {
+  pattern { N1 [form="à"]; N2 [form="le"]; N1 < N2 }
+  commands {
+    append_feats "+" N2 ==> N1;
+    del_node N2;
+  }
+}
+
+strat main { Onf (r) }

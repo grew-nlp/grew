@@ -1,0 +1,16 @@
+package add_edge_del_edge {
+  rule r1 { pattern {N -[A]-> M } commands { add_edge N -[B]-> M }}
+  rule r2 { pattern { e1:N -[A]-> M; e2:N -[B]-> M } commands { del_edge e1; del_edge e2; }}
+  rule rA { pattern { e1:N -[A]-> M } commands { del_edge e1; }}
+  rule rB { pattern { e2:N -[B]-> M } commands { del_edge e2; }}
+}
+
+package rewrite_edges_to_D {
+  rule addB { pattern {N -[A]-> M } commands { add_edge N -[B]-> M } }
+  rule A2C { pattern {N -[A]-> M } commands { add_edge N -[C]-> M } }
+  rule B2D { pattern {N -[B]-> M } commands { add_edge N -[D]-> M } }
+  rule C2D { pattern {N -[C]-> M } commands { add_edge N -[D]-> M } }
+}
+
+strat s01 { Iter (add_edge_del_edge) }
+strat s02 { Iter (rewrite_edges_to_D) }
