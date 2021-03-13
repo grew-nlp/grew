@@ -5,4 +5,4 @@ sys.path.append(os.getcwd() + '/../..')
 from utils import *
 
 print ("--------------- manipulate_modified_edge ---------------")
-success('grew_dev transform -grs code.grs -config sud -quiet -i 01_input.conll', '01_expected.conll')
+success('grew_dev transform -grs code.grs -config sud -quiet -i input.json -json', 'expected.json')

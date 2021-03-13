@@ -1,5 +1,5 @@
 {
-  "nodes": { "1": "B", "0": "AA" },
+  "nodes": { "0": "AA", "1": "B" },
   "edges": [
     { "src": "0", "label": "Y", "tar": "1" },
     { "src": "0", "label": "X", "tar": "1" }
