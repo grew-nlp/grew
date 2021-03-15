@@ -1,9 +1,9 @@
 (***********************************************************************)
 (*    Grew - a Graph Rewriting tool dedicated to NLP applications      *)
 (*                                                                     *)
-(*    Copyright 2011-2013 Inria, Université de Lorraine                *)
+(*    Copyright 2011-2021 Inria, Université de Lorraine                *)
 (*                                                                     *)
-(*    Webpage: http://grew.fr                                          *)
+(*    Webpage: https://grew.fr                                          *)
 (*    License: CeCILL (see LICENSE folder or "http://www.cecill.info") *)
 (*    Authors: see AUTHORS file                                        *)
 (***********************************************************************)
@@ -49,7 +49,7 @@ module Grew_args = struct
     "  help <sub> Print help for the given subcommand";
     "";
     "see subcommands help for args";
-    "For additional information, see http://grew.fr";
+    "For additional information, see https://grew.fr";
     "----------------------------------------------------------";
   ]
 
@@ -63,7 +63,7 @@ module Grew_args = struct
     "  -pattern <pat>   The pattern to search for";
     "  -i <corp>        The input data";
     "";
-    "For additional information, see http://grew.fr";
+    "For additional information, see https://grew.fr";
     "----------------------------------------------------------";
   ]
 
@@ -84,7 +84,7 @@ module Grew_args = struct
     "  -gr            If the option is present, the gr output format is produced";
     "  -track_rules   If the option is present, data about the rules applied are given in output";
     "";
-    "For additional information, see http://grew.fr";
+    "For additional information, see https://grew.fr";
     "----------------------------------------------------------";
   ]
 

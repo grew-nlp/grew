@@ -15,7 +15,7 @@ depends: [
   "libcaml-log"
   "libcaml-grew"
 ]
-synopsis: "A graph rewriting tool for NLP applications (see http://grew.fr)"
+synopsis: "A graph rewriting tool for NLP applications (see https://grew.fr)"
 url {
   src: "http://opam.grew.fr/tgz/grew.##VERSION##.tgz"
 }
