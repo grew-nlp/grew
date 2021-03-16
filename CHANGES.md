@@ -1,3 +1,7 @@
+# 1.5.0 (2021/03/16)
+  * New JSON encoding of graphs
+  * add tests
+
 ## 1.4.1 (2021/02/24)
   * stat mode
 
