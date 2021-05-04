@@ -126,18 +126,6 @@ module File = struct
       None
     with
     | Found i -> Some (String.sub file_name i (len-i))
-
-  let read_stdin () =
-    let cpt = ref 0 in
-    let res = ref [] in
-    try
-      while true do
-        incr cpt;
-        res := (!cpt, input_line stdin) :: !res
-      done;
-      assert false
-    with End_of_file -> List.rev !res
-
 end (* module File *)
 
 (* ================================================================================ *)
