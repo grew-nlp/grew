@@ -1,3 +1,8 @@
+# 1.6.0 (2021/05/05)
+  * add -columns argument
+  * fix invalid json output if there is more than one output graph
+  * follow libcaml-conll and libcaml-grew updates
+
 # 1.5.0 (2021/03/16)
   * New JSON encoding of graphs
   * add tests
