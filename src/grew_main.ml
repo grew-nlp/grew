@@ -3,7 +3,7 @@
 (*                                                                     *)
 (*    Copyright 2011-2021 Inria, Université de Lorraine                *)
 (*                                                                     *)
-(*    Webpage: https://grew.fr                                          *)
+(*    Webpage: https://grew.fr                                         *)
 (*    License: CeCILL (see LICENSE folder or "http://www.cecill.info") *)
 (*    Authors: see AUTHORS file                                        *)
 (***********************************************************************)
@@ -56,53 +56,46 @@ let transform () =
          | Some output_file -> open_out output_file
          | None -> stdout in
 
-       let out_graph ?new_sent_id graph = match (!Grew_args.output, new_sent_id) with
-         | (Grew_args.Conllx,None) ->
-           fprintf out_ch "%s\n" (graph |> Graph.to_json |> Conllx.of_json |> Conllx.to_string ~config)
-         | (Grew_args.Conllx,Some nsi) ->
-           fprintf out_ch "%s\n" (graph |> Graph.to_json |> Conllx.of_json |> Conllx.set_sent_id nsi |> Conllx.to_string ~config)
-         | (Grew_args.Cupt, None) ->
-           fprintf out_ch "%s\n" (graph |> Graph.to_json |> Conllx.of_json |> Conllx.to_string ~config ~columns:Conllx_columns.cupt)
-         | (Grew_args.Cupt,Some nsi) ->
-           fprintf out_ch "%s\n" (graph |> Graph.to_json |> Conllx.of_json |> Conllx.set_sent_id nsi |> Conllx.to_string ~config ~columns:Conllx_columns.cupt)
-         | (Grew_args.Semcor, None) ->
-           fprintf out_ch "%s\n" (graph |> Graph.to_json |> Conllx.of_json |> Conllx.to_string ~config ~columns:Conllx_columns.frsemcor)
-         | (Grew_args.Semcor,Some nsi) ->
-           fprintf out_ch "%s\n" (graph |> Graph.to_json |> Conllx.of_json |> Conllx.set_sent_id nsi |> Conllx.to_string ~config ~columns:Conllx_columns.frsemcor)
-         | (Grew_args.Gr, None) -> fprintf out_ch "%s\n" (Graph.to_gr ~config graph)
-         | (Grew_args.Gr, Some nsi) -> fprintf out_ch "%s\n" (Graph.to_gr ~config (Graph.set_meta "sent_id" nsi graph))
-         | (Grew_args.Dot, None) -> fprintf out_ch "%s\n" (Graph.to_dot ~config graph)
-         | (Grew_args.Dot, Some nsi) -> fprintf out_ch "# sent_id = %s\n%s\n" nsi (Graph.to_dot ~config graph)
-         | (Grew_args.Json, None) -> fprintf out_ch "%s\n" (graph |> Graph.to_json |> Yojson.Basic.pretty_to_string)
-         | (Grew_args.Json, Some nsi) -> fprintf out_ch "%s\n" (graph |> Graph.set_meta "sent_id" nsi |> Graph.to_json |> Yojson.Basic.pretty_to_string) in
-
-       begin
-         match !Grew_args.output with
-         | Conllx -> fprintf out_ch "%s\n" (Conllx_columns.to_string Conllx_columns.default)
-         | Cupt -> fprintf out_ch "%s\n" (Conllx_columns.to_string Conllx_columns.cupt)
-         | Semcor -> fprintf out_ch "%s\n" (Conllx_columns.to_string Conllx_columns.frsemcor)
-         | _ -> ()
-       end;
+       let (next_graph, final) = match !Grew_args.output with
+         | Grew_args.Conllx columns ->
+           fprintf out_ch "%s\n" (Conllx_columns.to_string columns);
+           (fun graph -> fprintf out_ch "%s\n" (graph |> Graph.to_json |> Conllx.of_json |> Conllx.to_string ~config ~columns)),
+           (fun () -> ())
+         | Grew_args.Gr ->
+           (fun graph -> fprintf out_ch "%s\n" (Graph.to_gr ~config graph)),
+           (fun () -> ())
+         | Grew_args.Dot ->
+           let flag = ref false in
+           let buff = Buffer.create 32 in
+           (fun graph ->
+              if !flag
+              then (Log.fmessage "`dot` output cannot be used when there is more than one graph in the output"; exit 1)
+              else (flag := true; bprintf buff "%s" (Graph.to_dot ~config graph))
+           ),
+           (fun () -> fprintf out_ch "%s\n" (Buffer.contents buff))
+         | Grew_args.Json ->
+           let data = ref [] in
+           (fun graph -> data := (graph |> Graph.to_json) :: !data),
+           (fun () ->
+            let json = match !data with
+            | [one] -> one
+            | _ -> `List (List.rev !data) in
+            fprintf out_ch "%s\n" (Yojson.Basic.pretty_to_string json)
+            )
+       in
 
        Corpus.iteri
-         (fun index id gr ->
-            Counter.print index len id;
+         (fun index sent_id gr ->
+            Counter.print index len sent_id;
             match Rewrite.simple_rewrite ~config gr grs !Grew_args.strat with
-            | [one] -> out_graph one
+            | [one] -> next_graph one
             | l ->
               List.iteri
-                (fun i graph ->
-                   let new_sent_id = sprintf "%s_%d" id i in
-                   out_graph ~new_sent_id graph
-                   (* graph
-                      |> Graph.to_json
-                      |> Conllx.of_json
-                      |> Conllx.set_sent_id (sprintf "%s_%d" id i)
-                      |> Conllx.to_string ~config
-                      |> fprintf out_ch "%s\n" *)
+                (fun i graph -> next_graph (Graph.set_meta "sent_id" (sprintf "%s_%d" sent_id i) graph)
                 ) l
          ) corpus;
        Counter.finish ();
+       final ();
        match !Grew_args.output_data with
        | Some output_file -> close_out out_ch
        | None -> ()

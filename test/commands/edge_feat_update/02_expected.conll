@@ -1,4 +1,6 @@
 # global.columns = ID FORM LEMMA UPOS XPOS FEATS HEAD DEPREL DEPS MISC
 1	A	_	_	_	_	0	root	_	_
-2	B	_	_	_	_	1	case:obj@x	_	_
+2	B	_	_	_	_	1|1	case:obj@x|zzz:obj@x	_	_
+3	C	_	_	_	_	2	case:obj@x	_	_
+4	D	_	_	_	_	3	case:obj@x	_	_
 

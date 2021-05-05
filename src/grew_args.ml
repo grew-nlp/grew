@@ -23,8 +23,8 @@ module Grew_args = struct
   let grs = ref None
   let dep_dir = ref None
 
-  type output = Conllx | Cupt | Semcor | Gr | Dot | Json
-  let output = ref Conllx
+  type output = Conllx of  Conllx_columns.t | Gr | Dot | Json
+  let output = ref (Conllx Conllx_columns.default)
 
   let (input_data : string list ref) = ref []
   let (output_data : string option ref) = ref None
@@ -102,8 +102,10 @@ module Grew_args = struct
   | "-max_rules" :: i :: args -> Rewrite.set_max_rules (int_of_string i); loop args
 
   | "-quiet" :: args -> quiet := true; loop args
-  | "-cupt" :: args -> output := Cupt; loop args
-  | "-semcor" :: args -> output := Semcor; loop args
+
+  | "-cupt" :: args -> output := Conllx (Conllx_columns.cupt); loop args
+  | "-semcor" :: args -> output := Conllx (Conllx_columns.frsemcor); loop args
+  | "-columns" :: desc :: args -> output := Conllx (Conllx_columns.build desc); loop args
   | "-gr" :: args -> output := Gr; loop args
   | "-dot" :: args -> output := Dot; loop args
   | "-json" :: args -> output := Json; loop args
