@@ -77,12 +77,28 @@ let transform () =
            let data = ref [] in
            (fun graph -> data := (graph |> Graph.to_json) :: !data),
            (fun () ->
-            let json = match !data with
-            | [one] -> one
-            | _ -> `List (List.rev !data) in
-            fprintf out_ch "%s\n" (Yojson.Basic.pretty_to_string json)
-            )
-       in
+              let json = match !data with
+                | [one] -> one
+                | _ -> `List (List.rev !data) in
+              fprintf out_ch "%s\n" (Yojson.Basic.pretty_to_string json)
+           )
+         | Grew_args.Multi_json ->
+           let data = ref [] in
+           (fun graph -> data := (graph |> Graph.to_json) :: !data),
+           (fun () -> 
+              match (!Grew_args.output_data, !data) with
+              | (None,_) -> fail "-multi_json implies -o"
+              | (Some out_file, l) ->
+                let base = 
+                  match Filename.chop_suffix_opt ".json" out_file with
+                  | Some b -> b
+                  | None -> out_file in
+                List.iteri
+                  (fun i json -> 
+                     let sub_out_ch = open_out (sprintf "%s__%d.json" base i) in
+                     fprintf sub_out_ch "%s\n" (Yojson.Basic.pretty_to_string json)
+                  ) l
+           ) in
 
        Corpus.iteri
          (fun index sent_id gr ->

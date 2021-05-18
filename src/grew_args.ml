@@ -23,7 +23,7 @@ module Grew_args = struct
   let grs = ref None
   let dep_dir = ref None
 
-  type output = Conllx of  Conllx_columns.t | Gr | Dot | Json
+  type output = Conllx of  Conllx_columns.t | Gr | Dot | Json | Multi_json
   let output = ref (Conllx Conllx_columns.default)
 
   let (input_data : string list ref) = ref []
@@ -109,6 +109,7 @@ module Grew_args = struct
   | "-gr" :: args -> output := Gr; loop args
   | "-dot" :: args -> output := Dot; loop args
   | "-json" :: args -> output := Json; loop args
+  | "-multi_json" :: args -> output := Multi_json; loop args
 
   | "-grew_match_server" :: dir :: args -> grew_match_server := Some dir; loop args
   | "-force" :: args -> force := true; loop args
