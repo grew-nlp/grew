@@ -1,3 +1,6 @@
+## 1.6.1 (2021/05/22)
+  * add option `-multi_json`
+
 # 1.6.0 (2021/05/05)
   * add -columns argument
   * fix invalid json output if there is more than one output graph
