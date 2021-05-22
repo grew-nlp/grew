@@ -1,0 +1,9 @@
+rule Y_after_X {
+  pattern { N1 [label=X]; N2 [label=Y]; N1 < N2 }
+  commands {
+    unorder N1;
+    insert N1 :> N2;
+  }
+}
+
+strat main { Onf (Y_after_X) }

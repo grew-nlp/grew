@@ -6,6 +6,7 @@ test:
 	cd commands/delete_edge_feat && test.py && cd -
 	cd commands/edge_feat_update && test.py && cd -
 	cd commands/manipulate_modified_edge && test.py && cd -
+	cd commands/ordering && test.py && cd -
 	cd grep && test.py && cd -
 	cd lexicons/pattern && test.py && cd -
 	cd lexicons/percent && test.py && cd -
