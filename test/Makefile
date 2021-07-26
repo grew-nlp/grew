@@ -8,6 +8,7 @@ test:
 	cd commands/manipulate_modified_edge && test.py && cd -
 	cd commands/ordering && test.py && cd -
 	cd grep && test.py && cd -
+	cd count && test.py && cd -
 	cd lexicons/pattern && test.py && cd -
 	cd lexicons/percent && test.py && cd -
 	cd matching/matching_complex_edges && test.py && cd -
