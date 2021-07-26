@@ -31,6 +31,7 @@ module Grew_args = struct
   let strat = ref "main"
   let timeout = ref None
   let (patterns : string list ref) = ref []
+  let key = ref None
   let html = ref false
 
   let config = ref (Conllx_config.build "ud")  (* "ud" is used as default value. *)
@@ -96,6 +97,7 @@ module Grew_args = struct
   | "-strat" :: s :: args -> strat := s; loop args
   | "-pattern" :: files :: args
   | "-patterns" :: files :: args -> patterns := !patterns @ (Str.split (Str.regexp " ") files); loop args
+  | "-key" :: s :: args -> key := Some s; loop args
   | "-html" :: args -> html := true; loop args
 
   | "-timeout" :: f :: args -> timeout := Some (float_of_string f); Rewrite.set_timeout (Some (float_of_string f)); loop args

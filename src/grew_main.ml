@@ -228,37 +228,99 @@ let load_marshal corpus_desc =
   let _ = close_in in_ch in
   data
 
+
+module String_map = Map.Make (String)
 (* -------------------------------------------------------------------------------- *)
 let count () =
   handle
     (fun () ->
-       printf "Corpus\t# sentences";
-       List.iter (fun p -> printf "\t%s" (p |> Filename.basename |> Filename.remove_extension)) !Grew_args.patterns;
-       printf "\n";
+       match (!Grew_args.patterns, !Grew_args.key) with
 
-       List.iter (
-         fun json_file ->
-           let corpus_desc_list = Corpus_desc.load_json json_file in
-           List.iter
-             (fun corpus_desc ->
-                let config = Corpus_desc.get_config corpus_desc in
-                (* NB: pattern loading depends on the config -> reload for each corpus!  *)
-                let patterns = List.map (Pattern.load ~config) !Grew_args.patterns in
-                let data = load_marshal corpus_desc in
-                printf "%s" (Corpus_desc.get_id corpus_desc);
-                printf "\t%d" (Corpus.size data);
+       (* no key --> count each pattern in each corpus *)
+       | (_, None) ->
+         printf "Corpus\t# sentences";
+         List.iter (fun p -> printf "\t%s" (p |> Filename.basename |> Filename.remove_extension)) !Grew_args.patterns;
+         printf "\n";
 
-                List.iter
-                  (fun pattern ->
-                     let count =
-                       Corpus.fold_left (fun acc _ graph ->
-                           acc + (List.length (Graph.search_pattern ~config pattern graph))
-                         ) 0 data in
-                     printf "\t%d" count
-                  ) patterns;
-                printf "\n%!"
-             ) corpus_desc_list
-       ) (!Grew_args.input_data)
+         List.iter (
+           fun json_file ->
+             let corpus_desc_list = Corpus_desc.load_json json_file in
+             List.iter
+               (fun corpus_desc ->
+                  let config = Corpus_desc.get_config corpus_desc in
+                  (* NB: pattern loading depends on the config -> reload for each corpus!  *)
+                  let patterns = List.map (Pattern.load ~config) !Grew_args.patterns in
+                  let data = load_marshal corpus_desc in
+                  printf "%s" (Corpus_desc.get_id corpus_desc);
+                  printf "\t%d" (Corpus.size data);
+
+                  List.iter
+                    (fun pattern ->
+                       let count =
+                         Corpus.fold_left (fun acc _ graph ->
+                             acc + (List.length (Graph.search_pattern ~config pattern graph))
+                           ) 0 data in
+                       printf "\t%d" count
+                    ) patterns;
+                  printf "\n%!"
+               ) corpus_desc_list
+         ) (!Grew_args.input_data)
+
+       (* with key --> one pattern only, count each cluster in each corpus *)
+       | ([pat], Some key) ->
+         let maps = 
+           CCList.flat_map (
+             fun json_file ->
+               let corpus_desc_list = Corpus_desc.load_json json_file in
+               List.map
+                 (fun corpus_desc ->
+                    let config = Corpus_desc.get_config corpus_desc in
+                    (* NB: pattern loading depends on the config -> reload for each corpus!  *)
+                    let pattern = Pattern.load ~config pat in
+                    let data = load_marshal corpus_desc in
+
+                    let dist = 
+                      Corpus.fold_left 
+                        (fun acc _ graph ->
+                           let matchings = Graph.search_pattern ~config pattern graph in
+                           List.fold_left 
+                             (fun acc2 matching ->
+                                let value = 
+                                  match Matching.get_value_opt ~config key pattern graph matching with
+                                  | None -> "undefined"
+                                  | Some v -> v in
+                                match String_map.find_opt value acc with
+                                | None -> String_map.add value 1 acc
+                                | Some old -> String_map.add value (old+1) acc
+                             ) acc matchings
+                        ) String_map.empty data in
+                    (Corpus_desc.get_id corpus_desc, dist)
+                 ) corpus_desc_list
+           ) (!Grew_args.input_data) in
+
+         let all_keys = List.fold_left 
+             (fun acc (_,map) ->
+                String_map.fold 
+                  (fun k _ acc2 ->
+                     String_set.add k acc2
+                  ) map acc
+             ) String_set.empty maps in
+
+         printf "Corpus";
+         String_set.iter (fun k -> printf "\t%s" k)  all_keys;
+         printf "\n";
+
+         List.iter (
+           fun (corpus_name, map) ->
+             printf "%s" corpus_name;
+             String_set.iter
+               (fun key ->
+                  printf "\t%d" (match String_map.find_opt key map with Some v -> v | None -> 0)
+               ) all_keys;
+             printf "\n%!"
+         ) maps
+
+       | (l,_) -> Log.fwarning "When the 'key' parameter is used, exactly one pattern is expected (%d given)" (List.length l)
     ) ()
 
 (* -------------------------------------------------------------------------------- *)
