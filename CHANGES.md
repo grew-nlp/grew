@@ -1,3 +1,6 @@
+## 1.6.2 (2021/07/26)
+  * add option `-key` for `grew count`
+
 ## 1.6.1 (2021/05/22)
   * add option `-multi_json`
 
