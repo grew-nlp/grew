@@ -289,9 +289,9 @@ let count () =
                                   match Matching.get_value_opt ~config key pattern graph matching with
                                   | None -> "undefined"
                                   | Some v -> v in
-                                match String_map.find_opt value acc with
-                                | None -> String_map.add value 1 acc
-                                | Some old -> String_map.add value (old+1) acc
+                                match String_map.find_opt value acc2 with
+                                | None -> String_map.add value 1 acc2
+                                | Some old -> String_map.add value (old+1) acc2
                              ) acc matchings
                         ) String_map.empty data in
                     (Corpus_desc.get_id corpus_desc, dist)

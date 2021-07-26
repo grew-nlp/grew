@@ -1,3 +1,6 @@
+## 1.6.3 (2021/07/26)
+  * Bug Fix (counting error with -key option)
+
 ## 1.6.2 (2021/07/26)
   * add option `-key` for `grew count`
 
