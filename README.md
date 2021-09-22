@@ -1,4 +1,4 @@
-# Grew -- Graph Rewriting for NLP
+# Grew - Graph Rewriting for NLP
 
 The Grew software is maintained on https://gitlab.inria.fr/grew and you can find documentation on https://grew.fr.
 
