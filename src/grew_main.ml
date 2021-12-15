@@ -90,7 +90,7 @@ let transform () =
               | (None,_) -> fail "-multi_json implies -o"
               | (Some out_file, l) ->
                 let base = 
-                  match Filename.chop_suffix_opt ".json" out_file with
+                  match Filename.chop_suffix_opt ~suffix:".json" out_file with
                   | Some b -> b
                   | None -> out_file in
                 List.iteri
@@ -410,7 +410,7 @@ let valid () =
 (* -------------------------------------------------------------------------------- *)
 let _ =
   Printexc.record_backtrace true;
-  Log.set_active_levels [`INFO; `MESSAGE; `WARNING];
+  Log.set_active_levels ~levels:[`INFO; `MESSAGE; `WARNING];
   Log.set_write_to_log_file false;
 
   (* parsing command line args *)
