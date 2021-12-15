@@ -1,3 +1,6 @@
+# 1.8.0 (2021/12/15)
+  * follow libcaml-grew update
+
 # 1.7.0 (2021/09/20)
   * follow libcaml-grew update
 
