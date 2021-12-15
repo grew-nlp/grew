@@ -321,6 +321,10 @@ let count () =
     ) ()
 
 (* -------------------------------------------------------------------------------- *)
+let compute_ratios l =  
+  let sum = float (List.fold_left (+) 0 l) in
+  List.map (fun i -> `Float ((Float.round (10000. *. float i /. sum)) /. 100.)) l
+
 let stat () =
   handle
     (fun () ->
@@ -336,34 +340,44 @@ let stat () =
                 Corpus_desc.load_json conf_file @ acc
              ) [] !Grew_args.input_data in
 
-         let lines =
+         let bare_lines =
            List.map
              (fun corpus_desc ->
                 let corpus = load_marshal corpus_desc in
                 let config = Corpus_desc.get_config corpus_desc in
-                `List (
-
-                  `String (Corpus_desc.get_id corpus_desc) ::
-                  List.map (
-                    fun pat_desc ->
-                      let pattern =
-                        try Pattern.parse ~config (String.concat " " pat_desc.Stat.code)
-                        with Libgrew.Error msg ->
-                          error
-                            ~fct:"Grew.stat"
-                            ~data:(`String (String.concat " " pat_desc.Stat.code))
-                            "cannot parse pattern associated with desc: %s" pat_desc.Stat.desc in
-                      let count =
-                        Corpus.fold_left (fun acc _ graph ->
-                            acc + (List.length (Graph.search_pattern ~config pattern graph))
-                          ) 0 corpus in
-                      `Int count
-                  ) pat_descs
+                (Corpus_desc.get_id corpus_desc,
+                 List.map (
+                   fun pat_desc ->
+                     let pattern = 
+                       (* NB: pattern should be reparsed for each corpora, because config may change *)
+                       try Pattern.parse ~config (String.concat " " pat_desc.Stat.code)
+                       with Libgrew.Error msg ->
+                         error
+                           ~fct:"Grew.stat"
+                           ~data:(`String (String.concat " " pat_desc.Stat.code))
+                           "cannot parse pattern associated with desc: %s" pat_desc.Stat.desc in
+                     Corpus.fold_left (fun acc _ graph ->
+                         acc + (List.length (Graph.search_pattern ~config pattern graph))
+                       ) 0 corpus
+                 ) pat_descs
                 )
              ) corpora in
+
+         let stats = `List (
+             List.map (fun (desc, occs) -> `List (`String desc :: (List.map (fun i -> `Int i) occs))) bare_lines
+           ) in
+
+         let ratio = `List (
+             List.map 
+               (fun (desc, occs) -> 
+                  `List (`String desc :: (compute_ratios occs))
+               ) bare_lines
+           ) in
+
          let final_json = `Assoc [
              ("patterns", json);
-             ("stats", `List lines)
+             ("stats", stats);
+             ("ratio", ratio);
            ] in
          match !Grew_args.output_data with
          | None -> printf "%s\n" (Yojson.Basic.pretty_to_string final_json)
