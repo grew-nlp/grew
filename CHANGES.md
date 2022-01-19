@@ -1,3 +1,6 @@
+# 1.8.1 (2022/01/19)
+  * add grep mode with "-key" arg
+
 # 1.8.0 (2021/12/15)
   * follow libcaml-grew update
 

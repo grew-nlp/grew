@@ -16,6 +16,8 @@ open Libgrew
 open Grew_utils
 open Grew_args
 
+module String_map = Map.Make (String)
+
 (* -------------------------------------------------------------------------------- *)
 let load_corpus () =
   let config = !Grew_args.config in
@@ -118,74 +120,117 @@ let transform () =
     ) ()
 
 (* -------------------------------------------------------------------------------- *)
-let grep () = handle
+let grep_with_key key =
+  let config = !Grew_args.config in
+  match !Grew_args.patterns with
+  | [pattern_file] ->
+
+    let pattern = Pattern.load ~config pattern_file in
+    (* get the array of graphs to explore *)
+    let corpus = load_corpus () in
+
+    let final_map =
+      Corpus.fold_left
+        (fun acc name graph ->
+           let matchings = Graph.search_pattern ~config pattern graph in
+           List.fold_left
+             (fun acc2 matching ->
+                let json_matching = `Assoc
+                    [
+                      ("sent_id", `String name);
+                      ("matching", Matching.to_json pattern graph matching)
+                    ] in
+                let value = 
+                  match Matching.get_value_opt ~config key pattern graph matching with
+                  | None -> "undefined"
+                  | Some v -> v in
+                match String_map.find_opt value acc2 with
+                | None -> String_map.add value [json_matching] acc2
+                | Some old -> String_map.add value (json_matching :: old) acc2
+             ) acc matchings
+        ) String_map.empty corpus in
+    let json_list = String_map.fold
+        (fun key_value l acc ->
+           (key_value, `List l) :: acc
+        ) final_map [] in
+    Printf.printf "%s\n" (Yojson.Basic.pretty_to_string (`Assoc json_list))
+  | l -> Log.fmessage "1 pattern expected for grep mode (%d given)" (List.length l); exit 1
+
+(* -------------------------------------------------------------------------------- *)
+let grep_without_key () = 
+  let config = !Grew_args.config in
+  match !Grew_args.patterns with
+  | [pattern_file] ->
+
+    let pattern = Pattern.load ~config pattern_file in
+
+    (* get the array of graphs to explore *)
+    let corpus = load_corpus () in
+
+    (match !Grew_args.dep_dir with
+     | None -> ()
+     | Some d -> ignore (Sys.command (sprintf "mkdir -p %s" d)));
+
+    (* printf "%s\n" (String.concat "_" (Pattern.pid_name_list pattern)); *)
+    let pattern_ids = Pattern.pid_name_list pattern in
+
+    let final_json =
+      Corpus.fold_left
+        (fun acc name graph ->
+           let matchings = Graph.search_pattern ~config pattern graph in
+           List.fold_left
+             (fun acc2 matching ->
+                let assoc_nodes = Matching.nodes pattern graph matching in
+                let graph_node_names = List.map snd assoc_nodes in
+                let deco = Deco.build pattern matching in
+
+                (* write the dep file if needed *)
+                let dep_file =
+                  match !Grew_args.dep_dir with
+                  | None -> None
+                  | Some dir ->
+                    let id = sprintf "%s__%s"
+                        name
+                        (String.concat "_" (List.map2 (sprintf "%s:%s") pattern_ids graph_node_names)) in
+                    let dep = Graph.to_dep ~config ~deco graph in
+                    let filename = Filename.concat dir (sprintf "%s.dep" id) in
+                    let out_ch = open_out filename in
+                    fprintf out_ch "%s" dep;
+                    close_out out_ch;
+                    Some filename in
+
+                let json_matching = Matching.to_json pattern graph matching in
+
+                let opt_list = [
+                  Some ("sent_id", `String name);
+                  Some ("matching", json_matching);
+                  (
+                    if !Grew_args.html
+                    then Some ("html", `String (Graph.to_sentence ~deco graph))
+                    else None
+                  );
+                  (
+                    match dep_file with
+                    | None -> None
+                    | Some f -> Some ("dep_file", `String f)
+                  )
+                ] in
+                let json = `Assoc (CCList.filter_map (fun x -> x) opt_list) in
+                json :: acc2
+             ) acc matchings
+        ) [] corpus in
+    Printf.printf "%s\n" (Yojson.Basic.pretty_to_string (`List final_json))
+  | l -> Log.fmessage "1 pattern expected for grep mode (%d given)" (List.length l); exit 1
+
+
+(* -------------------------------------------------------------------------------- *)
+let grep () =
+  handle
     (fun () ->
-       let config = !Grew_args.config in
-       match !Grew_args.patterns with
-       | [pattern_file] ->
-
-         let pattern = Pattern.load ~config pattern_file in
-
-         (* get the array of graphs to explore *)
-         let corpus = load_corpus () in
-
-         (match !Grew_args.dep_dir with
-          | None -> ()
-          | Some d -> ignore (Sys.command (sprintf "mkdir -p %s" d)));
-
-         (* printf "%s\n" (String.concat "_" (Pattern.pid_name_list pattern)); *)
-         let pattern_ids = Pattern.pid_name_list pattern in
-
-         let final_json =
-           Corpus.fold_left
-             (fun acc name graph ->
-                let matchings = Graph.search_pattern ~config pattern graph in
-                List.fold_left
-                  (fun acc2 matching ->
-                     let assoc_nodes = Matching.nodes pattern graph matching in
-                     let graph_node_names = List.map snd assoc_nodes in
-                     let deco = Deco.build pattern matching in
-
-                     (* write the dep file if needed *)
-                     let dep_file =
-                       match !Grew_args.dep_dir with
-                       | None -> None
-                       | Some dir ->
-                         let id = sprintf "%s__%s"
-                             name
-                             (String.concat "_" (List.map2 (sprintf "%s:%s") pattern_ids graph_node_names)) in
-                         let dep = Graph.to_dep ~config ~deco graph in
-                         let filename = Filename.concat dir (sprintf "%s.dep" id) in
-                         let out_ch = open_out filename in
-                         fprintf out_ch "%s" dep;
-                         close_out out_ch;
-                         Some filename in
-
-                     let json_matching = Matching.to_json pattern graph matching in
-
-                     let opt_list = [
-                       Some ("sent_id", `String name);
-                       Some ("matching", json_matching);
-                       (
-                         if !Grew_args.html
-                         then Some ("html", `String (Graph.to_sentence ~deco graph))
-                         else None
-                       );
-                       (
-                         match dep_file with
-                         | None -> None
-                         | Some f -> Some ("dep_file", `String f)
-                       )
-                     ] in
-                     let json = `Assoc (CCList.filter_map (fun x -> x) opt_list) in
-                     json :: acc2
-                  ) acc matchings
-             ) [] corpus in
-         Printf.printf "%s\n" (Yojson.Basic.pretty_to_string (`List final_json))
-       | l -> Log.fmessage "1 pattern expected for grep mode (%d given)" (List.length l); exit 1;
-
+       match !Grew_args.key with
+       | None -> grep_without_key ()
+       | Some key -> grep_with_key key
     ) ()
-
 
 (* -------------------------------------------------------------------------------- *)
 let compile () =
@@ -225,8 +270,6 @@ let load_marshal corpus_desc =
   let _ = close_in in_ch in
   data
 
-
-module String_map = Map.Make (String)
 (* -------------------------------------------------------------------------------- *)
 let count () =
   handle
