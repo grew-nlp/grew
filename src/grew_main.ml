@@ -9,7 +9,6 @@
 (***********************************************************************)
 
 open Printf
-open Log
 open Conllx
 open Libgrew
 
@@ -29,7 +28,7 @@ let load_corpus () =
         match Unix.stat one with
         | { Unix.st_kind = Unix.S_DIR } -> Corpus.from_dir ~config one
         | _ -> Corpus.from_file ~config one
-      with Unix.Unix_error _ -> fail (sprintf "File not found `%s`" one)
+      with Unix.Unix_error _ -> Log.fail "%s" (sprintf "File not found `%s`" one)
     end
   | files ->
     let sub_corpora =
@@ -38,7 +37,7 @@ let load_corpus () =
            try
              let subcorpus = Corpus.from_file ~config file in
              subcorpus :: acc
-           with Unix.Unix_error _ -> fail (sprintf "File not found `%s`" file)
+           with Unix.Unix_error _ -> Log.fail "%s" (sprintf "File not found `%s`" file)
         ) [] files in
     Corpus.merge sub_corpora
 
@@ -71,7 +70,7 @@ let transform () =
            let buff = Buffer.create 32 in
            (fun graph ->
               if !flag
-              then (Log.fmessage "`dot` output cannot be used when there is more than one graph in the output"; exit 1)
+              then (Log.fail "`dot` output cannot be used when there is more than one graph in the output")
               else (flag := true; bprintf buff "%s" (Graph.to_dot ~config graph))
            ),
            (fun () -> fprintf out_ch "%s\n" (Buffer.contents buff))
@@ -89,7 +88,7 @@ let transform () =
            (fun graph -> data := (graph |> Graph.to_json) :: !data),
            (fun () -> 
               match (!Grew_args.output_data, !data) with
-              | (None,_) -> fail "-multi_json implies -o"
+              | (None,_) -> Log.fail "%s" "-multi_json implies -o"
               | (Some out_file, l) ->
                 let base = 
                   match Filename.chop_suffix_opt ~suffix:".json" out_file with
@@ -154,7 +153,7 @@ let grep_with_key key =
            (key_value, `List l) :: acc
         ) final_map [] in
     Printf.printf "%s\n" (Yojson.Basic.pretty_to_string (`Assoc json_list))
-  | l -> Log.fmessage "1 pattern expected for grep mode (%d given)" (List.length l); exit 1
+  | l -> Log.fail "1 pattern expected for grep mode (%d given)" (List.length l)
 
 (* -------------------------------------------------------------------------------- *)
 let grep_without_key () = 
@@ -220,7 +219,7 @@ let grep_without_key () =
              ) acc matchings
         ) [] corpus in
     Printf.printf "%s\n" (Yojson.Basic.pretty_to_string (`List final_json))
-  | l -> Log.fmessage "1 pattern expected for grep mode (%d given)" (List.length l); exit 1
+  | l -> Log.fail "1 pattern expected for grep mode (%d given)" (List.length l)
 
 
 (* -------------------------------------------------------------------------------- *)
@@ -360,7 +359,7 @@ let count () =
              printf "\n%!"
          ) maps
 
-       | (l,_) -> Log.fwarning "When the 'key' parameter is used, exactly one pattern is expected (%d given)" (List.length l)
+       | (l,_) -> Log.warning "When the 'key' parameter is used, exactly one pattern is expected (%d given)" (List.length l)
     ) ()
 
 (* -------------------------------------------------------------------------------- *)
@@ -372,8 +371,8 @@ let stat () =
   handle
     (fun () ->
        match !Grew_args.patterns with
-       | [] -> Log.fwarning "No pattern given (expected one json file with patterns)"
-       | _::_::_ -> Log.fwarning "Too much patterns given (expected one json file with patterns)"
+       | [] -> Log.warning "No pattern given (expected one json file with patterns)"
+       | _::_::_ -> Log.warning "Too much patterns given (expected one json file with patterns)"
        | [one] ->
          let (pat_descs, json) = Stat.load_json one in
 
@@ -453,8 +452,6 @@ let valid () =
 (* -------------------------------------------------------------------------------- *)
 let _ =
   Printexc.record_backtrace true;
-  Log.set_active_levels ~levels:[`INFO; `MESSAGE; `WARNING];
-  Log.set_write_to_log_file false;
 
   (* parsing command line args *)
   Grew_args.parse ();

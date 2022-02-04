@@ -9,7 +9,6 @@
 (***********************************************************************)
 
 open Printf
-open Log
 open Conllx
 open Libgrew
 
@@ -18,6 +17,23 @@ module Int_set = Set.Make (Int)
 module Int_map = Map.Make (Int)
 
 let quiet = ref false
+
+
+(* ==================================================================================================== *)
+module Log = struct
+  let warning_ message =
+    ANSITerminal.eprintf [ANSITerminal.blue] "WARNING: %s\n" message;
+    Printf.eprintf "%!" (* force synchronous printing *)
+    
+  let warning message = Printf.ksprintf warning_ message
+
+  let fail_ message =
+    ANSITerminal.eprintf [ANSITerminal.red] "FAIL: %s\n" message;
+    Printf.eprintf "%!" (* force synchronous printing *);
+    exit 1
+    
+  let fail message = Printf.ksprintf fail_ message
+end
 
 (* ==================================================================================================== *)
 exception Error of Yojson.Basic.t
@@ -37,18 +53,16 @@ let error ?file ?line ?fct ?data = Printf.ksprintf (error_ ?file ?line ?fct ?dat
 
 (* -------------------------------------------------------------------------------- *)
 
-let fail msg = Log.fmessage "%s" msg; exit 2
-
 let handle fct () =
   try fct ()
   with
-  | Error json ->                  fail (Yojson.Basic.pretty_to_string json)
-  | Conllx_error json ->           fail (Yojson.Basic.pretty_to_string json)
-  | Libgrew.Error msg ->           fail msg
-  | Sys_error msg ->               fail (sprintf "System error: %s" msg)
-  | Yojson.Json_error msg ->       fail (sprintf "Json error: %s" msg)
-  | Libgrew.Bug msg ->             fail (sprintf "Libgrew.bug, please report: %s" msg)
-  | exc ->                         fail (sprintf "Uncaught exception, please report: %s" (Printexc.to_string exc))
+  | Error json ->                  Log.fail "%s" (Yojson.Basic.pretty_to_string json)
+  | Conllx_error json ->           Log.fail "%s" (Yojson.Basic.pretty_to_string json)
+  | Libgrew.Error msg ->           Log.fail "%s" msg
+  | Sys_error msg ->               Log.fail "%s" (sprintf "System error: %s" msg)
+  | Yojson.Json_error msg ->       Log.fail "%s" (sprintf "Json error: %s" msg)
+  | Libgrew.Bug msg ->             Log.fail "%s" (sprintf "Libgrew.bug, please report: %s" msg)
+  | exc ->                         Log.fail "%s" (sprintf "Uncaught exception, please report: %s" (Printexc.to_string exc))
 
 (* ---------------------------------------------------------------------------------------------------- *)
 let ensure_dir dir =
