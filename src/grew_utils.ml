@@ -24,14 +24,14 @@ module Log = struct
   let warning_ message =
     ANSITerminal.eprintf [ANSITerminal.blue] "WARNING: %s\n" message;
     Printf.eprintf "%!" (* force synchronous printing *)
-    
+
   let warning message = Printf.ksprintf warning_ message
 
   let fail_ message =
     ANSITerminal.eprintf [ANSITerminal.red] "FAIL: %s\n" message;
     Printf.eprintf "%!" (* force synchronous printing *);
     exit 1
-    
+
   let fail message = Printf.ksprintf fail_ message
 end
 
@@ -226,14 +226,14 @@ module Stat = struct
       try Yojson.Basic.from_file json_file
       with Yojson.Json_error msg -> error ~fct:"Stat.load_json" ~file:json_file "%s" msg in
 
-      let parse_pattern (id, json) =
-        let assoc = json |> to_assoc in
+    let parse_pattern (id, json) =
+      let assoc = json |> to_assoc in
       { id;
         desc = List.assoc "desc" assoc |> to_string;
         code = List.assoc "code" assoc |> to_list |> List.map to_string;
       } in
 
-      (json |> to_assoc |> List.map parse_pattern, json)
+    (json |> to_assoc |> List.map parse_pattern, json)
 end
 
 
@@ -247,7 +247,8 @@ module Validation = struct
 
   type modul = {
     title: string;
-    items: item list
+    items: item list;
+    languages: string list option; (* list of the languages codes restriction, None for all lang *)
   }
 
   (* -------------------------------------------------------------------------------- *)
@@ -288,9 +289,8 @@ module Validation = struct
           ~file: json_file
           "\"title\" field is mandatory and must be a string or a list of strings (%s)" json_error in
     let items = List.map parse_one (json |> member "items" |> to_list) in
-
-    { title; items }
-
+    let languages = try Some (json |> member "languages" |> to_list |> List.map to_string) with Type_error _ -> None in
+    { title; items; languages }
 
   (* -------------------------------------------------------------------------------- *)
   let check ?dir modul_list (corpus_desc:Corpus_desc.t) =
@@ -305,8 +305,11 @@ module Validation = struct
 
     let modules =
       `List
-        (List.map
+        (CCList.filter_map
            (fun modul ->
+             match (Corpus_desc.get_lang_opt corpus_desc, modul.languages) with
+             | (Some lang, Some lang_list) when not (List.mem lang lang_list) -> None
+             | _ ->
               let (out_items : Yojson.Basic.t) =
                 `List
                   (List.map
@@ -330,7 +333,7 @@ module Validation = struct
                           "level", `String item.level
                         ]
                      ) modul.items) in
-              `Assoc ["title", `String modul.title; "items", out_items]
+              Some (`Assoc ["title", `String modul.title; "items", out_items])
            ) modul_list) in
 
     let json = `Assoc [
