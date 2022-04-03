@@ -1,3 +1,6 @@
+# 1.8.2 (2022/04/03)
+  * handle "-whether" arg grep and count modes
+
 # 1.8.1 (2022/01/19)
   * add grep mode with "-key" arg
 
