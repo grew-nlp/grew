@@ -18,6 +18,7 @@ module Int_map = Map.Make (Int)
 
 let quiet = ref false
 
+type cluster = No_clust | Key of string | Whether of string
 
 (* ==================================================================================================== *)
 module Log = struct

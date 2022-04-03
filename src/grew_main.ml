@@ -119,12 +119,20 @@ let transform () =
     ) ()
 
 (* -------------------------------------------------------------------------------- *)
-let grep_with_key key =
+let grep_with_clust () =
   let config = !Grew_args.config in
   match !Grew_args.patterns with
   | [pattern_file] ->
 
     let pattern = Pattern.load ~config pattern_file in
+    let get_value = match !Grew_args.clust1 with
+      | Key key -> 
+        fun graph matching -> CCOption.get_or ~default:"undefined" (Matching.get_value_opt ~config key pattern graph matching)
+      | Whether clust_value -> 
+        let basic = Pattern.parse_basic ~config pattern ("{" ^ clust_value ^ "}") in
+        fun graph matching -> if Matching.whether ~config basic pattern graph matching then "Yes" else "No"
+      | No_clust -> assert false in
+
     (* get the array of graphs to explore *)
     let corpus = load_corpus () in
 
@@ -139,10 +147,7 @@ let grep_with_key key =
                       ("sent_id", `String name);
                       ("matching", Matching.to_json pattern graph matching)
                     ] in
-                let value = 
-                  match Matching.get_value_opt ~config key pattern graph matching with
-                  | None -> "undefined"
-                  | Some v -> v in
+                let value = get_value graph matching in
                 match String_map.find_opt value acc2 with
                 | None -> String_map.add value [json_matching] acc2
                 | Some old -> String_map.add value (json_matching :: old) acc2
@@ -226,9 +231,9 @@ let grep_without_key () =
 let grep () =
   handle
     (fun () ->
-       match !Grew_args.key with
-       | None -> grep_without_key ()
-       | Some key -> grep_with_key key
+       match !Grew_args.clust1 with
+       | No_clust -> grep_without_key ()
+       | _ -> grep_with_clust ()
     ) ()
 
 (* -------------------------------------------------------------------------------- *)
@@ -273,10 +278,10 @@ let load_marshal corpus_desc =
 let count () =
   handle
     (fun () ->
-       match (!Grew_args.patterns, !Grew_args.key) with
+       match (!Grew_args.patterns, !Grew_args.clust1) with
 
        (* no key --> count each pattern in each corpus *)
-       | (_, None) ->
+       | (_, No_clust) ->
          printf "Corpus\t# sentences";
          List.iter (fun p -> printf "\t%s" (p |> Filename.basename |> Filename.remove_extension)) !Grew_args.patterns;
          printf "\n";
@@ -305,8 +310,8 @@ let count () =
                ) corpus_desc_list
          ) (!Grew_args.input_data)
 
-       (* with key --> one pattern only, count each cluster in each corpus *)
-       | ([pat], Some key) ->
+       (* with clustering --> one pattern only, count each cluster in each corpus *)
+       | ([pat], _) ->
          let maps = 
            CCList.flat_map (
              fun json_file ->
@@ -316,6 +321,14 @@ let count () =
                     let config = Corpus_desc.get_config corpus_desc in
                     (* NB: pattern loading depends on the config -> reload for each corpus!  *)
                     let pattern = Pattern.load ~config pat in
+                    let get_value = match !Grew_args.clust1 with
+                      | Key key -> 
+                        fun graph matching -> CCOption.get_or ~default:"undefined" (Matching.get_value_opt ~config key pattern graph matching)
+                      | Whether clust_value -> 
+                        let basic = Pattern.parse_basic ~config pattern ("{" ^ clust_value ^ "}") in
+                        fun graph matching -> if Matching.whether ~config basic pattern graph matching then "Yes" else "No"
+                      | No_clust -> assert false in
+
                     let data = load_marshal corpus_desc in
 
                     let dist = 
@@ -324,10 +337,7 @@ let count () =
                            let matchings = Graph.search_pattern ~config pattern graph in
                            List.fold_left 
                              (fun acc2 matching ->
-                                let value = 
-                                  match Matching.get_value_opt ~config key pattern graph matching with
-                                  | None -> "undefined"
-                                  | Some v -> v in
+                                let value = get_value graph matching in
                                 match String_map.find_opt value acc2 with
                                 | None -> String_map.add value 1 acc2
                                 | Some old -> String_map.add value (old+1) acc2
