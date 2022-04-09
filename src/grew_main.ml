@@ -265,16 +265,6 @@ let clean () =
     ) ()
 
 (* -------------------------------------------------------------------------------- *)
-let load_marshal corpus_desc =
-  let id = Corpus_desc.get_id corpus_desc in
-  let directory = Corpus_desc.get_directory corpus_desc in
-  let marshal_file = (Filename.concat directory id) ^ ".marshal" in
-  let in_ch = open_in_bin marshal_file in
-  let data = (Marshal.from_channel in_ch : Corpus.t) in
-  let _ = close_in in_ch in
-  data
-
-(* -------------------------------------------------------------------------------- *)
 let count () =
   handle
     (fun () ->
@@ -291,22 +281,24 @@ let count () =
              let corpus_desc_list = Corpus_desc.load_json json_file in
              List.iter
                (fun corpus_desc ->
-                  let config = Corpus_desc.get_config corpus_desc in
-                  (* NB: pattern loading depends on the config -> reload for each corpus!  *)
-                  let patterns = List.map (Pattern.load ~config) !Grew_args.patterns in
-                  let data = load_marshal corpus_desc in
-                  printf "%s" (Corpus_desc.get_id corpus_desc);
-                  printf "\t%d" (Corpus.size data);
+                  match Corpus_desc.load_corpus_opt corpus_desc with
+                  | None -> error ~fct:"Grew.count" "The corpus %s is not compiled" (Corpus_desc.get_id corpus_desc)
+                  | Some data -> 
+                    let config = Corpus_desc.get_config corpus_desc in
+                    (* NB: pattern loading depends on the config -> reload for each corpus!  *)
+                    let patterns = List.map (Pattern.load ~config) !Grew_args.patterns in
+                    printf "%s" (Corpus_desc.get_id corpus_desc);
+                    printf "\t%d" (Corpus.size data);
 
-                  List.iter
-                    (fun pattern ->
-                       let count =
-                         Corpus.fold_left (fun acc _ graph ->
-                             acc + (List.length (Graph.search_pattern ~config pattern graph))
-                           ) 0 data in
-                       printf "\t%d" count
-                    ) patterns;
-                  printf "\n%!"
+                    List.iter
+                      (fun pattern ->
+                         let count =
+                           Corpus.fold_left (fun acc _ graph ->
+                               acc + (List.length (Graph.search_pattern ~config pattern graph))
+                             ) 0 data in
+                         printf "\t%d" count
+                      ) patterns;
+                    printf "\n%!"
                ) corpus_desc_list
          ) (!Grew_args.input_data)
 
@@ -318,32 +310,32 @@ let count () =
                let corpus_desc_list = Corpus_desc.load_json json_file in
                List.map
                  (fun corpus_desc ->
-                    let config = Corpus_desc.get_config corpus_desc in
-                    (* NB: pattern loading depends on the config -> reload for each corpus!  *)
-                    let pattern = Pattern.load ~config pat in
-                    let get_value = match !Grew_args.clust1 with
-                      | Key key -> 
-                        fun graph matching -> CCOption.get_or ~default:"undefined" (Matching.get_value_opt ~config key pattern graph matching)
-                      | Whether clust_value -> 
-                        let basic = Pattern.parse_basic ~config pattern ("{" ^ clust_value ^ "}") in
-                        fun graph matching -> if Matching.whether ~config basic pattern graph matching then "Yes" else "No"
-                      | No_clust -> assert false in
-
-                    let data = load_marshal corpus_desc in
-
-                    let dist = 
-                      Corpus.fold_left 
-                        (fun acc _ graph ->
-                           let matchings = Graph.search_pattern ~config pattern graph in
-                           List.fold_left 
-                             (fun acc2 matching ->
-                                let value = get_value graph matching in
-                                match String_map.find_opt value acc2 with
-                                | None -> String_map.add value 1 acc2
-                                | Some old -> String_map.add value (old+1) acc2
-                             ) acc matchings
-                        ) String_map.empty data in
-                    (Corpus_desc.get_id corpus_desc, dist)
+                    match Corpus_desc.load_corpus_opt corpus_desc with
+                    | None -> error ~fct:"Grew.count" "The corpus %s is not compiled" (Corpus_desc.get_id corpus_desc)
+                    | Some data -> 
+                      let config = Corpus_desc.get_config corpus_desc in
+                      (* NB: pattern loading depends on the config -> reload for each corpus!  *)
+                      let pattern = Pattern.load ~config pat in
+                      let get_value = match !Grew_args.clust1 with
+                        | Key key -> 
+                          fun graph matching -> CCOption.get_or ~default:"undefined" (Matching.get_value_opt ~config key pattern graph matching)
+                        | Whether clust_value -> 
+                          let basic = Pattern.parse_basic ~config pattern ("{" ^ clust_value ^ "}") in
+                          fun graph matching -> if Matching.whether ~config basic pattern graph matching then "Yes" else "No"
+                        | No_clust -> assert false in
+                      let dist = 
+                        Corpus.fold_left 
+                          (fun acc _ graph ->
+                             let matchings = Graph.search_pattern ~config pattern graph in
+                             List.fold_left 
+                               (fun acc2 matching ->
+                                  let value = get_value graph matching in
+                                  match String_map.find_opt value acc2 with
+                                  | None -> String_map.add value 1 acc2
+                                  | Some old -> String_map.add value (old+1) acc2
+                               ) acc matchings
+                          ) String_map.empty data in
+                      (Corpus_desc.get_id corpus_desc, dist)
                  ) corpus_desc_list
            ) (!Grew_args.input_data) in
 
@@ -395,24 +387,26 @@ let stat () =
          let bare_lines =
            List.map
              (fun corpus_desc ->
-                let corpus = load_marshal corpus_desc in
-                let config = Corpus_desc.get_config corpus_desc in
-                (Corpus_desc.get_id corpus_desc,
-                 List.map (
-                   fun pat_desc ->
-                     let pattern = 
-                       (* NB: pattern should be reparsed for each corpora, because config may change *)
-                       try Pattern.parse ~config (String.concat " " pat_desc.Stat.code)
-                       with Libgrew.Error msg ->
-                         error
-                           ~fct:"Grew.stat"
-                           ~data:(`String (String.concat " " pat_desc.Stat.code))
-                           "cannot parse pattern associated with desc: %s" pat_desc.Stat.desc in
-                     Corpus.fold_left (fun acc _ graph ->
-                         acc + (List.length (Graph.search_pattern ~config pattern graph))
-                       ) 0 corpus
-                 ) pat_descs
-                )
+                match Corpus_desc.load_corpus_opt corpus_desc with
+                | None -> error ~fct:"Grew.stat" "The corpus %s is not compiled" (Corpus_desc.get_id corpus_desc)
+                | Some corpus -> 
+                  let config = Corpus_desc.get_config corpus_desc in
+                  (Corpus_desc.get_id corpus_desc,
+                   List.map (
+                     fun pat_desc ->
+                       let pattern = 
+                         (* NB: pattern should be reparsed for each corpora, because config may change *)
+                         try Pattern.parse ~config (String.concat " " pat_desc.Stat.code)
+                         with Libgrew.Error msg ->
+                           error
+                             ~fct:"Grew.stat"
+                             ~data:(`String (String.concat " " pat_desc.Stat.code))
+                             "cannot parse pattern associated with desc: %s" pat_desc.Stat.desc in
+                       Corpus.fold_left (fun acc _ graph ->
+                           acc + (List.length (Graph.search_pattern ~config pattern graph))
+                         ) 0 corpus
+                   ) pat_descs
+                  )
              ) corpora in
 
          let stats = `List (
