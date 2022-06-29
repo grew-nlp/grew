@@ -1,7 +1,10 @@
-# 1.8.2 (2022/04/03)
+# 1.9.0 (2022/06/29)
+  * follow libcaml-grew update
+
+## 1.8.2 (2022/04/03)
   * handle "-whether" arg grep and count modes
 
-# 1.8.1 (2022/01/19)
+## 1.8.1 (2022/01/19)
   * add grep mode with "-key" arg
 
 # 1.8.0 (2021/12/15)
