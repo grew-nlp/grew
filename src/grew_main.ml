@@ -139,7 +139,7 @@ let grep_with_clust () =
     let final_map =
       Corpus.fold_left
         (fun acc name graph ->
-           let matchings = Graph.search_pattern ~config pattern graph in
+           let matchings = Matching.search_pattern_in_graph ~config pattern graph in
            List.fold_left
              (fun acc2 matching ->
                 let json_matching = `Assoc
@@ -181,12 +181,12 @@ let grep_without_key () =
     let final_json =
       Corpus.fold_left
         (fun acc name graph ->
-           let matchings = Graph.search_pattern ~config pattern graph in
+           let matchings = Matching.search_pattern_in_graph ~config pattern graph in
            List.fold_left
              (fun acc2 matching ->
                 let assoc_nodes = Matching.nodes pattern graph matching in
                 let graph_node_names = List.map snd assoc_nodes in
-                let deco = Deco.build pattern matching in
+                let deco = Matching.build_deco pattern matching in
 
                 (* write the dep file if needed *)
                 let dep_file =
@@ -294,7 +294,7 @@ let count () =
                       (fun pattern ->
                          let count =
                            Corpus.fold_left (fun acc _ graph ->
-                               acc + (List.length (Graph.search_pattern ~config pattern graph))
+                               acc + (List.length (Matching.search_pattern_in_graph ~config pattern graph))
                              ) 0 data in
                          printf "\t%d" count
                       ) patterns;
@@ -326,7 +326,7 @@ let count () =
                       let dist = 
                         Corpus.fold_left 
                           (fun acc _ graph ->
-                             let matchings = Graph.search_pattern ~config pattern graph in
+                             let matchings = Matching.search_pattern_in_graph ~config pattern graph in
                              List.fold_left 
                                (fun acc2 matching ->
                                   let value = get_value graph matching in
@@ -403,7 +403,7 @@ let stat () =
                              ~data:(`String (String.concat " " pat_desc.Stat.code))
                              "cannot parse pattern associated with desc: %s" pat_desc.Stat.desc in
                        Corpus.fold_left (fun acc _ graph ->
-                           acc + (List.length (Graph.search_pattern ~config pattern graph))
+                           acc + (List.length (Matching.search_pattern_in_graph ~config pattern graph))
                          ) 0 corpus
                    ) pat_descs
                   )

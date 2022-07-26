@@ -325,7 +325,7 @@ module Validation = struct
                         in
                         let count =
                           Corpus.fold_left (fun acc _ graph ->
-                              acc + (List.length (Graph.search_pattern ~config grew_pattern graph))
+                              acc + (List.length (Matching.search_pattern_in_graph ~config grew_pattern graph))
                             ) 0 corpus in
                         `Assoc [
                           "count", `Int count;
