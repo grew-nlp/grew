@@ -13,7 +13,6 @@ open Conllx
 open Libgrew
 
 (* ==================================================================================================== *)
-module Int_set = Set.Make (Int)
 module Int_map = Map.Make (Int)
 
 let quiet = ref false
@@ -76,9 +75,6 @@ let ensure_dir dir =
       try Unix.mkdir dir 0o755; None
       with exc -> Some (sprintf "grew_match option ignored: cannot create dir %s (%s)" dir (Printexc.to_string exc))
     end
-
-(* ================================================================================ *)
-module StringMap = Map.Make (String)
 
 (* ================================================================================ *)
 module String_ = struct

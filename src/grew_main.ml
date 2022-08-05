@@ -15,8 +15,6 @@ open Libgrew
 open Grew_utils
 open Grew_args
 
-module String_map = Map.Make (String)
-
 (* -------------------------------------------------------------------------------- *)
 let load_corpus () =
   let config = !Grew_args.config in
