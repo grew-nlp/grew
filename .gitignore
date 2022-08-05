@@ -5,3 +5,4 @@ DATA_DIR
 LOCAL
 install_dev
 __pycache__
+.vscode

@@ -11,8 +11,9 @@ all: native
 native:
 	$(OCB) -tag-line "true:	package(libgrew_dev)" grew_main.native
 
+# use mv instead of cp to avoid signature pble. See: https://developer.apple.com/forums/thread/130313#410704022
 install: native
-	cp grew_main.native $(BINDIR)/grew_dev
+	mv grew_main.native $(BINDIR)/grew_dev
 
 uninstall:
 	rm -f $(BINDIR)/grew
