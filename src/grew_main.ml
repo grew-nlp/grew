@@ -10,9 +10,10 @@
 
 open Printf
 open Conllx
+open Grew_types
 open Libgrew
 
-open Grew_utils
+open Grew_cli_utils
 open Grew_args
 
 (* -------------------------------------------------------------------------------- *)

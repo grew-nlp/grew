@@ -12,7 +12,7 @@ open Arg
 open Conllx
 open Libgrew
 
-open Grew_utils
+open Grew_cli_utils
 
 module Grew_args = struct
 
