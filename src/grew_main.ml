@@ -117,114 +117,51 @@ let transform () =
        | None -> ()
     ) ()
 
+
 (* -------------------------------------------------------------------------------- *)
-let grep_with_clust () =
+let get_value ~config clusts pattern graph matching =
+  List.map 
+    (function
+      | Key key -> Matching.get_value_opt ~config key pattern graph matching
+      | Whether whether -> 
+          let basic = Pattern.parse_basic ~config pattern ("{" ^ whether ^ "}") in
+          if Matching.whether ~config basic pattern graph matching then Some "Yes" else Some "No"
+      | No_clust -> assert false
+    ) clusts
+
+let new_grep_with_clusts clusts =
   let config = !Grew_args.config in
   match !Grew_args.patterns with
   | [pattern_file] ->
-
     let pattern = Pattern.load ~config pattern_file in
-    let get_value = match !Grew_args.clust1 with
-      | Key key -> 
-        fun graph matching -> CCOption.get_or ~default:"undefined" (Matching.get_value_opt ~config key pattern graph matching)
-      | Whether clust_value -> 
-        let basic = Pattern.parse_basic ~config pattern ("{" ^ clust_value ^ "}") in
-        fun graph matching -> if Matching.whether ~config basic pattern graph matching then "Yes" else "No"
-      | No_clust -> assert false in
-
-    (* get the array of graphs to explore *)
+    let build_key_list = get_value ~config clusts pattern in
     let corpus = load_corpus () in
-
-    let final_map =
+    let clustered =
       Corpus.fold_left
         (fun acc name graph ->
-           let matchings = Matching.search_pattern_in_graph ~config pattern graph in
-           List.fold_left
-             (fun acc2 matching ->
-                let json_matching = `Assoc
-                    [
-                      ("sent_id", `String name);
-                      ("matching", Matching.to_json pattern graph matching)
-                    ] in
-                let value = get_value graph matching in
-                match String_map.find_opt value acc2 with
-                | None -> String_map.add value [json_matching] acc2
-                | Some old -> String_map.add value (json_matching :: old) acc2
-             ) acc matchings
-        ) String_map.empty corpus in
-    let json_list = String_map.fold
-        (fun key_value l acc ->
-           (key_value, `List l) :: acc
-        ) final_map [] in
-    Printf.printf "%s\n" (Yojson.Basic.pretty_to_string (`Assoc json_list))
+          let matchings = Matching.search_pattern_in_graph ~config pattern graph in
+          List.fold_left
+          (fun acc2 matching ->
+            let key_list = build_key_list graph matching in
+            let json_matching = `Assoc
+            [
+              ("sent_id", `String name);
+              ("matching", Matching.to_json pattern graph matching)
+            ] in
+            Clustered.update (fun x -> json_matching :: x) key_list [] acc2
+          ) acc matchings
+        ) (Clustered.empty []) corpus in
+    Clustered.fold_layer
+      (fun json_list -> `List json_list)
+      []
+      (fun string_opt sub acc -> (CCOption.get_or ~default:"undefined" string_opt, sub) :: acc)
+      (fun x -> `Assoc x)
+      clustered
   | l -> Log.fail "1 pattern expected for grep mode (%d given)" (List.length l)
 
-(* -------------------------------------------------------------------------------- *)
-let grep_without_key () = 
-  let config = !Grew_args.config in
-  match !Grew_args.patterns with
-  | [pattern_file] ->
+let grep_with_clust () = Printf.printf "%s\n" (Yojson.Basic.pretty_to_string (new_grep_with_clusts [!Grew_args.clust1]))
 
-    let pattern = Pattern.load ~config pattern_file in
-
-    (* get the array of graphs to explore *)
-    let corpus = load_corpus () in
-
-    (match !Grew_args.dep_dir with
-     | None -> ()
-     | Some d -> ignore (Sys.command (sprintf "mkdir -p %s" d)));
-
-    (* printf "%s\n" (String.concat "_" (Pattern.pid_name_list pattern)); *)
-    let pattern_ids = Pattern.pid_name_list pattern in
-
-    let final_json =
-      Corpus.fold_left
-        (fun acc name graph ->
-           let matchings = Matching.search_pattern_in_graph ~config pattern graph in
-           List.fold_left
-             (fun acc2 matching ->
-                let assoc_nodes = Matching.nodes pattern graph matching in
-                let graph_node_names = List.map snd assoc_nodes in
-                let deco = Matching.build_deco pattern matching in
-
-                (* write the dep file if needed *)
-                let dep_file =
-                  match !Grew_args.dep_dir with
-                  | None -> None
-                  | Some dir ->
-                    let id = sprintf "%s__%s"
-                        name
-                        (String.concat "_" (List.map2 (sprintf "%s:%s") pattern_ids graph_node_names)) in
-                    let dep = Graph.to_dep ~config ~deco graph in
-                    let filename = Filename.concat dir (sprintf "%s.dep" id) in
-                    let out_ch = open_out filename in
-                    fprintf out_ch "%s" dep;
-                    close_out out_ch;
-                    Some filename in
-
-                let json_matching = Matching.to_json pattern graph matching in
-
-                let opt_list = [
-                  Some ("sent_id", `String name);
-                  Some ("matching", json_matching);
-                  (
-                    if !Grew_args.html
-                    then Some ("html", `String (Graph.to_sentence ~deco graph))
-                    else None
-                  );
-                  (
-                    match dep_file with
-                    | None -> None
-                    | Some f -> Some ("dep_file", `String f)
-                  )
-                ] in
-                let json = `Assoc (CCList.filter_map (fun x -> x) opt_list) in
-                json :: acc2
-             ) acc matchings
-        ) [] corpus in
-    Printf.printf "%s\n" (Yojson.Basic.pretty_to_string (`List final_json))
-  | l -> Log.fail "1 pattern expected for grep mode (%d given)" (List.length l)
-
+let grep_without_key () = Printf.printf "%s\n" (Yojson.Basic.pretty_to_string (new_grep_with_clusts []))
 
 (* -------------------------------------------------------------------------------- *)
 let grep () =
