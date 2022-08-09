@@ -16,6 +16,8 @@ open Grew_cli_utils
 
 module Grew_args = struct
 
+  type cluster_item = Key of string | Whether of string
+
   type mode = Undefined | Transform | Grep | Count | Valid | Stat | Compile | Clean | Test
   let mode = ref Undefined
 
@@ -32,7 +34,7 @@ module Grew_args = struct
   let (patterns : string list ref) = ref []
   let html = ref false
 
-  let clust1 = ref No_clust
+  let (clustering : cluster_item list ref) = ref []
 
   let config = ref (Conllx_config.build "ud")  (* "ud" is used as default value. *)
 
@@ -97,8 +99,8 @@ module Grew_args = struct
     | "-strat" :: s :: args -> strat := s; loop args
     | "-pattern" :: files :: args
     | "-patterns" :: files :: args -> patterns := !patterns @ (Str.split (Str.regexp " ") files); loop args
-    | "-key" :: s :: args -> clust1 := Key s; loop args
-    | "-whether" :: s :: args ->  clust1 := Whether s; loop args
+    | "-key" :: s :: args -> clustering := !clustering @ [Key s]; loop args
+    | "-whether" :: s :: args ->  clustering := !clustering @ [Whether s]; loop args
     | "-html" :: args -> html := true; loop args
 
     | "-timeout" :: f :: args -> timeout := Some (float_of_string f); Rewrite.set_timeout (Some (float_of_string f)); loop args
@@ -131,7 +133,7 @@ module Grew_args = struct
   let parse () =
     match Array.to_list Sys.argv with
     | [] -> failwith "bug: Empty argv"
-    | _ :: "gui" :: _ -> Printf.printf "The gui mode is not longer supported"
+    | _ :: "gui" :: _ -> Printf.printf "The gui mode is not longer supported, see http://transform.grew.fr"
     | _ :: "transform" :: args -> mode := Transform; loop args
     | _ :: "grep" :: args -> mode := Grep; loop args
     | _ :: "count" :: args -> mode := Count; loop args

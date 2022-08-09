@@ -122,11 +122,10 @@ let transform () =
 let get_value ~config clusts pattern graph matching =
   List.map 
     (function
-      | Key key -> Matching.get_value_opt ~config key pattern graph matching
+      | Grew_args.Key key -> Matching.get_value_opt ~config key pattern graph matching
       | Whether whether -> 
           let basic = Pattern.parse_basic ~config pattern ("{" ^ whether ^ "}") in
           if Matching.whether ~config basic pattern graph matching then Some "Yes" else Some "No"
-      | No_clust -> assert false
     ) clusts
 
 let new_grep_with_clusts clusts =
@@ -159,17 +158,12 @@ let new_grep_with_clusts clusts =
       clustered
   | l -> Log.fail "1 pattern expected for grep mode (%d given)" (List.length l)
 
-let grep_with_clust () = Printf.printf "%s\n" (Yojson.Basic.pretty_to_string (new_grep_with_clusts [!Grew_args.clust1]))
-
-let grep_without_key () = Printf.printf "%s\n" (Yojson.Basic.pretty_to_string (new_grep_with_clusts []))
-
 (* -------------------------------------------------------------------------------- *)
 let grep () =
   handle
     (fun () ->
-       match !Grew_args.clust1 with
-       | No_clust -> grep_without_key ()
-       | _ -> grep_with_clust ()
+      let c = new_grep_with_clusts !Grew_args.clustering in
+      Printf.printf "%s\n" (Yojson.Basic.pretty_to_string c)
     ) ()
 
 (* -------------------------------------------------------------------------------- *)
@@ -204,10 +198,10 @@ let clean () =
 let count () =
   handle
     (fun () ->
-       match (!Grew_args.patterns, !Grew_args.clust1) with
+       match (!Grew_args.patterns, !Grew_args.clustering) with
 
        (* no key --> count each pattern in each corpus *)
-       | (_, No_clust) ->
+       | (_, []) ->
          printf "Corpus\t# sentences";
          List.iter (fun p -> printf "\t%s" (p |> Filename.basename |> Filename.remove_extension)) !Grew_args.patterns;
          printf "\n";
@@ -239,7 +233,7 @@ let count () =
          ) (!Grew_args.input_data)
 
        (* with clustering --> one pattern only, count each cluster in each corpus *)
-       | ([pat], _) ->
+       | ([pat], [cluster_item]) ->
          let maps = 
            CCList.flat_map (
              fun json_file ->
@@ -252,13 +246,12 @@ let count () =
                       let config = Corpus_desc.get_config corpus_desc in
                       (* NB: pattern loading depends on the config -> reload for each corpus!  *)
                       let pattern = Pattern.load ~config pat in
-                      let get_value = match !Grew_args.clust1 with
+                      let get_value = match cluster_item with
                         | Key key -> 
                           fun graph matching -> CCOption.get_or ~default:"undefined" (Matching.get_value_opt ~config key pattern graph matching)
                         | Whether clust_value -> 
                           let basic = Pattern.parse_basic ~config pattern ("{" ^ clust_value ^ "}") in
-                          fun graph matching -> if Matching.whether ~config basic pattern graph matching then "Yes" else "No"
-                        | No_clust -> assert false in
+                          fun graph matching -> if Matching.whether ~config basic pattern graph matching then "Yes" else "No" in
                       let dist = 
                         Corpus.fold_left 
                           (fun acc _ graph ->
