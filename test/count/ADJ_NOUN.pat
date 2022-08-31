@@ -1,1 +1,1 @@
-pattern { A[upos=ADJ]; N[upos=NOUN]; N -[amod]-> A; A << N }
+pattern { A[upos=ADJ]; N[upos=NOUN]; e: N -[amod]-> A; A << N }

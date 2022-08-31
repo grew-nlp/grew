@@ -98,7 +98,9 @@ let transform () =
                      let sub_out_ch = open_out (sprintf "%s__%d.json" base i) in
                      fprintf sub_out_ch "%s\n" (Yojson.Basic.pretty_to_string json)
                   ) l
-           ) in
+           )
+          | Tsv -> Log.fail "`tsv` output cannot be used in transform mode"
+        in
 
        Corpus.iteri
          (fun index sent_id gr ->
@@ -119,21 +121,20 @@ let transform () =
 
 
 (* -------------------------------------------------------------------------------- *)
-let get_value ~config clusts pattern graph matching =
-  List.map 
-    (function
-      | Grew_args.Key key -> Matching.get_value_opt ~config key pattern graph matching
-      | Whether whether -> 
-          let basic = Pattern.parse_basic ~config pattern ("{" ^ whether ^ "}") in
-          if Matching.whether ~config basic pattern graph matching then Some "Yes" else Some "No"
-    ) clusts
-
 let new_grep_with_clusts clusts =
   let config = !Grew_args.config in
   match !Grew_args.patterns with
   | [pattern_file] ->
     let pattern = Pattern.load ~config pattern_file in
-    let build_key_list = get_value ~config clusts pattern in
+    (* let build_key_list = get_value ~config clusts pattern in *)
+    let build_key_list graph matching =
+      List.map 
+      (fun clust_item -> 
+        (match clust_item with Key k -> printf "### KEY ### %s\n" k | Whether w -> printf "### WHETHER ### %s\n" w);
+        Matching.get_clust_value_opt ~config clust_item pattern graph matching
+        |> (fun x -> (match clust_item with Key k -> printf "### KEY ### %s OK\n" k | Whether w -> printf "### WHETHER ### %s OK\n" w); x)
+      )
+      clusts in
     let corpus = load_corpus () in
     let clustered =
       Corpus.fold_left
@@ -198,99 +199,82 @@ let clean () =
 let count () =
   handle
     (fun () ->
-       match (!Grew_args.patterns, !Grew_args.clustering) with
+      let corpus_desc_list = CCList.flat_map Corpus_desc.load_json !Grew_args.input_data in
 
-       (* no key --> count each pattern in each corpus *)
-       | (_, []) ->
+      let count_clustered = 
+        Clustered.build_layer
+        (fun corpus_desc ->
+          let config = Corpus_desc.get_config corpus_desc in 
+          match Corpus_desc.load_corpus_opt corpus_desc with
+          | None -> failwith "TODO: cannot get corpus"
+          | Some corpus -> 
+
+            Clustered.build_layer
+            (fun file_pattern -> 
+              let pattern = Pattern.load ~config file_pattern in
+              Corpus.search ~config 0 (fun _ x -> x+1) pattern !Grew_args.clustering corpus
+            )
+            (fun file_pattern -> Some file_pattern)
+            0 !Grew_args.patterns 
+
+        )
+        (fun corpus_desc -> Some (Corpus_desc.get_id corpus_desc))
+        0 corpus_desc_list in
+    
+
+      match (!Grew_args.output, !Grew_args.patterns, !Grew_args.clustering) with
+       | (Grew_args.Tsv, _, []) ->
          printf "Corpus\t# sentences";
          List.iter (fun p -> printf "\t%s" (p |> Filename.basename |> Filename.remove_extension)) !Grew_args.patterns;
          printf "\n";
+         List.iter
+          (fun corpus_desc -> 
+            let corpus_id = Corpus_desc.get_id corpus_desc in
+            printf "%s" corpus_id;
 
-         List.iter (
-           fun json_file ->
-             let corpus_desc_list = Corpus_desc.load_json json_file in
-             List.iter
-               (fun corpus_desc ->
-                  match Corpus_desc.load_corpus_opt corpus_desc with
-                  | None -> error ~fct:"Grew.count" "The corpus %s is not compiled" (Corpus_desc.get_id corpus_desc)
-                  | Some data -> 
-                    let config = Corpus_desc.get_config corpus_desc in
-                    (* NB: pattern loading depends on the config -> reload for each corpus!  *)
-                    let patterns = List.map (Pattern.load ~config) !Grew_args.patterns in
-                    printf "%s" (Corpus_desc.get_id corpus_desc);
-                    printf "\t%d" (Corpus.size data);
+            (* reloading of the corpus in order to get the size: TODO change grew count output to avoid this. *)
+            match Corpus_desc.load_corpus_opt corpus_desc with
+            | None -> error ~fct:"Grew.count" "The corpus %s is not compiled" (Corpus_desc.get_id corpus_desc)
+            | Some data -> printf "\t%d" (Corpus.size data);
 
-                    List.iter
-                      (fun pattern ->
-                         let count =
-                           Corpus.fold_left (fun acc _ graph ->
-                               acc + (List.length (Matching.search_pattern_in_graph ~config pattern graph))
-                             ) 0 data in
-                         printf "\t%d" count
-                      ) patterns;
-                    printf "\n%!"
-               ) corpus_desc_list
-         ) (!Grew_args.input_data)
+            List.iter
+              (fun p -> printf "\t%d" (Clustered.get_opt 0 [Some corpus_id; Some p] count_clustered)
+            ) !Grew_args.patterns;
+            printf "\n";
+          ) corpus_desc_list
 
        (* with clustering --> one pattern only, count each cluster in each corpus *)
-       | ([pat], [cluster_item]) ->
-         let maps = 
-           CCList.flat_map (
-             fun json_file ->
-               let corpus_desc_list = Corpus_desc.load_json json_file in
-               List.map
-                 (fun corpus_desc ->
-                    match Corpus_desc.load_corpus_opt corpus_desc with
-                    | None -> error ~fct:"Grew.count" "The corpus %s is not compiled" (Corpus_desc.get_id corpus_desc)
-                    | Some data -> 
-                      let config = Corpus_desc.get_config corpus_desc in
-                      (* NB: pattern loading depends on the config -> reload for each corpus!  *)
-                      let pattern = Pattern.load ~config pat in
-                      let get_value = match cluster_item with
-                        | Key key -> 
-                          fun graph matching -> CCOption.get_or ~default:"undefined" (Matching.get_value_opt ~config key pattern graph matching)
-                        | Whether clust_value -> 
-                          let basic = Pattern.parse_basic ~config pattern ("{" ^ clust_value ^ "}") in
-                          fun graph matching -> if Matching.whether ~config basic pattern graph matching then "Yes" else "No" in
-                      let dist = 
-                        Corpus.fold_left 
-                          (fun acc _ graph ->
-                             let matchings = Matching.search_pattern_in_graph ~config pattern graph in
-                             List.fold_left 
-                               (fun acc2 matching ->
-                                  let value = get_value graph matching in
-                                  match String_map.find_opt value acc2 with
-                                  | None -> String_map.add value 1 acc2
-                                  | Some old -> String_map.add value (old+1) acc2
-                               ) acc matchings
-                          ) String_map.empty data in
-                      (Corpus_desc.get_id corpus_desc, dist)
-                 ) corpus_desc_list
-           ) (!Grew_args.input_data) in
-
-         let all_keys = List.fold_left 
-             (fun acc (_,map) ->
-                String_map.fold 
-                  (fun k _ acc2 ->
-                     String_set.add k acc2
-                  ) map acc
-             ) String_set.empty maps in
-
+       | (Grew_args.Tsv, [pat], [cluster_item]) ->
+         let all_keys = Clustered.get_all_keys 2 count_clustered in
          printf "Corpus";
-         String_set.iter (fun k -> printf "\t%s" k)  all_keys;
+         List.iter (fun k -> printf "\t%s" (CCOption.map_or ~default:"undefined" CCFun.id k)) all_keys;
          printf "\n";
-
          List.iter (
-           fun (corpus_name, map) ->
-             printf "%s" corpus_name;
-             String_set.iter
+           fun corpus_desc ->
+            let corpus_id = Corpus_desc.get_id corpus_desc in
+             printf "%s" corpus_id;
+             List.iter
                (fun key ->
-                  printf "\t%d" (match String_map.find_opt key map with Some v -> v | None -> 0)
+                  printf "\t%d" (Clustered.get_opt 0 [Some corpus_id; Some pat; key] count_clustered)
                ) all_keys;
              printf "\n%!"
-         ) maps
+         ) corpus_desc_list;
 
-       | (l,_) -> Log.warning "When the 'key' parameter is used, exactly one pattern is expected (%d given)" (List.length l)
+      | (Grew_args.Tsv, _,_) -> 
+          Log.warning 
+          "The `tsv` ouput is not available with the current request.
+         It is avaible with: (one pattern, one clutering item) or with (several patterns, no clustering_item).
+         See https://grew.fr/usage/cli/#count for more deatils."
+
+      | _ ->
+        let json = Clustered.fold_layer
+        (fun x -> `Int x)
+        []
+        (fun string_opt sub acc -> (CCOption.get_or ~default:"undefined" string_opt, sub) :: acc)
+        (fun x -> `Assoc x)
+        count_clustered in
+        Printf.printf "%s\n" (Yojson.Basic.pretty_to_string json)
+  
     ) ()
 
 (* -------------------------------------------------------------------------------- *)

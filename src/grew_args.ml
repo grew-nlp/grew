@@ -10,13 +10,13 @@
 
 open Arg
 open Conllx
+
+open Grew_types
 open Libgrew
 
 open Grew_cli_utils
 
 module Grew_args = struct
-
-  type cluster_item = Key of string | Whether of string
 
   type mode = Undefined | Transform | Grep | Count | Valid | Stat | Compile | Clean | Test
   let mode = ref Undefined
@@ -24,7 +24,7 @@ module Grew_args = struct
   let grs = ref None
   let dep_dir = ref None
 
-  type output = Conllx of  Conllx_columns.t | Gr | Dot | Json | Multi_json
+  type output = Conllx of  Conllx_columns.t | Gr | Dot | Json | Multi_json | Tsv
   let output = ref (Conllx Conllx_columns.default)
 
   let (input_data : string list ref) = ref []
@@ -114,6 +114,7 @@ module Grew_args = struct
     | "-gr" :: args -> output := Gr; loop args
     | "-dot" :: args -> output := Dot; loop args
     | "-json" :: args -> output := Json; loop args
+    | "-tsv" :: args -> output := Tsv; loop args
     | "-multi_json" :: args -> output := Multi_json; loop args
 
     | "-grew_match_server" :: dir :: args -> grew_match_server := Some dir; loop args
