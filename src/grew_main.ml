@@ -16,6 +16,10 @@ open Libgrew
 open Grew_cli_utils
 open Grew_args
 
+
+(* -------------------------------------------------------------------------------- *)
+let load_corpus_desc_list () = CCList.flat_map Corpus_desc.load_json !Grew_args.input_data
+
 (* -------------------------------------------------------------------------------- *)
 let load_corpus () =
   let config = !Grew_args.config in
@@ -169,38 +173,27 @@ let grep () =
 
 (* -------------------------------------------------------------------------------- *)
 let compile () =
-  handle
-    (fun () ->
-       List.iter
-         (fun json_file ->
-            let corpus_desc_list = Corpus_desc.load_json json_file in
-            List.iter
-              (fun corpus_desc ->
-                 Corpus_desc.compile ~force:!Grew_args.force ?grew_match:!Grew_args.grew_match_server corpus_desc
-              ) corpus_desc_list
-         ) !Grew_args.input_data
-    ) ()
+  handle (fun () ->
+    List.iter
+      (fun corpus_desc ->
+        Corpus_desc.compile ~force:!Grew_args.force ?grew_match:!Grew_args.grew_match_server corpus_desc
+      ) (load_corpus_desc_list ())
+  ) ()
 
 (* -------------------------------------------------------------------------------- *)
 let clean () =
-  handle
-    (fun () ->
-       List.iter
-         (fun json_file ->
-            let corpus_desc_list = Corpus_desc.load_json json_file in
-            List.iter
-              (fun corpus_desc ->
-                 Corpus_desc.clean corpus_desc
-              ) corpus_desc_list
-         ) !Grew_args.input_data
-    ) ()
+  handle (fun () ->
+    List.iter
+      (fun corpus_desc ->
+        Corpus_desc.clean corpus_desc
+      ) (load_corpus_desc_list ())
+  ) ()
 
 (* -------------------------------------------------------------------------------- *)
 let count () =
   handle
     (fun () ->
-      let corpus_desc_list = CCList.flat_map Corpus_desc.load_json !Grew_args.input_data in
-
+      let corpus_desc_list = load_corpus_desc_list () in
       let count_clustered = 
         Clustered.build_layer
         (fun corpus_desc ->
@@ -291,12 +284,6 @@ let stat () =
        | [one] ->
          let (pat_descs, json) = Stat.load_json one in
 
-         let corpora =
-           List.fold_left
-             (fun acc conf_file ->
-                Corpus_desc.load_json conf_file @ acc
-             ) [] !Grew_args.input_data in
-
          let bare_lines =
            List.map
              (fun corpus_desc ->
@@ -320,7 +307,7 @@ let stat () =
                          ) 0 corpus
                    ) pat_descs
                   )
-             ) corpora in
+             ) (load_corpus_desc_list ()) in
 
          let stats = `List (
              List.map (fun (desc, occs) -> `List (`String desc :: (List.map (fun i -> `Int i) occs))) bare_lines
@@ -355,13 +342,10 @@ let valid () =
          | None ->
            let validator_list = List.map Validation.load_json !Grew_args.patterns in
            List.iter
-             (fun conf_file ->
-                List.iter
-                  (fun corpus_desc ->
-                     if not !quiet then printf "%s\n" (Corpus_desc.get_id corpus_desc);
-                     Validation.check ~dir validator_list corpus_desc
-                  ) (Corpus_desc.load_json conf_file)
-             ) !Grew_args.input_data
+            (fun corpus_desc ->
+              if not !quiet then printf "%s\n" (Corpus_desc.get_id corpus_desc);
+              Validation.check ~dir validator_list corpus_desc
+            ) (load_corpus_desc_list ())
     ) ()
 
 
