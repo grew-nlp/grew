@@ -10,10 +10,8 @@
 
 open Printf
 open Conllx
+open Grew_types
 open Libgrew
-
-(* ==================================================================================================== *)
-module Int_map = Map.Make (Int)
 
 let quiet = ref false
 
@@ -66,33 +64,11 @@ let handle fct () =
 let ensure_dir dir =
   try (* catch if dir does not exist *)
     match Unix.stat dir with
-    | { Unix.st_kind = Unix.S_DIR } -> None
-    | _ ->  Some (sprintf "grew_match option ignored: %s already exists and is not directory" dir)
-  with Unix.Unix_error (Unix.ENOENT,_,_) ->
-    begin (* dir does not exist -> try to create it *)
-      try Unix.mkdir dir 0o755; None
-      with exc -> Some (sprintf "grew_match option ignored: cannot create dir %s (%s)" dir (Printexc.to_string exc))
-    end
-
-(* ================================================================================ *)
-module String_ = struct
-  let contains sub str =
-    try let _ = Str.search_forward (Str.regexp_string sub) str 0 in true
-    with Not_found -> false
-end
-
-(* ================================================================================ *)
-module Array_ = struct
-  (* dichotomic search in a sorted array *)
-  let dicho_find elt array =
-    let rec loop low high =
-      (if low > high then raise Not_found);
-      match (low+high)/2 with
-      | middle when array.(middle) = elt -> middle
-      | middle when array.(middle) < elt -> loop (middle+1) high
-      | middle -> loop low (middle - 1) in
-    loop 0 ((Array.length array) - 1)
-end
+    | { Unix.st_kind = Unix.S_DIR } -> ()
+    | _ ->  error "path `%s` already exists and is not directory" dir
+  with Unix.Unix_error (Unix.ENOENT,_,_) -> (* dir does not exist -> try to create it *)
+    try Unix.mkdir dir 0o755
+    with exc -> error "cannot create dir %s (%s)" dir (Printexc.to_string exc)
 
 (* ================================================================================ *)
 module Counter = struct
@@ -104,105 +80,6 @@ module Counter = struct
 
   let finish () = if not !quiet then eprintf "%s100.00%%\n%!" back
 end (* module Counter *)
-
-(* ================================================================================ *)
-module File = struct
-  let read_rev file =
-    let in_ch = open_in file in
-    let line_num = ref 0 in
-    let res = ref [] in
-    try
-
-      (* if the input file contains an UTF-8 byte order mark (EF BB BF), skip 3 bytes, else get back to 0 *)
-      (match input_byte in_ch with 0xEF -> seek_in in_ch 3 | _ -> seek_in in_ch 0);
-
-      while true do
-        incr line_num;
-        res := (!line_num, input_line in_ch) :: !res
-      done; assert false
-    with End_of_file -> close_in in_ch; !res
-
-  let read file = List.rev (read_rev file)
-
-  exception Found of int
-  let get_suffix file_name =
-    let len = String.length file_name in
-    try
-      for i = len-1 downto 0 do
-        if file_name.[i] = '.'
-        then raise (Found i)
-      done;
-      None
-    with
-    | Found i -> Some (String.sub file_name i (len-i))
-end (* module File *)
-
-(* ================================================================================ *)
-module List_ = struct
-  (** [index elt l] returns Some i where i is the index of the first occurence of [elt] in [l].
-      None is returned if [l] does not contain [elt]. *)
-  let index elt l =
-    let rec loop i = function
-      | [] -> None
-      | e::t when e=elt -> Some i
-      | _::t -> loop (i+1) t
-    in loop 0 l
-
-  let iteri fct =
-    let rec loop i = function
-      | [] -> ()
-      | h::t -> (fct i h); (loop (i+1) t) in
-    loop 0
-
-  let mapi fct =
-    let rec loop i = function
-      | [] -> []
-      | h::t -> let head = fct i h in head :: (loop (i+1) t)
-    in loop 0
-
-  let rec opt_map fct = function
-    | [] -> []
-    | h::t ->
-      match (fct h) with
-      | Some x -> x::(opt_map fct t)
-      | None -> opt_map fct t
-
-  let opt_mapi fct =
-    let rec loop i = function
-      | [] -> []
-      | h::t ->
-        match fct i h with
-        | Some x -> x::(loop (i+1) t)
-        | None -> loop (i+1) t
-    in loop 0
-
-end (* module List_ *)
-
-
-(* ==================================================================================================== *)
-module Timer = struct
-  type t = int
-
-  let cpt = ref 0
-
-  let table = ref Int_map.empty
-
-  let create () =
-    incr cpt;
-    let current_time = Unix.times () in
-    table := Int_map.add !cpt current_time.Unix.tms_utime !table;
-    !cpt
-
-  let see timer =
-    let current_time = Unix.times () in
-    current_time.Unix.tms_utime -. (Int_map.find timer !table)
-
-  let get timer =
-    let current_time = Unix.times () in
-    let diff = current_time.Unix.tms_utime -. (Int_map.find timer !table) in
-    table := Int_map.remove !cpt !table;
-    diff
-end
 
 (* ==================================================================================================== *)
 module Stat = struct
@@ -229,8 +106,11 @@ module Stat = struct
       } in
 
     (json |> to_assoc |> List.map parse_pattern, json)
-end
 
+  let compute_ratios l =  
+    let sum = float (List.fold_left (+) 0 l) in
+    List.map (fun i -> `Float ((Float.round (10000. *. float i /. sum)) /. 100.)) l
+end (* module Stat *)
 
 (* ==================================================================================================== *)
 module Validation = struct
@@ -301,22 +181,21 @@ module Validation = struct
     let modules =
       `List
         (CCList.filter_map
-           (fun modul ->
-             match (Corpus_desc.get_lang_opt corpus_desc, modul.languages) with
-             | (Some lang, Some lang_list) when not (List.mem lang lang_list) -> None
-             | _ ->
-              let (out_items : Yojson.Basic.t) =
-                `List
-                  (List.map
-                     (fun item ->
+          (fun modul ->
+            match (Corpus_desc.get_lang_opt corpus_desc, modul.languages) with
+              | (Some lang, Some lang_list) when not (List.mem lang lang_list) -> None
+              | _ ->
+                let (out_items : Yojson.Basic.t) =
+                  `List
+                    (List.map
+                      (fun item ->
                         let grew_pattern =
                           try Pattern.parse ~config (String.concat " " item.pattern)
                           with Libgrew.Error msg ->
                             error
                               ~fct:"Validation.check"
                               ~data:(`String (String.concat " " item.pattern))
-                              "cannot parse pattern associated with desc: %s" item.description
-                        in
+                              "cannot parse pattern associated with desc: %s" item.description in
                         let count =
                           Corpus.fold_left (fun acc _ graph ->
                               acc + (List.length (Matching.search_pattern_in_graph ~config grew_pattern graph))
@@ -327,9 +206,11 @@ module Validation = struct
                           "description", `String item.description;
                           "level", `String item.level
                         ]
-                     ) modul.items) in
+                      ) modul.items
+                    ) in
               Some (`Assoc ["title", `String modul.title; "items", out_items])
-           ) modul_list) in
+          ) modul_list
+        ) in
 
     let json = `Assoc [
         "corpus", `String (Corpus_desc.get_id corpus_desc);
@@ -343,4 +224,4 @@ module Validation = struct
       let out_file = Filename.concat dir ((Corpus_desc.get_id corpus_desc) ^ ".json") in
       CCIO.with_out out_file (fun out_ch -> fprintf out_ch "%s\n" (Yojson.Basic.pretty_to_string json))
 
-end
+end (* module Validation *)

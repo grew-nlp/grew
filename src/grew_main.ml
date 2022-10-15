@@ -123,48 +123,39 @@ let transform () =
       | None -> ()
 
 (* -------------------------------------------------------------------------------- *)
-let new_grep_with_clusts clusts =
+let grep () =
   let config = !Grew_args.config in
   match !Grew_args.patterns with
   | [pattern_file] ->
     let pattern = Pattern.load ~config pattern_file in
-    (* let build_key_list = get_value ~config clusts pattern in *)
     let build_key_list graph matching =
       List.map 
-      (fun clust_item -> 
-        (match clust_item with Key k -> printf "### KEY ### %s\n" k | Whether w -> printf "### WHETHER ### %s\n" w);
-        Matching.get_clust_value_opt ~config clust_item pattern graph matching
-        |> (fun x -> (match clust_item with Key k -> printf "### KEY ### %s OK\n" k | Whether w -> printf "### WHETHER ### %s OK\n" w); x)
-      )
-      clusts in
+        (fun clust_item -> Matching.get_clust_value_opt ~config clust_item pattern graph matching)
+        !Grew_args.clustering in
     let corpus = load_corpus () in
     let clustered =
       Corpus.fold_left
         (fun acc name graph ->
           let matchings = Matching.search_pattern_in_graph ~config pattern graph in
           List.fold_left
-          (fun acc2 matching ->
-            let key_list = build_key_list graph matching in
-            let json_matching = `Assoc
-            [
-              ("sent_id", `String name);
-              ("matching", Matching.to_json pattern graph matching)
-            ] in
-            Clustered.update (fun x -> json_matching :: x) key_list [] acc2
-          ) acc matchings
+            (fun acc2 matching ->
+              let key_list = build_key_list graph matching in
+              let json_matching = `Assoc
+              [
+                ("sent_id", `String name);
+               ("matching", Matching.to_json pattern graph matching)
+              ] in
+              Clustered.update (fun x -> json_matching :: x) key_list [] acc2
+            ) acc matchings
         ) (Clustered.empty []) corpus in
-    Clustered.fold_layer
+    let final_json = Clustered.fold_layer
       (fun json_list -> `List json_list)
       []
-      (fun string_opt sub acc -> (CCOption.get_or ~default:"undefined" string_opt, sub) :: acc)
+      (fun string_opt sub acc -> (CCOption.get_or ~default:"__undefined__" string_opt, sub) :: acc)
       (fun x -> `Assoc x)
-      clustered
+      clustered in
+    Printf.printf "%s\n" (Yojson.Basic.pretty_to_string final_json)
   | l -> Log.fail "1 pattern expected for grep mode (%d given)" (List.length l)
-
-(* -------------------------------------------------------------------------------- *)
-let grep () =
-  let c = new_grep_with_clusts !Grew_args.clustering in
-  Printf.printf "%s\n" (Yojson.Basic.pretty_to_string c)
 
 (* -------------------------------------------------------------------------------- *)
 let compile () =
@@ -255,10 +246,6 @@ let count () =
       Printf.printf "%s\n" (Yojson.Basic.pretty_to_string json)
 
 (* -------------------------------------------------------------------------------- *)
-let compute_ratios l =  
-  let sum = float (List.fold_left (+) 0 l) in
-  List.map (fun i -> `Float ((Float.round (10000. *. float i /. sum)) /. 100.)) l
-
 let stat () =
   match !Grew_args.patterns with
     | [] -> Log.warning "No pattern given (expected one json file with patterns)"
@@ -297,10 +284,7 @@ let stat () =
       ) in
 
       let ratio = `List (
-        List.map 
-          (fun (desc, occs) -> 
-            `List (`String desc :: (compute_ratios occs))
-          ) bare_lines
+        List.map (fun (desc, occs) -> `List (`String desc :: (Stat.compute_ratios occs))) bare_lines
         ) in
 
      let final_json = `Assoc [
@@ -317,15 +301,13 @@ let valid () =
   match !Grew_args.output_data with
     | None -> error ~fct:"valid" "an output directory is required (use -o option)"
     | Some dir ->
-      match ensure_dir dir with
-        | Some pble -> error ~fct:"valid" "%s" pble
-        | None ->
-          let validator_list = List.map Validation.load_json !Grew_args.patterns in
-          List.iter
-            (fun corpus_desc ->
-              if not !quiet then printf "%s\n" (Corpus_desc.get_id corpus_desc);
-              Validation.check ~dir validator_list corpus_desc
-            ) (load_corpus_desc_list ())
+      ensure_dir dir;
+      let validator_list = List.map Validation.load_json !Grew_args.patterns in
+      List.iter
+        (fun corpus_desc ->
+          if not !quiet then printf "%s\n" (Corpus_desc.get_id corpus_desc);
+          Validation.check ~dir validator_list corpus_desc
+        ) (load_corpus_desc_list ())
 
 (* -------------------------------------------------------------------------------- *)
 let _ =
