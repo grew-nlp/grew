@@ -65,11 +65,6 @@ let transform () =
         (fun graph -> fprintf out_ch "%s\n" (graph |> Graph.to_json |> Conllx.of_json |> Conllx.to_string ~config ~columns)),
         (fun () -> ())
       )
-    | Grew_args.Gr ->
-      (
-        (fun graph -> fprintf out_ch "%s\n" (Graph.to_gr ~config graph)),
-        (fun () -> ())
-      )
     | Grew_args.Dot ->
       let flag = ref false in
       let buff = Buffer.create 32 in
@@ -191,7 +186,6 @@ let count () =
       )
       (fun corpus_desc -> Some (Corpus_desc.get_id corpus_desc))
       0 corpus_desc_list in
-
   match (!Grew_args.output, !Grew_args.patterns, !Grew_args.clustering) with
     | (Grew_args.Tsv, _, []) ->
       printf "Corpus\t# sentences";
@@ -217,7 +211,7 @@ let count () =
     | (Grew_args.Tsv, [pat], [cluster_item]) ->
       let all_keys = Clustered.get_all_keys 2 count_clustered in
         printf "Corpus";
-        List.iter (fun k -> printf "\t%s" (CCOption.map_or ~default:"undefined" CCFun.id k)) all_keys;
+        List.iter (fun k -> printf "\t%s" (CCOption.map_or ~default:"__undefined__" CCFun.id k)) all_keys;
         printf "\n";
         List.iter (
           fun corpus_desc ->
@@ -240,7 +234,7 @@ let count () =
       let json = Clustered.fold_layer
         (fun x -> `Int x)
         []
-        (fun string_opt sub acc -> (CCOption.get_or ~default:"undefined" string_opt, sub) :: acc)
+        (fun string_opt sub acc -> (CCOption.get_or ~default:"__undefined__" string_opt, sub) :: acc)
         (fun x -> `Assoc x)
         count_clustered in
       Printf.printf "%s\n" (Yojson.Basic.pretty_to_string json)

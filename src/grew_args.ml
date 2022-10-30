@@ -24,7 +24,7 @@ module Grew_args = struct
   let grs = ref None
   let dep_dir = ref None
 
-  type output = Conllx of  Conllx_columns.t | Gr | Dot | Json | Multi_json | Tsv
+  type output = Conllx of  Conllx_columns.t | Dot | Json | Multi_json | Tsv
   let output = ref (Conllx Conllx_columns.default)
 
   let (input_data : string list ref) = ref []
@@ -111,7 +111,6 @@ module Grew_args = struct
     | "-cupt" :: args -> output := Conllx (Conllx_columns.cupt); loop args
     | "-semcor" :: args -> output := Conllx (Conllx_columns.frsemcor); loop args
     | "-columns" :: desc :: args -> output := Conllx (Conllx_columns.build desc); loop args
-    | "-gr" :: args -> output := Gr; loop args
     | "-dot" :: args -> output := Dot; loop args
     | "-json" :: args -> output := Json; loop args
     | "-tsv" :: args -> output := Tsv; loop args
@@ -129,6 +128,7 @@ module Grew_args = struct
 
     | "-rff" :: value :: args -> config := Conllx_config.remove_from_feats value !config; loop args
 
+    | "-gr" :: args -> Log.warning "The GR file is no longer supported, please use JSON format"; loop args
     | x :: args -> Log.warning "Invalid argument: %s, it is ignored!" x; loop args
 
   let parse () =
