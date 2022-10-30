@@ -1,0 +1,5 @@
+{
+  "UD_French-PUD": { "ADJ_NOUN.pat": { "Sing": 245, "Plur": 178 } },
+  "UD_English-PUD": { "ADJ_NOUN.pat": { "Sing": 722, "Plur": 392 } },
+  "UD_Chinese-PUD": { "ADJ_NOUN.pat": { "__undefined__": 364 } }
+}
