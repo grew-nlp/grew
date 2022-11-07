@@ -122,7 +122,7 @@ let grep () =
   let config = !Grew_args.config in
   match !Grew_args.patterns with
   | [pattern_file] ->
-    let pattern = Pattern.load ~config pattern_file in
+    let pattern = Request.load ~config pattern_file in
     let build_key_list graph matching =
       List.map 
         (fun clust_item -> Matching.get_clust_value_opt ~config clust_item pattern graph matching)
@@ -131,14 +131,14 @@ let grep () =
     let clustered =
       Corpus.fold_left
         (fun acc name graph ->
-          let matchings = Matching.search_pattern_in_graph ~config pattern graph in
+          let matchings = Matching.search_request_in_graph ~config pattern graph in
           List.fold_left
             (fun acc2 matching ->
               let key_list = build_key_list graph matching in
               let json_matching = `Assoc
               [
                 ("sent_id", `String name);
-               ("matching", Matching.to_json pattern graph matching)
+                ("matching", Matching.to_json pattern graph matching)
               ] in
               Clustered.update (fun x -> json_matching :: x) key_list [] acc2
             ) acc matchings
@@ -178,7 +178,7 @@ let count () =
           | Some corpus -> 
             Clustered.build_layer
               (fun file_pattern -> 
-                let pattern = Pattern.load ~config file_pattern in
+                let pattern = Request.load ~config file_pattern in
                 Corpus.search ~config 0 (fun _ x -> x+1) pattern !Grew_args.clustering corpus
               )
               (fun file_pattern -> Some file_pattern)
@@ -259,7 +259,7 @@ let stat () =
                     fun pat_desc ->
                       let pattern = 
                         (* NB: pattern should be reparsed for each corpora, because config may change *)
-                        try Pattern.parse ~config (String.concat " " pat_desc.Stat.code)
+                        try Request.parse ~config (String.concat " " pat_desc.Stat.code)
                         with Libgrew.Error msg ->
                           error
                             ~fct:"Grew.stat"
@@ -267,7 +267,7 @@ let stat () =
                             "cannot parse pattern associated with desc: %s" pat_desc.Stat.desc in
                       Corpus.fold_left 
                         (fun acc _ graph ->
-                          acc + (List.length (Matching.search_pattern_in_graph ~config pattern graph))
+                          acc + (List.length (Matching.search_request_in_graph ~config pattern graph))
                         ) 0 corpus
                   ) pat_descs
                 )

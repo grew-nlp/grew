@@ -190,7 +190,7 @@ module Validation = struct
                     (List.map
                       (fun item ->
                         let grew_pattern =
-                          try Pattern.parse ~config (String.concat " " item.pattern)
+                          try Request.parse ~config (String.concat " " item.pattern)
                           with Libgrew.Error msg ->
                             error
                               ~fct:"Validation.check"
@@ -198,7 +198,7 @@ module Validation = struct
                               "cannot parse pattern associated with desc: %s" item.description in
                         let count =
                           Corpus.fold_left (fun acc _ graph ->
-                              acc + (List.length (Matching.search_pattern_in_graph ~config grew_pattern graph))
+                              acc + (List.length (Matching.search_request_in_graph ~config grew_pattern graph))
                             ) 0 corpus in
                         `Assoc [
                           "count", `Int count;
