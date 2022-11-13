@@ -186,30 +186,33 @@ let clean () =
 
 (* -------------------------------------------------------------------------------- *)
 let count () =
-  let corpus_desc_list = match parse_input () with
-  | Mono _ -> error ~fct:"Grew.count" "count mode requires multi-corpora input data" (* TODO count + Multi  *)
-  | Multi l -> l in
-  let count_clustered = 
+
+  let clustered_corpus ~config corpus = 
+    Clustered.build_layer
+    (fun file_request -> 
+      let request = Request.load ~config file_request in
+      Corpus.search ~config 0 (fun _ _ _ x -> x+1) request !Grew_args.clustering corpus
+    )
+    (fun file_request -> Some file_request)
+    0 !Grew_args.requests in
+
+  let input = parse_input () in
+  let count_clustered = match input with
+    | Mono corpus -> clustered_corpus ~config:!Grew_args.config corpus
+    | Multi corpus_desc_list ->
     Clustered.build_layer
       (fun corpus_desc ->
         let config = Corpus_desc.get_config corpus_desc in 
         match Corpus_desc.load_corpus_opt corpus_desc with
           | None -> error ~fct:"Grew.count" "cannot load corpus `%s`" (Corpus_desc.get_id corpus_desc)
-          | Some corpus -> 
-            Clustered.build_layer
-              (fun file_request -> 
-                let request = Request.load ~config file_request in
-                Corpus.search ~config 0 (fun _ _ _ x -> x+1) request !Grew_args.clustering corpus
-              )
-              (fun file_request -> Some file_request)
-              0 !Grew_args.requests 
+          | Some corpus -> clustered_corpus ~config corpus
       )
       (fun corpus_desc -> Some (Corpus_desc.get_id corpus_desc))
       0 corpus_desc_list in
-  match (!Grew_args.output, !Grew_args.requests, !Grew_args.clustering) with
+  match (!Grew_args.output, input, !Grew_args.requests, !Grew_args.clustering) with
 
-    (* TSV + No clustering *)
-    | (Grew_args.Tsv, _, []) ->
+    (* TSV + Multi + Several requests + No clustering *)
+    | (Grew_args.Tsv, Multi corpus_desc_list, _, []) ->
       printf "Corpus\t# sentences";
       List.iter (fun p -> printf "\t%s" (p |> Filename.basename |> Filename.remove_extension)) !Grew_args.requests;
       printf "\n";
@@ -229,8 +232,8 @@ let count () =
           printf "\n";
         ) corpus_desc_list
 
-    (* TSV + Clustering --> one request only, count each cluster in each corpus *)
-    | (Grew_args.Tsv, [pat], [_]) ->
+    (* TSV + Multi + One request + One clustering   --> count each cluster in each corpus *)
+    | (Grew_args.Tsv, Multi corpus_desc_list, [pat], [_]) ->
       let all_keys = Clustered.get_all_keys 2 count_clustered in
         printf "Corpus";
         List.iter (fun k -> printf "\t%s" (CCOption.map_or ~default:"__undefined__" CCFun.id k)) all_keys;
@@ -246,10 +249,41 @@ let count () =
             printf "\n%!"
         ) corpus_desc_list;
 
-    | (Grew_args.Tsv, _,_) -> 
+     (* TSV + Mono + Several requests + No clustering *)
+     | (Grew_args.Tsv, Mono _, _, []) ->
+      let req_ids = Clustered.get_all_keys 0 count_clustered in
+      List.iter 
+        (fun req_id -> printf "%s\t%d\n%!"
+          (match req_id with None -> "__undefined__" | Some s -> s)
+          (Clustered.get_opt 0 [req_id] count_clustered)
+        ) req_ids
+
+     (* TSV + Mono + Several requests + One clustering *)
+     | (Grew_args.Tsv, Mono _, _, [_]) ->
+      let req_ids = Clustered.get_all_keys 0 count_clustered in
+      let clust_values = Clustered.get_all_keys 1 count_clustered in
+      printf "Request\t%s\n" (String.concat "\t" (List.map (CCOption.get_or ~default: "__undefined__") clust_values));
+      List.iter 
+        (fun req_id -> printf "%s\t%s\n%!"
+          (CCOption.get_or ~default: "__undefined__" req_id)
+          (String.concat "\t" (List.map (fun v -> string_of_int (Clustered.get_opt 0 [req_id; v] count_clustered)) clust_values))
+        ) req_ids
+
+      (* TSV + Mono + One request + Two clusterings *)
+     | (Grew_args.Tsv, Mono _, [_], [_; _]) ->
+      let req_id = List.hd (Clustered.get_all_keys 0 count_clustered) in
+      let clust_values_1 = Clustered.get_all_keys 1 count_clustered in
+      let clust_values_2 = Clustered.get_all_keys 2 count_clustered in
+      printf "Clust_1\\Clust_2\t%s\n" (String.concat "\t" (List.map (CCOption.get_or ~default: "__undefined__") clust_values_2));
+      List.iter 
+        (fun v1 -> printf "%s\t%s\n%!"
+          (CCOption.get_or ~default: "__undefined__" v1)
+          (String.concat "\t" (List.map (fun v2 -> string_of_int (Clustered.get_opt 0 [req_id; v1; v2] count_clustered)) clust_values_2))
+        ) clust_values_1
+
+    | (Grew_args.Tsv, _, _, _) -> 
           Log.warning 
           "The `tsv` ouput is not available with the given arguments.
-         It is avaible with: (one request, one clutering item) or with (several requests, no clustering_item).
          See https://grew.fr/usage/cli/#count for more details."
     
     (* JSON output *)
