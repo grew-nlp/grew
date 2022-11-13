@@ -1,0 +1,48 @@
+{
+  "Yes": [
+    {
+      "sent_id": "emea-fr-test_00478",
+      "matching": {
+        "nodes": { "V": "33", "DE": "32", "A": "35" },
+        "edges": {}
+      }
+    },
+    {
+      "sent_id": "annodis.er_00441",
+      "matching": {
+        "nodes": { "V": "16", "DE": "20", "A": "18" },
+        "edges": {}
+      }
+    }
+  ],
+  "No": [
+    {
+      "sent_id": "Europar.550_00496",
+      "matching": {
+        "nodes": { "V": "16", "DE": "19", "A": "14" },
+        "edges": {}
+      }
+    },
+    {
+      "sent_id": "emea-fr-test_00438",
+      "matching": {
+        "nodes": { "V": "20", "DE": "21", "A": "22" },
+        "edges": {}
+      }
+    },
+    {
+      "sent_id": "annodis.er_00240",
+      "matching": {
+        "nodes": { "V": "12", "DE": "13", "A": "11" },
+        "edges": {}
+      }
+    },
+    {
+      "sent_id": "annodis.er_00040",
+      "matching": {
+        "nodes": { "V": "42", "DE": "50", "A": "47" },
+        "edges": {}
+      }
+    }
+  ]
+}
