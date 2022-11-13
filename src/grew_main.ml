@@ -128,33 +128,35 @@ let transform () =
 
 (* -------------------------------------------------------------------------------- *)
 let grep () =
-  let config = !Grew_args.config in
   match !Grew_args.requests with
   | [request_file] ->
-    let request = Request.load ~config request_file in
-    let build_key_list graph matching =
-      List.map 
-        (fun clust_item -> Matching.get_clust_value_opt ~config clust_item request graph matching)
-        !Grew_args.clustering in
-    let corpus = match parse_input () with
-    | Mono c -> c
-    | Multi _ -> error ~fct:"Grew_grep" "grep mode cannot be used with multi-corpora input data" in (* TODO grep + Mono *)
+    let clustered_corpus ~config corpus =
+      let request = Request.load ~config request_file in
+      Corpus.search 
+        ~config 
+        [] 
+        (fun sent_id graph matching acc -> `Assoc [
+          ("sent_id", `String sent_id);
+          ("matching", Matching.to_json request graph matching)
+          ] :: acc
+        )
+        request 
+        !Grew_args.clustering 
+        corpus in
 
-    let clustered =
-      Corpus.fold_left
-        (fun acc name graph ->
-          let matchings = Matching.search_request_in_graph ~config request graph in
-          List.fold_left
-            (fun acc2 matching ->
-              let key_list = build_key_list graph matching in
-              let json_matching = `Assoc
-              [
-                ("sent_id", `String name);
-                ("matching", Matching.to_json request graph matching)
-              ] in
-              Clustered.update (fun x -> json_matching :: x) key_list [] acc2
-            ) acc matchings
-        ) (Clustered.empty []) corpus in
+    let clustered = match parse_input () with
+      | Mono corpus -> clustered_corpus ~config:!Grew_args.config corpus
+      | Multi corpus_desc_list -> 
+        Clustered.build_layer
+        (fun corpus_desc ->
+          let config = Corpus_desc.get_config corpus_desc in 
+          match Corpus_desc.load_corpus_opt corpus_desc with
+            | None -> error ~fct:"Grew.count" "cannot load corpus `%s`" (Corpus_desc.get_id corpus_desc)
+            | Some corpus -> clustered_corpus ~config corpus
+        )
+        (fun corpus_desc -> Some (Corpus_desc.get_id corpus_desc))
+        [] corpus_desc_list in
+
     let final_json = Clustered.fold_layer
       (fun json_list -> `List json_list)
       []
@@ -162,6 +164,7 @@ let grep () =
       (fun x -> `Assoc x)
       clustered in
     Printf.printf "%s\n" (Yojson.Basic.pretty_to_string final_json)
+
   | l -> error ~fct:"Grew.grep" "1 request expected for grep mode (%d given)" (List.length l)
 
 (* -------------------------------------------------------------------------------- *)
