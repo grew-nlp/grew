@@ -216,18 +216,13 @@ let count () =
 
     (* TSV + Multi + Several requests + No clustering *)
     | (Grew_args.Tsv, Multi corpus_desc_list, _, []) ->
-      printf "Corpus\t# sentences";
+      printf "Corpus";
       List.iter (fun p -> printf "\t%s" (p |> Filename.basename |> Filename.remove_extension)) !Grew_args.requests;
       printf "\n";
       List.iter
         (fun corpus_desc -> 
           let corpus_id = Corpus_desc.get_id corpus_desc in
           printf "%s" corpus_id;
-
-          (* reloading of the corpus in order to get the size: TODO change grew count output to avoid this. *)
-          match Corpus_desc.load_corpus_opt corpus_desc with
-            | None -> error ~fct:"Grew.count" "The corpus %s is not compiled" (Corpus_desc.get_id corpus_desc)
-            | Some data -> printf "\t%d" (Corpus.size data);
 
           List.iter
             (fun p -> printf "\t%d" (Clustered.get_opt 0 [Some corpus_id; Some p] count_clustered)
