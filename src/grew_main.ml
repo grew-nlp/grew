@@ -16,33 +16,39 @@ open Libgrew
 open Grew_cli_utils
 open Grew_args
 
-
 (* -------------------------------------------------------------------------------- *)
-let load_corpus_desc_list () = CCList.flat_map Corpus_desc.load_json !Grew_args.input_data
+type input =
+  | Multi of Corpus_desc.t list
+  | Mono of Corpus.t
 
-(* -------------------------------------------------------------------------------- *)
-let load_corpus () =
+
+let parse_input () =
   let config = !Grew_args.config in
   match !Grew_args.input_data with
-  | [] -> Corpus.from_stdin ~config ()
-  | [one] ->
-    begin
-      try
-        match Unix.stat one with
-        | { Unix.st_kind = Unix.S_DIR } -> Corpus.from_dir ~config one
-        | _ -> Corpus.from_file ~config one
-      with Unix.Unix_error _ -> Log.fail "%s" (sprintf "File not found `%s`" one)
-    end
-  | files ->
-    let sub_corpora =
-      List.fold_left
-        (fun acc file ->
-           try
-             let subcorpus = Corpus.from_file ~config file in
-             subcorpus :: acc
-           with Unix.Unix_error _ -> Log.fail "%s" (sprintf "File not found `%s`" file)
-        ) [] files in
-    Corpus.merge sub_corpora
+  | [] -> Mono (Corpus.from_stdin ~config ())
+  | l -> 
+      try Multi (CCList.flat_map Corpus_desc.load_json !Grew_args.input_data)
+      with Libgrew.Error _ ->
+        (* TODO add specific error for compile/ clean *)
+        match l with
+        | [one] ->
+          begin
+            try
+              match Unix.stat one with
+              | { Unix.st_kind = Unix.S_DIR } -> Mono (Corpus.from_dir ~config one)
+              | _ -> Mono (Corpus.from_file ~config one)
+            with Unix.Unix_error _ -> error ~fct:"Grew.parse_input" "File not found `%s`" one
+          end
+        | files ->
+          let sub_corpora =
+            List.fold_left
+              (fun acc file ->
+                 try
+                   let subcorpus = Corpus.from_file ~config file in
+                   subcorpus :: acc
+                 with Unix.Unix_error _ -> error ~fct:"Grew.parse_input" "File not found `%s`" file
+              ) [] files in
+          Mono (Corpus.merge sub_corpora)
 
 (* -------------------------------------------------------------------------------- *)
 let transform () =
@@ -51,7 +57,10 @@ let transform () =
     | None -> Grs.empty
     | Some file -> Grs.load ~config file in
 
-  let corpus = load_corpus () in
+  let corpus = match parse_input () with
+  | Mono c -> c
+  | Multi _ -> error ~fct:"Grew.transform" "transform mode cannot be used with multi-corpora input data" in
+
   let len = Corpus.size corpus in
 
   let out_ch = match !Grew_args.output_data with
@@ -71,7 +80,7 @@ let transform () =
       (
         (fun graph ->
           if !flag
-          then (Log.fail "`dot` output cannot be used when there is more than one graph in the output")
+          then (error ~fct:"Grew.transform" "`dot` output cannot be used when there is more than one graph in the output")
           else (flag := true; bprintf buff "%s" (Graph.to_dot ~config graph))),
         (fun () -> fprintf out_ch "%s\n" (Buffer.contents buff))
       )
@@ -91,7 +100,7 @@ let transform () =
           (fun graph -> data := (graph |> Graph.to_json) :: !data),
           (fun () -> 
             match (!Grew_args.output_data, !data) with
-              | (None,_) -> Log.fail "%s" "-multi_json implies -o"
+              | (None,_) -> error ~fct:"Grew.transform" "-multi_json implies -o"
               | (Some out_file, l) ->
                 let base = match Filename.chop_suffix_opt ~suffix:".json" out_file with
                   | Some b -> b
@@ -102,7 +111,7 @@ let transform () =
                      fprintf sub_out_ch "%s\n" (Yojson.Basic.pretty_to_string json)
                   ) l)
         )
-    | Tsv -> Log.fail "`tsv` output cannot be used in transform mode" in
+    | Tsv -> error ~fct:"Grew.transform" "`tsv` output cannot be used in transform mode" in
 
   Corpus.iteri
     (fun index sent_id gr ->
@@ -127,7 +136,10 @@ let grep () =
       List.map 
         (fun clust_item -> Matching.get_clust_value_opt ~config clust_item request graph matching)
         !Grew_args.clustering in
-    let corpus = load_corpus () in
+    let corpus = match parse_input () with
+    | Mono c -> c
+    | Multi _ -> error ~fct:"Grew_grep" "grep mode cannot be used with multi-corpora input data" in (* TODO grep + Mono *)
+
     let clustered =
       Corpus.fold_left
         (fun acc name graph ->
@@ -150,31 +162,39 @@ let grep () =
       (fun x -> `Assoc x)
       clustered in
     Printf.printf "%s\n" (Yojson.Basic.pretty_to_string final_json)
-  | l -> Log.fail "1 request expected for grep mode (%d given)" (List.length l)
+  | l -> error ~fct:"Grew.grep" "1 request expected for grep mode (%d given)" (List.length l)
 
 (* -------------------------------------------------------------------------------- *)
 let compile () =
+  let corpus_desc_list = match parse_input () with
+  | Mono _ -> error ~fct:"Grew.compile" "compile mode requires multi-corpora input data"
+  | Multi l -> l in
   List.iter
     (fun corpus_desc ->
       Corpus_desc.compile ~force:!Grew_args.force ?grew_match:!Grew_args.grew_match_server corpus_desc
-    ) (load_corpus_desc_list ())
+    ) corpus_desc_list
 
 (* -------------------------------------------------------------------------------- *)
 let clean () =
+  let corpus_desc_list = match parse_input () with
+  | Mono _ -> error ~fct:"Grew.clean" "clean mode requires multi-corpora input data"
+  | Multi l -> l in
   List.iter
     (fun corpus_desc ->
       Corpus_desc.clean corpus_desc
-    ) (load_corpus_desc_list ())
+    ) corpus_desc_list
 
 (* -------------------------------------------------------------------------------- *)
 let count () =
-  let corpus_desc_list = load_corpus_desc_list () in
+  let corpus_desc_list = match parse_input () with
+  | Mono _ -> error ~fct:"Grew.count" "count mode requires multi-corpora input data" (* TODO count + Multi  *)
+  | Multi l -> l in
   let count_clustered = 
     Clustered.build_layer
       (fun corpus_desc ->
         let config = Corpus_desc.get_config corpus_desc in 
         match Corpus_desc.load_corpus_opt corpus_desc with
-          | None -> failwith "TODO: cannot get corpus"
+          | None -> error ~fct:"Grew.count" "cannot load corpus `%s`" (Corpus_desc.get_id corpus_desc)
           | Some corpus -> 
             Clustered.build_layer
               (fun file_request -> 
@@ -187,6 +207,8 @@ let count () =
       (fun corpus_desc -> Some (Corpus_desc.get_id corpus_desc))
       0 corpus_desc_list in
   match (!Grew_args.output, !Grew_args.requests, !Grew_args.clustering) with
+
+    (* TSV + No clustering *)
     | (Grew_args.Tsv, _, []) ->
       printf "Corpus\t# sentences";
       List.iter (fun p -> printf "\t%s" (p |> Filename.basename |> Filename.remove_extension)) !Grew_args.requests;
@@ -207,8 +229,8 @@ let count () =
           printf "\n";
         ) corpus_desc_list
 
-    (* with clustering --> one request only, count each cluster in each corpus *)
-    | (Grew_args.Tsv, [pat], [cluster_item]) ->
+    (* TSV + Clustering --> one request only, count each cluster in each corpus *)
+    | (Grew_args.Tsv, [pat], [_]) ->
       let all_keys = Clustered.get_all_keys 2 count_clustered in
         printf "Corpus";
         List.iter (fun k -> printf "\t%s" (CCOption.map_or ~default:"__undefined__" CCFun.id k)) all_keys;
@@ -226,10 +248,11 @@ let count () =
 
     | (Grew_args.Tsv, _,_) -> 
           Log.warning 
-          "The `tsv` ouput is not available with the current request.
+          "The `tsv` ouput is not available with the given arguments.
          It is avaible with: (one request, one clutering item) or with (several requests, no clustering_item).
-         See https://grew.fr/usage/cli/#count for more deatils."
-
+         See https://grew.fr/usage/cli/#count for more details."
+    
+    (* JSON output *)
     | _ ->
       let json = Clustered.fold_layer
         (fun x -> `Int x)
@@ -241,6 +264,9 @@ let count () =
 
 (* -------------------------------------------------------------------------------- *)
 let stat () =
+  let corpus_desc_list = match parse_input () with
+  | Mono _ -> error ~fct:"Grew.stat" "stat mode requires multi-corpora input data"
+  | Multi l -> l in
   match !Grew_args.requests with
     | [] -> Log.warning "No request given (expected one json file with requests)"
     | _::_::_ -> Log.warning "Too much requests given (expected one json file with requests)"
@@ -271,7 +297,7 @@ let stat () =
                         ) 0 corpus
                   ) pat_descs
                 )
-          ) (load_corpus_desc_list ()) in
+          ) corpus_desc_list in
 
       let stats = `List (
          List.map (fun (desc, occs) -> `List (`String desc :: (List.map (fun i -> `Int i) occs))) bare_lines
@@ -292,6 +318,9 @@ let stat () =
 
 (* -------------------------------------------------------------------------------- *)
 let valid () =
+  let corpus_desc_list = match parse_input () with
+  | Mono _ -> error ~fct:"Grew.valid" "valid mode requires multi-corpora input data"
+  | Multi l -> l in
   match !Grew_args.output_data with
     | None -> error ~fct:"valid" "an output directory is required (use -o option)"
     | Some dir ->
@@ -301,7 +330,7 @@ let valid () =
         (fun corpus_desc ->
           if not !quiet then printf "%s\n" (Corpus_desc.get_id corpus_desc);
           Validation.check ~dir validator_list corpus_desc
-        ) (load_corpus_desc_list ())
+        ) corpus_desc_list
 
 (* -------------------------------------------------------------------------------- *)
 let _ =
