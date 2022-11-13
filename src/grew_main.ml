@@ -120,25 +120,25 @@ let transform () =
 (* -------------------------------------------------------------------------------- *)
 let grep () =
   let config = !Grew_args.config in
-  match !Grew_args.patterns with
-  | [pattern_file] ->
-    let pattern = Request.load ~config pattern_file in
+  match !Grew_args.requests with
+  | [request_file] ->
+    let request = Request.load ~config request_file in
     let build_key_list graph matching =
       List.map 
-        (fun clust_item -> Matching.get_clust_value_opt ~config clust_item pattern graph matching)
+        (fun clust_item -> Matching.get_clust_value_opt ~config clust_item request graph matching)
         !Grew_args.clustering in
     let corpus = load_corpus () in
     let clustered =
       Corpus.fold_left
         (fun acc name graph ->
-          let matchings = Matching.search_request_in_graph ~config pattern graph in
+          let matchings = Matching.search_request_in_graph ~config request graph in
           List.fold_left
             (fun acc2 matching ->
               let key_list = build_key_list graph matching in
               let json_matching = `Assoc
               [
                 ("sent_id", `String name);
-                ("matching", Matching.to_json pattern graph matching)
+                ("matching", Matching.to_json request graph matching)
               ] in
               Clustered.update (fun x -> json_matching :: x) key_list [] acc2
             ) acc matchings
@@ -150,7 +150,7 @@ let grep () =
       (fun x -> `Assoc x)
       clustered in
     Printf.printf "%s\n" (Yojson.Basic.pretty_to_string final_json)
-  | l -> Log.fail "1 pattern expected for grep mode (%d given)" (List.length l)
+  | l -> Log.fail "1 request expected for grep mode (%d given)" (List.length l)
 
 (* -------------------------------------------------------------------------------- *)
 let compile () =
@@ -177,19 +177,19 @@ let count () =
           | None -> failwith "TODO: cannot get corpus"
           | Some corpus -> 
             Clustered.build_layer
-              (fun file_pattern -> 
-                let pattern = Request.load ~config file_pattern in
-                Corpus.search ~config 0 (fun _ x -> x+1) pattern !Grew_args.clustering corpus
+              (fun file_request -> 
+                let request = Request.load ~config file_request in
+                Corpus.search ~config 0 (fun _ _ _ x -> x+1) request !Grew_args.clustering corpus
               )
-              (fun file_pattern -> Some file_pattern)
-              0 !Grew_args.patterns 
+              (fun file_request -> Some file_request)
+              0 !Grew_args.requests 
       )
       (fun corpus_desc -> Some (Corpus_desc.get_id corpus_desc))
       0 corpus_desc_list in
-  match (!Grew_args.output, !Grew_args.patterns, !Grew_args.clustering) with
+  match (!Grew_args.output, !Grew_args.requests, !Grew_args.clustering) with
     | (Grew_args.Tsv, _, []) ->
       printf "Corpus\t# sentences";
-      List.iter (fun p -> printf "\t%s" (p |> Filename.basename |> Filename.remove_extension)) !Grew_args.patterns;
+      List.iter (fun p -> printf "\t%s" (p |> Filename.basename |> Filename.remove_extension)) !Grew_args.requests;
       printf "\n";
       List.iter
         (fun corpus_desc -> 
@@ -203,11 +203,11 @@ let count () =
 
           List.iter
             (fun p -> printf "\t%d" (Clustered.get_opt 0 [Some corpus_id; Some p] count_clustered)
-            ) !Grew_args.patterns;
+            ) !Grew_args.requests;
           printf "\n";
         ) corpus_desc_list
 
-    (* with clustering --> one pattern only, count each cluster in each corpus *)
+    (* with clustering --> one request only, count each cluster in each corpus *)
     | (Grew_args.Tsv, [pat], [cluster_item]) ->
       let all_keys = Clustered.get_all_keys 2 count_clustered in
         printf "Corpus";
@@ -227,7 +227,7 @@ let count () =
     | (Grew_args.Tsv, _,_) -> 
           Log.warning 
           "The `tsv` ouput is not available with the current request.
-         It is avaible with: (one pattern, one clutering item) or with (several patterns, no clustering_item).
+         It is avaible with: (one request, one clutering item) or with (several requests, no clustering_item).
          See https://grew.fr/usage/cli/#count for more deatils."
 
     | _ ->
@@ -241,9 +241,9 @@ let count () =
 
 (* -------------------------------------------------------------------------------- *)
 let stat () =
-  match !Grew_args.patterns with
-    | [] -> Log.warning "No pattern given (expected one json file with patterns)"
-    | _::_::_ -> Log.warning "Too much patterns given (expected one json file with patterns)"
+  match !Grew_args.requests with
+    | [] -> Log.warning "No request given (expected one json file with requests)"
+    | _::_::_ -> Log.warning "Too much requests given (expected one json file with requests)"
     | [one] ->
       let (pat_descs, json) = Stat.load_json one in
       let bare_lines =
@@ -257,17 +257,17 @@ let stat () =
                   Corpus_desc.get_id corpus_desc,
                   List.map (
                     fun pat_desc ->
-                      let pattern = 
-                        (* NB: pattern should be reparsed for each corpora, because config may change *)
+                      let request = 
+                        (* NB: request should be reparsed for each corpora, because config may change *)
                         try Request.parse ~config (String.concat " " pat_desc.Stat.code)
                         with Libgrew.Error msg ->
                           error
                             ~fct:"Grew.stat"
                             ~data:(`String (String.concat " " pat_desc.Stat.code))
-                            "cannot parse pattern associated with desc: %s" pat_desc.Stat.desc in
+                            "cannot parse request associated with desc: %s" pat_desc.Stat.desc in
                       Corpus.fold_left 
                         (fun acc _ graph ->
-                          acc + (List.length (Matching.search_request_in_graph ~config pattern graph))
+                          acc + (List.length (Matching.search_request_in_graph ~config request graph))
                         ) 0 corpus
                   ) pat_descs
                 )
@@ -282,7 +282,7 @@ let stat () =
         ) in
 
      let final_json = `Assoc [
-        ("patterns", json);
+        ("requests", json);
         ("stats", stats);
         ("ratio", ratio);
       ] in
@@ -296,7 +296,7 @@ let valid () =
     | None -> error ~fct:"valid" "an output directory is required (use -o option)"
     | Some dir ->
       ensure_dir dir;
-      let validator_list = List.map Validation.load_json !Grew_args.patterns in
+      let validator_list = List.map Validation.load_json !Grew_args.requests in
       List.iter
         (fun corpus_desc ->
           if not !quiet then printf "%s\n" (Corpus_desc.get_id corpus_desc);

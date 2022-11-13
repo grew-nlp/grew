@@ -31,7 +31,7 @@ module Grew_args = struct
   let (output_data : string option ref) = ref None
   let strat = ref "main"
   let timeout = ref None
-  let (patterns : string list ref) = ref []
+  let (requests : string list ref) = ref []
   let html = ref false
 
   let (clustering : cluster_item list ref) = ref []
@@ -47,7 +47,7 @@ module Grew_args = struct
       "";
       "subcommands are:";
       "  transform  Apply a GRS on a corpus";
-      "  grep       Search for a pattern in a corpus";
+      "  grep       Search for a request in a corpus";
       "  version    Print current version number";
       "  help <sub> Print help for the given subcommand";
       "";
@@ -60,10 +60,10 @@ module Grew_args = struct
       "----------------------------------------------------------";
       "usage: grew grep [<args>]";
       "";
-      "This subcommand searches for a pattern in a corpus.";
+      "This subcommand searches for a request in a corpus.";
       "";
       "args are optionnal and can be change in the GUI:";
-      "  -pattern <pat>   The pattern to search for";
+      "  -request <req>   The request to search for";
       "  -i <corp>        The input data";
       "";
       "For additional information, see https://grew.fr";
@@ -97,8 +97,12 @@ module Grew_args = struct
     | "-i" :: files :: args -> input_data := !input_data @ (Str.split (Str.regexp " ") files); loop args
     | "-o" :: file :: args -> output_data := Some file; loop args
     | "-strat" :: s :: args -> strat := s; loop args
+    | "-request" :: files :: args
+    | "-requests" :: files :: args -> requests := !requests @ (Str.split (Str.regexp " ") files); loop args
     | "-pattern" :: files :: args
-    | "-patterns" :: files :: args -> patterns := !patterns @ (Str.split (Str.regexp " ") files); loop args
+    | "-patterns" :: files :: args -> 
+        Log.warning "-pattern and -patterns comman line args are deprecated, replaced by -request and -requests"; 
+        requests := !requests @ (Str.split (Str.regexp " ") files); loop args
     | "-key" :: s :: args -> clustering := !clustering @ [Key s]; loop args
     | "-whether" :: s :: args ->  clustering := !clustering @ [Whether s]; loop args
     | "-html" :: args -> html := true; loop args

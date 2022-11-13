@@ -98,14 +98,14 @@ module Stat = struct
       try Yojson.Basic.from_file json_file
       with Yojson.Json_error msg -> error ~fct:"Stat.load_json" ~file:json_file "%s" msg in
 
-    let parse_pattern (id, json) =
+    let parse_request (id, json) =
       let assoc = json |> to_assoc in
       { id;
         desc = List.assoc "desc" assoc |> to_string;
         code = List.assoc "code" assoc |> to_list |> List.map to_string;
       } in
 
-    (json |> to_assoc |> List.map parse_pattern, json)
+    (json |> to_assoc |> List.map parse_request, json)
 
   let compute_ratios l =  
     let sum = float (List.fold_left (+) 0 l) in
@@ -115,7 +115,7 @@ end (* module Stat *)
 (* ==================================================================================================== *)
 module Validation = struct
   type item = {
-    pattern: string list;
+    request: string list;
     description: string;
     level: string;
   }
@@ -135,18 +135,18 @@ module Validation = struct
       with Yojson.Json_error msg -> error ~fct:"Validation.load_json" ~file:json_file "%s" msg in
 
     let parse_one json =
-      let pattern =
-        try json |> member "pattern" |> to_string |> (fun x -> [x])
+      let request =
+        try json |> member "request" |> to_string |> (fun x -> [x])
         with Type_error _ ->
         try json
-            |> member "pattern"
+            |> member "request"
             |> to_list
             |> (List.map to_string)
         with Type_error (json_error,_) ->
           error
             ~fct:"Validation.load_json"
             ~file: json_file
-            "\"pattern\" field is mandatory and must be a string or a list of strings (%s)" json_error in
+            "\"request\" field is mandatory and must be a string or a list of strings (%s)" json_error in
       let description =
         try json |> member "description" |> to_string
         with Type_error _ -> "No description" in
@@ -154,7 +154,7 @@ module Validation = struct
         try json |> member "level" |> to_string
         with Type_error _ -> "No level" in
 
-      { pattern; description; level } in
+      { request; description; level } in
 
     let title =
       try json |> member "title" |> to_string
@@ -189,20 +189,20 @@ module Validation = struct
                   `List
                     (List.map
                       (fun item ->
-                        let grew_pattern =
-                          try Request.parse ~config (String.concat " " item.pattern)
+                        let grew_request =
+                          try Request.parse ~config (String.concat " " item.request)
                           with Libgrew.Error msg ->
                             error
                               ~fct:"Validation.check"
-                              ~data:(`String (String.concat " " item.pattern))
-                              "cannot parse pattern associated with desc: %s" item.description in
+                              ~data:(`String (String.concat " " item.request))
+                              "cannot parse request associated with desc: %s" item.description in
                         let count =
                           Corpus.fold_left (fun acc _ graph ->
-                              acc + (List.length (Matching.search_request_in_graph ~config grew_pattern graph))
+                              acc + (List.length (Matching.search_request_in_graph ~config grew_request graph))
                             ) 0 corpus in
                         `Assoc [
                           "count", `Int count;
-                          "pattern", `List (List.map (fun x -> `String x) item.pattern);
+                          "request", `List (List.map (fun x -> `String x) item.request);
                           "description", `String item.description;
                           "level", `String item.level
                         ]
