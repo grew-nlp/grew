@@ -1,3 +1,8 @@
+# 1.10.0 (2022/11/23)
+  * follow libcaml-grew update
+  * ⚠️ remove Gr format handling
+  * improve corpus loading
+
 # 1.9.0 (2022/06/29)
   * follow libcaml-grew update
 
