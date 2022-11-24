@@ -5,14 +5,14 @@ sys.path.append(os.getcwd() + '/..')
 from utils import *
 
 print ("--------------- grep ---------------")
-success("grew_dev grep -pattern subcat.pat -quiet -i input.conll", "01_expected.json")
+success("grew_dev grep -request subcat.req -quiet -i input.conll", "01_expected.json")
 
 print ("--------------- grep with key ---------------")
-success("grew_dev grep -pattern subcat.pat -key V.lemma -quiet -i input.conll", "02_expected.json")
+success("grew_dev grep -request subcat.req -key V.lemma -quiet -i input.conll", "02_expected.json")
 
 print ("--------------- grep with whether ---------------")
-success('grew_dev grep -pattern subcat.pat -whether "V.lemma=faire" -quiet -i input.conll', "03_expected.json")
+success('grew_dev grep -request subcat.req -whether "V.lemma=faire" -quiet -i input.conll', "03_expected.json")
 
 print ("--------------- grep with two keys ---------------")
-success('grew_dev grep -pattern subcat.pat -key V.m -key V.t -quiet -i input.conll', "04_expected.json")
+success('grew_dev grep -request subcat.req -key V.m -key V.t -quiet -i input.conll', "04_expected.json")
 
