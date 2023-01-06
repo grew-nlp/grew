@@ -12,7 +12,7 @@ remove: [
 depends: [
   "cppo"
   "ANSITerminal"
-  "libcaml-grew"
+  "libcaml-grew"  { >= "1.10.2"}
 ]
 synopsis: "A graph rewriting tool for NLP applications (see https://grew.fr)"
 url {

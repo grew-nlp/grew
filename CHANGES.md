@@ -1,3 +1,6 @@
+## 1.10.1 (2023/01/06)
+  * Conllx -> Conll
+
 # 1.10.0 (2022/11/23)
   * follow libcaml-grew update
   * ⚠️ remove Gr format handling
