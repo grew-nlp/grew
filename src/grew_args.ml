@@ -9,7 +9,7 @@
 (***********************************************************************)
 
 open Arg
-open Conllx
+open Conll
 
 open Grew_types
 open Libgrew
@@ -24,8 +24,8 @@ module Grew_args = struct
   let grs = ref None
   let dep_dir = ref None
 
-  type output = Conllx of  Conllx_columns.t | Dot | Json | Multi_json | Tsv
-  let output = ref (Conllx Conllx_columns.default)
+  type output = Conll of  Conll_columns.t | Dot | Json | Multi_json | Tsv
+  let output = ref (Conll Conll_columns.default)
 
   let (input_data : string list ref) = ref []
   let (output_data : string option ref) = ref None
@@ -36,7 +36,7 @@ module Grew_args = struct
 
   let (clustering : cluster_item list ref) = ref []
 
-  let config = ref (Conllx_config.build "ud")  (* "ud" is used as default value. *)
+  let config = ref (Conll_config.build "ud")  (* "ud" is used as default value. *)
 
   let grew_match_server = ref None
   let force = ref false
@@ -112,9 +112,9 @@ module Grew_args = struct
 
     | "-quiet" :: args -> quiet := true; loop args
 
-    | "-cupt" :: args -> output := Conllx (Conllx_columns.cupt); loop args
-    | "-semcor" :: args -> output := Conllx (Conllx_columns.frsemcor); loop args
-    | "-columns" :: desc :: args -> output := Conllx (Conllx_columns.build desc); loop args
+    | "-cupt" :: args -> output := Conll (Conll_columns.cupt); loop args
+    | "-semcor" :: args -> output := Conll (Conll_columns.frsemcor); loop args
+    | "-columns" :: desc :: args -> output := Conll (Conll_columns.build desc); loop args
     | "-dot" :: args -> output := Dot; loop args
     | "-json" :: args -> output := Json; loop args
     | "-tsv" :: args -> output := Tsv; loop args
@@ -128,9 +128,9 @@ module Grew_args = struct
     | "-debug" :: args -> Libgrew.set_debug_mode true; loop args
     | "-dep_dir" :: dir :: args -> dep_dir := Some dir; loop args
 
-    | "-config" :: value :: args -> config := handle (fun () -> Conllx_config.build value) (); loop args
+    | "-config" :: value :: args -> config := handle (fun () -> Conll_config.build value) (); loop args
 
-    | "-rff" :: value :: args -> config := Conllx_config.remove_from_feats value !config; loop args
+    | "-rff" :: value :: args -> config := Conll_config.remove_from_feats value !config; loop args
 
     | "-gr" :: args -> Log.warning "The GR file is no longer supported, please use JSON format"; loop args
     | x :: args -> Log.warning "Invalid argument: %s, it is ignored!" x; loop args

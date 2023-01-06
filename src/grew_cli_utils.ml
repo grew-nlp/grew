@@ -9,7 +9,7 @@
 (***********************************************************************)
 
 open Printf
-open Conllx
+open Conll
 open Grew_types
 open Libgrew
 
@@ -53,7 +53,7 @@ let handle fct () =
   try fct ()
   with
   | Error json ->                  Log.fail "%s" (Yojson.Basic.pretty_to_string json)
-  | Conllx_error json ->           Log.fail "%s" (Yojson.Basic.pretty_to_string json)
+  | Conll_error json ->           Log.fail "%s" (Yojson.Basic.pretty_to_string json)
   | Libgrew.Error msg ->           Log.fail "%s" msg
   | Sys_error msg ->               Log.fail "%s" (sprintf "System error: %s" msg)
   | Yojson.Json_error msg ->       Log.fail "%s" (sprintf "Json error: %s" msg)

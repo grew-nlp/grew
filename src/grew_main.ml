@@ -9,7 +9,7 @@
 (***********************************************************************)
 
 open Printf
-open Conllx
+open Conll
 open Grew_types
 open Libgrew
 
@@ -68,10 +68,10 @@ let transform () =
     | None -> stdout in
 
   let (next_graph, final) = match !Grew_args.output with
-    | Grew_args.Conllx columns ->
-      fprintf out_ch "%s\n" (Conllx_columns.to_string columns);
+    | Grew_args.Conll columns ->
+      fprintf out_ch "%s\n" (Conll_columns.to_string columns);
       (
-        (fun graph -> fprintf out_ch "%s\n" (graph |> Graph.to_json |> Conllx.of_json |> Conllx.to_string ~config ~columns)),
+        (fun graph -> fprintf out_ch "%s\n" (graph |> Graph.to_json |> Conll.of_json |> Conll.to_string ~config ~columns)),
         (fun () -> ())
       )
     | Grew_args.Dot ->
