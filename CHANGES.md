@@ -1,3 +1,6 @@
+## 1.10.2 (2023/01/11)
+  * restore broken usage of -html / -dep_dir in `grew grep`
+
 ## 1.10.1 (2023/01/06)
   * Conllx -> Conll
 
