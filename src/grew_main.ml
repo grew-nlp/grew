@@ -126,19 +126,54 @@ let transform () =
       | Some output_file -> close_out out_ch
       | None -> ()
 
+let dep_counter = ref 0
+let json_of_matching ~config request sent_id graph matching =
+  let dep_file =
+    match !Grew_args.dep_dir with
+    | None -> None
+    | Some dir ->
+      let deco = Matching.build_deco request matching in
+      (* let id = sprintf "%s__%s"
+          name
+          (String.concat "_" (List.map2 (sprintf "%s:%s") pattern_ids graph_node_names)) in *)
+    incr dep_counter;
+      let id = sprintf "g_%05d" !dep_counter in
+      let dep = Graph.to_dep ~config ~deco graph in
+      let filename = Filename.concat dir (sprintf "%s.dep" id) in
+      let out_ch = open_out filename in
+      fprintf out_ch "%s" dep;
+      close_out out_ch;
+      Some ("dep_file", `String filename) in
+
+  `Assoc (CCList.filter_map (fun x -> x)
+    [
+      Some ("sent_id", `String sent_id);
+      Some ("matching", Matching.to_json request graph matching);
+      (
+        if !Grew_args.html
+        then 
+          let deco = Matching.build_deco request matching in
+          Some ("html", `String (Graph.to_sentence ~deco graph))
+        else None
+      );
+      dep_file
+      ])
+  
 (* -------------------------------------------------------------------------------- *)
 let grep () =
   match !Grew_args.requests with
   | [request_file] ->
+    (match !Grew_args.dep_dir with
+    | None -> ()
+    | Some d -> ignore (Sys.command (sprintf "mkdir -p %s" d)));
+
     let clustered_corpus ~config corpus =
       let request = Request.load ~config request_file in
       Corpus.search 
         ~config 
         [] 
-        (fun sent_id graph matching acc -> `Assoc [
-          ("sent_id", `String sent_id);
-          ("matching", Matching.to_json request graph matching)
-          ] :: acc
+        (fun sent_id graph matching acc -> 
+          (json_of_matching ~config request sent_id graph matching) :: acc
         )
         request 
         !Grew_args.clustering 
