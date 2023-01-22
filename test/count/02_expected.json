@@ -1,5 +1,5 @@
 {
-  "UD_French-PUD": { "NOUN_ADJ.pat": 935, "ADJ_NOUN.pat": 423 },
-  "UD_English-PUD": { "NOUN_ADJ.pat": 12, "ADJ_NOUN.pat": 1114 },
-  "UD_Chinese-PUD": { "NOUN_ADJ.pat": 0, "ADJ_NOUN.pat": 364 }
+  "UD_French-PUD": { "NOUN_ADJ.req": 935, "ADJ_NOUN.req": 423 },
+  "UD_English-PUD": { "NOUN_ADJ.req": 12, "ADJ_NOUN.req": 1114 },
+  "UD_Chinese-PUD": { "NOUN_ADJ.req": 0, "ADJ_NOUN.req": 364 }
 }

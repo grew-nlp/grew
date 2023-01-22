@@ -1,4 +1,4 @@
-Corpus	# sentences	ADJ_NOUN	NOUN_ADJ
-UD_English-PUD	1000	1114	12
-UD_French-PUD	1000	423	935
-UD_Chinese-PUD	1000	364	0
+Corpus	ADJ_NOUN	NOUN_ADJ
+UD_English-PUD	1114	12
+UD_French-PUD	423	935
+UD_Chinese-PUD	364	0
