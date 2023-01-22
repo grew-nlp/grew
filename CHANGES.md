@@ -1,3 +1,6 @@
+# 1.11.0 (2023/01/22)
+  * follow libcaml-grew update
+
 ## 1.10.2 (2023/01/11)
   * restore broken usage of -html / -dep_dir in `grew grep`
 
