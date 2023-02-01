@@ -8,11 +8,9 @@
 (*    Authors: see AUTHORS file                                        *)
 (***********************************************************************)
 
-open Arg
 open Conll
 
-open Grew_types
-open Libgrew
+open Grewlib
 
 open Grew_cli_utils
 
@@ -123,9 +121,9 @@ module Grew_args = struct
     | "-grew_match_server" :: dir :: args -> grew_match_server := Some dir; loop args
     | "-force" :: args -> force := true; loop args
 
-    | "-safe_commands" :: args -> Libgrew.set_safe_commands true; loop args
-    | "-track_rules" :: args -> Libgrew.set_track_rules true; loop args
-    | "-debug" :: args -> Libgrew.set_debug_mode true; loop args
+    | "-safe_commands" :: args -> Grewlib.set_safe_commands true; loop args
+    | "-track_rules" :: args -> Grewlib.set_track_rules true; loop args
+    | "-debug" :: args -> Grewlib.set_debug_mode true; loop args
     | "-dep_dir" :: dir :: args -> dep_dir := Some dir; loop args
 
     | "-config" :: value :: args -> config := handle (fun () -> Conll_config.build value) (); loop args
@@ -147,8 +145,8 @@ module Grew_args = struct
     | _ :: "compile" :: args -> mode := Compile; loop args
     | _ :: "clean" :: args -> mode := Clean; loop args
     | _ :: "version" :: _ ->
-      Printf.printf "libgrew: %s\n" (Libgrew.get_version ());
-      Printf.printf "grew: %s\n" VERSION;
+      Printf.printf "libgrew: %s\n" (Grewlib.get_version ());
+      Printf.printf "grew: %s\n" "VERSION";
     | _ :: "test" :: args -> mode := Test; loop args
     | _ :: "help" :: "transform" :: _ -> help_transform ()
     | _ :: "help" :: "grep" :: _ -> help_grep ()

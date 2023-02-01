@@ -1,0 +1,14 @@
+(executable
+ (public_name grew)
+ (name grew_main)
+ (libraries 
+   str
+   unix
+   ANSITerminal 
+   containers 
+   yojson 
+   amr 
+   conll
+   grewlib
+ )
+)

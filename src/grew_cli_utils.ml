@@ -10,8 +10,7 @@
 
 open Printf
 open Conll
-open Grew_types
-open Libgrew
+open Grewlib
 
 let quiet = ref false
 
@@ -54,17 +53,17 @@ let handle fct () =
   with
   | Error json ->                  Log.fail "%s" (Yojson.Basic.pretty_to_string json)
   | Conll_error json ->           Log.fail "%s" (Yojson.Basic.pretty_to_string json)
-  | Libgrew.Error msg ->           Log.fail "%s" msg
+  | Grewlib.Error msg ->           Log.fail "%s" msg
   | Sys_error msg ->               Log.fail "%s" (sprintf "System error: %s" msg)
   | Yojson.Json_error msg ->       Log.fail "%s" (sprintf "Json error: %s" msg)
-  | Libgrew.Bug msg ->             Log.fail "%s" (sprintf "Libgrew.bug, please report: %s" msg)
+  | Grewlib.Bug msg ->             Log.fail "%s" (sprintf "Grewlib.bug, please report: %s" msg)
   | exc ->                         Log.fail "%s" (sprintf "Uncaught exception, please report: %s" (Printexc.to_string exc))
 
 (* ---------------------------------------------------------------------------------------------------- *)
 let ensure_dir dir =
   try (* catch if dir does not exist *)
     match Unix.stat dir with
-    | { Unix.st_kind = Unix.S_DIR } -> ()
+    | { Unix.st_kind = Unix.S_DIR; _ } -> ()
     | _ ->  error "path `%s` already exists and is not directory" dir
   with Unix.Unix_error (Unix.ENOENT,_,_) -> (* dir does not exist -> try to create it *)
     try Unix.mkdir dir 0o755
@@ -191,7 +190,7 @@ module Validation = struct
                       (fun item ->
                         let grew_request =
                           try Request.parse ~config (String.concat " " item.request)
-                          with Libgrew.Error msg ->
+                          with Grewlib.Error _msg -> (* TODO *)
                             error
                               ~fct:"Validation.check"
                               ~data:(`String (String.concat " " item.request))

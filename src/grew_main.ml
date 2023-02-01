@@ -10,8 +10,7 @@
 
 open Printf
 open Conll
-open Grew_types
-open Libgrew
+open Grewlib
 
 open Grew_cli_utils
 open Grew_args
@@ -28,14 +27,14 @@ let parse_input () =
   | [] -> Mono (Corpus.from_stdin ~config ())
   | l -> 
       try Multi (CCList.flat_map Corpus_desc.load_json !Grew_args.input_data)
-      with Libgrew.Error _ ->
+      with Grewlib.Error _ ->
         (* TODO add specific error for compile/ clean *)
         match l with
         | [one] ->
           begin
             try
               match Unix.stat one with
-              | { Unix.st_kind = Unix.S_DIR } -> Mono (Corpus.from_dir ~config one)
+              | { Unix.st_kind = Unix.S_DIR; _ } -> Mono (Corpus.from_dir ~config one)
               | _ -> Mono (Corpus.from_file ~config one)
             with Unix.Unix_error _ -> error ~fct:"Grew.parse_input" "File not found `%s`" one
           end
@@ -123,7 +122,7 @@ let transform () =
     Counter.finish ();
     final ();
     match !Grew_args.output_data with
-      | Some output_file -> close_out out_ch
+      | Some _ -> close_out out_ch
       | None -> ()
 
 let dep_counter = ref 0
@@ -353,7 +352,7 @@ let stat () =
                       let request = 
                         (* NB: request should be reparsed for each corpora, because config may change *)
                         try Request.parse ~config (String.concat " " pat_desc.Stat.code)
-                        with Libgrew.Error msg ->
+                        with Grewlib.Error _msg -> (* TODO *)
                           error
                             ~fct:"Grew.stat"
                             ~data:(`String (String.concat " " pat_desc.Stat.code))
