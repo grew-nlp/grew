@@ -145,8 +145,19 @@ module Grew_args = struct
     | _ :: "compile" :: args -> mode := Compile; loop args
     | _ :: "clean" :: args -> mode := Clean; loop args
     | _ :: "version" :: _ ->
-      Printf.printf "libgrew: %s\n" (Grewlib.get_version ());
-      Printf.printf "grew: %s\n" "VERSION";
+      begin
+        match Build_info.V1.version () with
+        | Some v -> Printf.printf "%s\n" (Build_info.V1.Version.to_string v)
+        | None -> Printf.printf "dev\n%!"
+      end
+    | _ :: "libraries" :: _ ->
+        List.iter
+        (fun lib -> match Build_info.V1.Statically_linked_library.version lib with
+        | Some v -> Printf.printf " - %s: %s\n" 
+          (Build_info.V1.Statically_linked_library.name lib)
+          (Build_info.V1.Version.to_string v)
+        | None -> ()
+        ) (Build_info.V1.Statically_linked_libraries.to_list ())
     | _ :: "test" :: args -> mode := Test; loop args
     | _ :: "help" :: "transform" :: _ -> help_transform ()
     | _ :: "help" :: "grep" :: _ -> help_grep ()

@@ -4,6 +4,7 @@
  (libraries 
    str
    unix
+   dune-build-info
    ANSITerminal 
    containers 
    yojson 
