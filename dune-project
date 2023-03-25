@@ -24,7 +24,7 @@
  (depends 
   ocaml 
   dune
-  dune-build-inof
+  dune-build-info
   (containers ( >= "3.6" ))
   amr 
   conll 
