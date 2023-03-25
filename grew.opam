@@ -2,7 +2,7 @@
 opam-version: "2.0"
 version: "1.12.0"
 synopsis: " Grew system"
-description: "TODO"
+description: "CLI for Grew (Graph Rewriting for NLP)"
 maintainer: ["Bruno.Guillaume@inria.fr"]
 authors: ["Bruno Guillaume"]
 license: "CECILL-2.1"
@@ -13,9 +13,10 @@ bug-reports: "https://github.com/grew-nlp/grew/issues"
 depends: [
   "ocaml"
   "dune" {>= "3.5"}
+  "containers" {>= "3.6"}
   "amr"
   "conll"
-  "grewlib"
+  "grewlib" {>= "1.12.0"}
   "odoc" {with-doc}
 ]
 build: [

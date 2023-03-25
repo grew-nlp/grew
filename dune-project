@@ -20,8 +20,15 @@
 (package
  (name grew)
  (synopsis " Grew system")
- (description "TODO")
- (depends ocaml dune amr conll grewlib)
+ (description "CLI for Grew (Graph Rewriting for NLP)")
+ (depends 
+  ocaml 
+  dune 
+  (containers ( >= "3.6" ))
+  amr 
+  conll 
+  (grewlib ( >= "1.12.0" ))
+ )
  (tags
   (nlp "graph rewriting")
  )
