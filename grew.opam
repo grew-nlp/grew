@@ -13,6 +13,7 @@ bug-reports: "https://github.com/grew-nlp/grew/issues"
 depends: [
   "ocaml"
   "dune" {>= "3.5"}
+  "dune-build-inof"
   "containers" {>= "3.6"}
   "amr"
   "conll"

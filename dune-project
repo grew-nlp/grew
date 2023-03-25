@@ -23,7 +23,8 @@
  (description "CLI for Grew (Graph Rewriting for NLP)")
  (depends 
   ocaml 
-  dune 
+  dune
+  dune-build-inof
   (containers ( >= "3.6" ))
   amr 
   conll 
