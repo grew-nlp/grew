@@ -168,14 +168,15 @@ let grep () =
 
     let clustered_corpus ~config corpus =
       let request = Request.load ~config request_file in
-      Corpus.search 
+      let clustert_item2_list = List.map (Request.parse_cluster_item ~config request) !Grew_args.clustering in
+      Corpus.search
         ~config 
         [] 
         (fun sent_id graph matching acc -> 
           (json_of_matching ~config request sent_id graph matching) :: acc
         )
         request 
-        !Grew_args.clustering 
+        clustert_item2_list
         corpus in
 
     let clustered = match parse_input () with
@@ -228,7 +229,8 @@ let count () =
     Clustered.build_layer
     (fun file_request -> 
       let request = Request.load ~config file_request in
-      Corpus.search ~config 0 (fun _ _ _ x -> x+1) request !Grew_args.clustering corpus
+      let clustert_item2_list = List.map (Request.parse_cluster_item ~config request) !Grew_args.clustering in
+      Corpus.search ~config 0 (fun _ _ _ x -> x+1) request clustert_item2_list corpus
     )
     (fun file_request -> Some file_request)
     0 !Grew_args.requests in

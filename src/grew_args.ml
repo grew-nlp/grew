@@ -32,7 +32,7 @@ module Grew_args = struct
   let (requests : string list ref) = ref []
   let html = ref false
 
-  let (clustering : cluster_item list ref) = ref []
+  let (clustering : string list ref) = ref []
 
   let config = ref (Conll_config.build "ud")  (* "ud" is used as default value. *)
 
@@ -101,8 +101,10 @@ module Grew_args = struct
     | "-patterns" :: files :: args -> 
         Log.warning "-pattern and -patterns comman line args are deprecated, replaced by -request and -requests"; 
         requests := !requests @ (Str.split (Str.regexp " ") files); loop args
-    | "-key" :: s :: args -> clustering := !clustering @ [Key s]; loop args
-    | "-whether" :: s :: args ->  clustering := !clustering @ [Whether s]; loop args
+    | "-key" :: s :: args -> clustering := !clustering @ [s]; loop args
+    | "-whether" :: s :: args ->
+        Log.warning "Whether argument is deprecated, see https://grew.fr/usage/cli/#with-clustering";
+        clustering := !clustering @ [Printf.sprintf "{%s}" s]; loop args
     | "-html" :: args -> html := true; loop args
 
     | "-timeout" :: f :: args -> timeout := Some (float_of_string f); Rewrite.set_timeout (Some (float_of_string f)); loop args
