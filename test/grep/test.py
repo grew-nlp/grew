@@ -2,7 +2,7 @@
 import sys
 import os
 sys.path.append(os.getcwd() + '/..')
-from utils import *
+from grew_test_utils import *
 
 print ("--------------- grep ---------------")
 success("grew_dev grep -request subcat.req -quiet -i input.conll", "01_expected.json")

@@ -2,7 +2,7 @@
 import sys
 import os
 sys.path.append(os.getcwd() + '/../..')
-from utils import *
+from grew_test_utils import *
 
 print ("--------------- matching_complex_edges ---------------")
 success('grew_dev transform -grs code.grs -config sud -strat "Onf(r_01)" -quiet -i input.conll','01_expected.conll')

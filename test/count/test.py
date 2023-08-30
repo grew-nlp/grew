@@ -2,7 +2,7 @@
 import sys
 import os
 sys.path.append(os.getcwd() + '/..')
-from utils import *
+from grew_test_utils import *
 
 print ("--------------- count 01 ---------------")
 success("grew_dev compile -i en_fr_zh.json && grew_dev count -tsv -request ADJ_NOUN.req -request NOUN_ADJ.req -i en_fr_zh.json", "01_expected.tsv")

@@ -2,7 +2,7 @@
 import sys
 import os
 sys.path.append(os.getcwd() + '/../..')
-from utils import *
+from grew_test_utils import *
 
 print ("--------------- edge_feat_update ---------------")
 success('grew_dev transform -grs code.grs -config sud -quiet -i 01_input.conll', '01_expected.conll')

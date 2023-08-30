@@ -2,7 +2,7 @@
 import sys
 import os
 sys.path.append(os.getcwd() + '/..')
-from utils import *
+from grew_test_utils import *
 
 print ("--------------- effective commands ---------------")
 print (" -- r1 --")

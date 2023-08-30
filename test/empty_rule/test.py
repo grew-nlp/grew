@@ -2,7 +2,7 @@
 import sys
 import os
 sys.path.append(os.getcwd() + '/..')
-from utils import *
+from grew_test_utils import *
 
 print ("--------------- empty rule ---------------")
 success("grew_dev transform -grs code.grs -strat r -quiet -json -i input.json", "expected.json")

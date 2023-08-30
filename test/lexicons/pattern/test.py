@@ -2,7 +2,7 @@
 import sys
 import os
 sys.path.append(os.getcwd() + '/../..')
-from utils import *
+from grew_test_utils import *
 
 print ("--------------- pattern ---------------")
 success('grew_dev transform -grs ExtPos.grs -strat "Onf (local)" -quiet -i input.conll', 'local_expected.conll')

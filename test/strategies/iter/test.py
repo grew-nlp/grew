@@ -2,7 +2,7 @@
 import sys
 import os
 sys.path.append(os.getcwd() + '/../..')
-from utils import *
+from grew_test_utils import *
 
 print ("--------------- iter ---------------")
 success('grew_dev transform -grs code.grs -config basic -strat s01 -quiet -i input.json','01_expected.conll')
