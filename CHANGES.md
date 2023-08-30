@@ -1,3 +1,6 @@
+# 1.13.0 (2023/09/16)
+  * follow libcaml-grew update
+
 # 1.12.0 (2023/03/25)
   * Use dune buid system
 
