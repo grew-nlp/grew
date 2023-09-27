@@ -15,6 +15,120 @@ open Grewlib
 open Grew_cli_utils
 open Grew_args
 
+(* ==================================================================================================== *)
+module Validation = struct
+  type item = {
+    request: string list;
+    description: string;
+    level: string;
+  }
+
+  type modul = {
+    title: string;
+    items: item list;
+    languages: string list option; (* list of the languages codes restriction, None for all lang *)
+  }
+
+  (* -------------------------------------------------------------------------------- *)
+  let load_json json_file =
+    let open Yojson.Basic.Util in
+
+    let json =
+      try Yojson.Basic.from_file json_file
+      with Yojson.Json_error msg -> error ~fct:"Validation.load_json" ~file:json_file "%s" msg in
+
+    let parse_one json =
+      let request =
+        try json |> member "request" |> to_string |> (fun x -> [x])
+        with Type_error _ ->
+        try json
+            |> member "request"
+            |> to_list
+            |> (List.map to_string)
+        with Type_error (json_error,_) ->
+          error
+            ~fct:"Validation.load_json"
+            ~file: json_file
+            "\"request\" field is mandatory and must be a string or a list of strings (%s)" json_error in
+      let description =
+        try json |> member "description" |> to_string
+        with Type_error _ -> "No description" in
+      let level =
+        try json |> member "level" |> to_string
+        with Type_error _ -> "No level" in
+
+      { request; description; level } in
+
+    let title =
+      try json |> member "title" |> to_string
+      with Type_error (json_error,_) ->
+        error
+          ~fct:"Validation.load_json"
+          ~file: json_file
+          "\"title\" field is mandatory and must be a string or a list of strings (%s)" json_error in
+    let items = List.map parse_one (json |> member "items" |> to_list) in
+    let languages = try Some (json |> member "languages" |> to_list |> List.map to_string) with Type_error _ -> None in
+    { title; items; languages }
+
+  (* -------------------------------------------------------------------------------- *)
+  let check ?dir modul_list (corpus_desc:Corpus_desc.t) =
+    let corpus = Corpus_desc.build_corpus (Grew_args.get_corpusbank ()) corpus_desc in
+    let config = Corpus_desc.get_config corpus_desc in
+
+    let date =
+      let tm = Unix.localtime (Unix.time ()) in
+      sprintf "%d/%02d/%02d - %02d:%02d"
+        (tm.Unix.tm_year + 1900) (tm.Unix.tm_mon + 1) tm.Unix.tm_mday
+        tm.Unix.tm_hour tm.Unix.tm_min in
+
+    let modules =
+      `List
+        (CCList.filter_map
+          (fun modul ->
+            match (Corpus_desc.get_field_opt "lang" corpus_desc, modul.languages) with
+              | (Some lang, Some lang_list) when not (List.mem lang lang_list) -> None
+              | _ ->
+                let (out_items : Yojson.Basic.t) =
+                  `List
+                    (List.map
+                      (fun item ->
+                        let grew_request =
+                          try Request.parse ~config (String.concat " " item.request)
+                          with Grewlib.Error _msg -> (* TODO *)
+                            error
+                              ~fct:"Validation.check"
+                              ~data:(`String (String.concat " " item.request))
+                              "cannot parse request associated with desc: %s" item.description in
+                        let count =
+                          Corpus.fold_left (fun acc _ graph ->
+                              acc + (List.length (Matching.search_request_in_graph ~config grew_request graph))
+                            ) 0 corpus in
+                        `Assoc [
+                          "count", `Int count;
+                          "request", `List (List.map (fun x -> `String x) item.request);
+                          "description", `String item.description;
+                          "level", `String item.level
+                        ]
+                      ) modul.items
+                    ) in
+              Some (`Assoc ["title", `String modul.title; "items", out_items])
+          ) modul_list
+        ) in
+
+    let json = `Assoc [
+        "corpus", `String (Corpus_desc.get_id corpus_desc);
+        "date", `String date;
+        "modules", modules
+      ] in
+
+    match dir with
+    | None -> printf "%s\n" (Yojson.Basic.pretty_to_string json)
+    | Some dir ->
+      let out_file = Filename.concat dir ((Corpus_desc.get_id corpus_desc) ^ ".json") in
+      CCIO.with_out out_file (fun out_ch -> fprintf out_ch "%s\n" (Yojson.Basic.pretty_to_string json))
+
+end (* module Validation *)
+
 (* -------------------------------------------------------------------------------- *)
 type input =
   | Multi of Corpus_desc.t list
@@ -185,7 +299,7 @@ let grep () =
         Clustered.build_layer
         (fun corpus_desc ->
           let config = Corpus_desc.get_config corpus_desc in 
-          match Corpus_desc.load_corpus_opt corpus_desc with
+          match Corpus_desc.load_corpus_opt (Grew_args.get_corpusbank ()) corpus_desc with
             | None -> error ~fct:"Grew.count" "cannot load corpus `%s`" (Corpus_desc.get_id corpus_desc)
             | Some corpus -> clustered_corpus ~config corpus
         )
@@ -209,7 +323,7 @@ let compile () =
   | Multi l -> l in
   List.iter
     (fun corpus_desc ->
-      Corpus_desc.compile ~force:!Grew_args.force ?grew_match:!Grew_args.grew_match_server corpus_desc
+      Corpus_desc.compile ~force:!Grew_args.force (* ?grew_match:!Grew_args.grew_match_server*) (Grew_args.get_corpusbank ()) corpus_desc
     ) corpus_desc_list
 
 (* -------------------------------------------------------------------------------- *)
@@ -219,7 +333,7 @@ let clean () =
   | Multi l -> l in
   List.iter
     (fun corpus_desc ->
-      Corpus_desc.clean corpus_desc
+      Corpus_desc.clean (Grew_args.get_corpusbank ()) corpus_desc
     ) corpus_desc_list
 
 (* -------------------------------------------------------------------------------- *)
@@ -242,7 +356,7 @@ let count () =
     Clustered.build_layer
       (fun corpus_desc ->
         let config = Corpus_desc.get_config corpus_desc in 
-        match Corpus_desc.load_corpus_opt corpus_desc with
+        match Corpus_desc.load_corpus_opt (Grew_args.get_corpusbank ()) corpus_desc with
           | None -> error ~fct:"Grew.count" "cannot load corpus `%s`" (Corpus_desc.get_id corpus_desc)
           | Some corpus -> clustered_corpus ~config corpus
       )
@@ -343,7 +457,7 @@ let stat () =
       let bare_lines =
         List.map
           (fun corpus_desc ->
-            match Corpus_desc.load_corpus_opt corpus_desc with
+            match Corpus_desc.load_corpus_opt (Grew_args.get_corpusbank ()) corpus_desc with
               | None -> error ~fct:"Grew.stat" "The corpus %s is not compiled" (Corpus_desc.get_id corpus_desc)
               | Some corpus -> 
                 let config = Corpus_desc.get_config corpus_desc in

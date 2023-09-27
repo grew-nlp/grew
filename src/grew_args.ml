@@ -39,6 +39,14 @@ module Grew_args = struct
   let grew_match_server = ref None
   let force = ref false
 
+  let corpusbank = ref (Sys.getenv_opt "CORPUSBANK")
+
+  let get_corpusbank () =
+    match !corpusbank with
+    | Some d -> d
+    | None -> Log.fail "Cannot run this command without a corpusbank: use -cb option or define CORPUSBANK env variable."
+
+
   let help () = List.iter (fun x -> Printf.printf "%s\n%!" x) [
       "----------------------------------------------------------";
       "usage: grew <subcommand> [<args>]";
@@ -122,6 +130,8 @@ module Grew_args = struct
 
     | "-grew_match_server" :: dir :: args -> grew_match_server := Some dir; loop args
     | "-force" :: args -> force := true; loop args
+
+    | "-cb" :: dir :: args -> corpusbank := Some dir; loop args
 
     | "-safe_commands" :: args -> Grewlib.set_safe_commands true; loop args
     | "-track_rules" :: args -> Grewlib.set_track_rules true; loop args
