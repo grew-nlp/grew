@@ -1,13 +1,13 @@
 # global.columns = ID FORM LEMMA UPOS XPOS FEATS HEAD DEPREL DEPS MISC
 # sent_id = fr-ud-dev_00342
 # text = Quant au cheval, en particulier le cheval ailé, il s'agit d'un symbole funéraire et d'un guide pour les âmes des morts (psychopompe).
-1	Quant	quant	ADV	_	_	4	case	_	ExtPos=ADP
+1	Quant	quant	ADV	_	ExtPos=ADP	4	case	_	_
 2-3	au	_	_	_	_	_	_	_	_
 2	à	à	ADP	_	_	1	fixed	_	_
 3	le	le	DET	_	Definite=Def|Gender=Masc|Number=Sing|PronType=Art	4	det	_	_
 4	cheval	cheval	NOUN	_	Gender=Masc|Number=Sing	14	obl:mod	_	SpaceAfter=No
 5	,	,	PUNCT	_	_	14	punct	_	_
-6	en	en	ADP	_	_	9	advmod	_	ExtPos=ADV
+6	en	en	ADP	_	ExtPos=ADV	9	advmod	_	_
 7	particulier	particulier	ADJ	_	Gender=Masc|Number=Sing	6	fixed	_	_
 8	le	le	DET	_	Definite=Def|Gender=Masc|Number=Sing|PronType=Art	9	det	_	_
 9	cheval	cheval	NOUN	_	Gender=Masc|Number=Sing	4	conj	_	_
