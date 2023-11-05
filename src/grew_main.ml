@@ -72,7 +72,7 @@ module Validation = struct
 
   (* -------------------------------------------------------------------------------- *)
   let check ?dir modul_list (corpus_desc:Corpus_desc.t) =
-    let corpus = Corpus_desc.build_corpus (Grew_args.get_corpusbank ()) corpus_desc in
+    let corpus = Corpus_desc.build_corpus corpus_desc in
     let config = Corpus_desc.get_config corpus_desc in
 
     let date =
@@ -299,7 +299,7 @@ let grep () =
         Clustered.build_layer
         (fun corpus_desc ->
           let config = Corpus_desc.get_config corpus_desc in 
-          match Corpus_desc.load_corpus_opt (Grew_args.get_corpusbank ()) corpus_desc with
+          match Corpus_desc.load_corpus_opt corpus_desc with
             | None -> error ~fct:"Grew.count" "cannot load corpus `%s`" (Corpus_desc.get_id corpus_desc)
             | Some corpus -> clustered_corpus ~config corpus
         )
@@ -323,7 +323,7 @@ let compile () =
   | Multi l -> l in
   List.iter
     (fun corpus_desc ->
-      Corpus_desc.compile ~force:!Grew_args.force (* ?grew_match:!Grew_args.grew_match_server*) (Grew_args.get_corpusbank ()) corpus_desc
+      Corpus_desc.compile ~force:!Grew_args.force (* ?grew_match:!Grew_args.grew_match_server*) corpus_desc
     ) corpus_desc_list
 
 (* -------------------------------------------------------------------------------- *)
@@ -333,7 +333,7 @@ let clean () =
   | Multi l -> l in
   List.iter
     (fun corpus_desc ->
-      Corpus_desc.clean (Grew_args.get_corpusbank ()) corpus_desc
+      Corpus_desc.clean corpus_desc
     ) corpus_desc_list
 
 (* -------------------------------------------------------------------------------- *)
@@ -356,7 +356,7 @@ let count () =
     Clustered.build_layer
       (fun corpus_desc ->
         let config = Corpus_desc.get_config corpus_desc in 
-        match Corpus_desc.load_corpus_opt (Grew_args.get_corpusbank ()) corpus_desc with
+        match Corpus_desc.load_corpus_opt corpus_desc with
           | None -> error ~fct:"Grew.count" "cannot load corpus `%s`" (Corpus_desc.get_id corpus_desc)
           | Some corpus -> clustered_corpus ~config corpus
       )
@@ -457,7 +457,7 @@ let stat () =
       let bare_lines =
         List.map
           (fun corpus_desc ->
-            match Corpus_desc.load_corpus_opt (Grew_args.get_corpusbank ()) corpus_desc with
+            match Corpus_desc.load_corpus_opt corpus_desc with
               | None -> error ~fct:"Grew.stat" "The corpus %s is not compiled" (Corpus_desc.get_id corpus_desc)
               | Some corpus -> 
                 let config = Corpus_desc.get_config corpus_desc in
