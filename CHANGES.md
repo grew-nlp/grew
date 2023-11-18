@@ -1,3 +1,7 @@
+# 1.14.0 (2023/11/11)
+  - add disjunction in Node definition (feature request: https://github.com/grew-nlp/grew/issues/47)
+  - Optimise request representation
+
 # 1.13.0 (2023/09/16)
   * follow libcaml-grew update
 
