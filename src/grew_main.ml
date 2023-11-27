@@ -18,7 +18,7 @@ open Grew_args
 (* ==================================================================================================== *)
 module Validation = struct
   type item = {
-    request: string list;
+    request: string list; (* JSON does not support multi line strings *)
     description: string;
     level: string;
   }
@@ -71,7 +71,7 @@ module Validation = struct
     { title; items; languages }
 
   (* -------------------------------------------------------------------------------- *)
-  let check ?dir modul_list (corpus_desc:Corpus_desc.t) =
+  let check modul_list (corpus_desc:Corpus_desc.t) =
     let corpus = Corpus_desc.build_corpus corpus_desc in
     let config = Corpus_desc.get_config corpus_desc in
 
@@ -121,12 +121,15 @@ module Validation = struct
         "modules", modules
       ] in
 
-    match dir with
-    | None -> printf "%s\n" (Yojson.Basic.pretty_to_string json)
-    | Some dir ->
-      let out_file = Filename.concat dir ((Corpus_desc.get_id corpus_desc) ^ ".json") in
-      CCIO.with_out out_file (fun out_ch -> fprintf out_ch "%s\n" (Yojson.Basic.pretty_to_string json))
-
+    let out_file = 
+      List.fold_left Filename.concat "" [
+        Corpus_desc.get_directory corpus_desc;
+        "_build_grew";
+        Corpus_desc.get_id corpus_desc;
+        "validation.json"
+      ] in
+      CCIO.with_out out_file 
+        (fun out_ch -> fprintf out_ch "%s\n" (Yojson.Basic.pretty_to_string json))
 end (* module Validation *)
 
 (* -------------------------------------------------------------------------------- *)
@@ -503,16 +506,12 @@ let valid () =
   let corpus_desc_list = match parse_input () with
   | Mono _ -> error ~fct:"Grew.valid" "valid mode requires multi-corpora input data"
   | Multi l -> l in
-  match !Grew_args.output_data with
-    | None -> error ~fct:"valid" "an output directory is required (use -o option)"
-    | Some dir ->
-      ensure_dir dir;
-      let validator_list = List.map Validation.load_json !Grew_args.requests in
-      List.iter
-        (fun corpus_desc ->
-          if not !quiet then printf "%s\n" (Corpus_desc.get_id corpus_desc);
-          Validation.check ~dir validator_list corpus_desc
-        ) corpus_desc_list
+  let validator_list = List.map Validation.load_json !Grew_args.requests in
+    List.iter
+      (fun corpus_desc ->
+        if not !quiet then printf "%s\n" (Corpus_desc.get_id corpus_desc);
+        Validation.check validator_list corpus_desc
+      ) corpus_desc_list
 
 (* -------------------------------------------------------------------------------- *)
 let _ =
