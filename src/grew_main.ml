@@ -14,6 +14,7 @@ open Grewlib
 
 open Grew_cli_utils
 open Grew_args
+open Grew_status
 
 (* ==================================================================================================== *)
 module Validation = struct
@@ -136,7 +137,6 @@ end (* module Validation *)
 type input =
   | Multi of Corpus_desc.t list
   | Mono of Corpus.t
-
 
 let parse_input () =
   let config = !Grew_args.config in
@@ -527,7 +527,8 @@ let _ =
   | Grew_args.Compile -> handle compile ()
   | Grew_args.Clean -> handle clean ()
   | Grew_args.Count-> handle count ()
-  | Grew_args.Stat-> handle stat ()
-  | Grew_args.Valid-> handle valid ()
+  | Grew_args.Stat -> handle stat ()
+  | Grew_args.Valid -> handle valid ()
+  | Grew_args.Status -> handle dump_status ()
   | Grew_args.Test -> failwith "No test defined"
 

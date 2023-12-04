@@ -16,7 +16,7 @@ open Grew_cli_utils
 
 module Grew_args = struct
 
-  type mode = Undefined | Transform | Grep | Count | Valid | Stat | Compile | Clean | Test
+  type mode = Undefined | Transform | Grep | Count | Valid | Stat | Compile | Clean | Status | Test
   let mode = ref Undefined
 
   let grs = ref None
@@ -31,6 +31,8 @@ module Grew_args = struct
   let timeout = ref None
   let (requests : string list ref) = ref []
   let html = ref false
+
+  let corpusbank = ref (Sys.getenv_opt "CORPUSBANK")
 
   let (clustering : string list ref) = ref []
 
@@ -129,6 +131,7 @@ module Grew_args = struct
     | "-dep_dir" :: dir :: args -> dep_dir := Some dir; loop args
 
     | "-config" :: value :: args -> config := handle (fun () -> Conll_config.build value) (); loop args
+    | "-corpusbank" :: value :: args -> corpusbank := Some value; loop args
 
     | "-rff" :: value :: args -> config := Conll_config.remove_from_feats value !config; loop args
 
@@ -146,6 +149,7 @@ module Grew_args = struct
     | _ :: "stat" :: args -> mode := Stat; loop args
     | _ :: "compile" :: args -> mode := Compile; loop args
     | _ :: "clean" :: args -> mode := Clean; loop args
+    | _ :: "status" :: args -> mode := Status; loop args
     | _ :: "version" :: _ ->
       begin
         match Build_info.V1.version () with
