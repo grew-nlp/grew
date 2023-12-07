@@ -12,68 +12,14 @@ open Conll
 
 open Grewlib
 
+open Grew_cli_global
 open Grew_cli_utils
 
 
 module Grew_args = struct
 
-  type mode = Undefined | Transform | Grep | Count | Valid | Stat | Compile | Clean | Status | Build | Test
-  let mode = ref Undefined
 
-  let grs = ref None
-  let dep_dir = ref None
 
-  type output = Conll of  Conll_columns.t | Dot | Json | Multi_json | Tsv
-  let output = ref (Conll Conll_columns.default)
-
-  let (input_data : string list ref) = ref []
-  let (output_data : string option ref) = ref None
-  let strat = ref "main"
-  let timeout = ref None
-  let (requests : string list ref) = ref []
-  let html = ref false
-
-  let corpusbank = ref (Sys.getenv_opt "CORPUSBANK")
-
-  let (clustering : string list ref) = ref []
-
-  let config = ref (Conll_config.build "ud")  (* "ud" is used as default value. *)
-
-  let grew_match_server = ref None
-  let force = ref false
-
-  (* -------------------------------------------------------------------------------- *)
-  type input =
-    | Multi of Corpus_desc.t list
-    | Mono of Corpus.t
-
-  let parse_input () =
-    let config = !config in
-    match !input_data with
-    | [] -> Mono (Corpus.from_stdin ~config ())
-    | l -> 
-        try Multi (CCList.flat_map Corpus_desc.load_json !input_data)
-        with Grewlib.Error _ ->
-          (* TODO add specific error for compile/ clean *)
-          match l with
-          | [one] ->
-            begin
-              try
-                match Unix.stat one with
-                | { Unix.st_kind = Unix.S_DIR; _ } -> Mono (Corpus.from_dir ~config one)
-                | _ -> Mono (Corpus.from_file ~config one)
-              with Unix.Unix_error _ -> error ~fct:"Grew.parse_input" "File not found `%s`" one
-            end
-          | files ->
-            let sub_corpora =
-              List.fold_left
-                (fun acc file ->
-                   try
-                     let subcorpus = Corpus.from_file ~config file in
-                     subcorpus :: acc
-                   with Unix.Unix_error _ -> error ~fct:"Grew.parse_input" "File not found `%s`" file
-                ) [] files in
-            Mono (Corpus.merge sub_corpora)
 
 
 
@@ -161,7 +107,6 @@ module Grew_args = struct
     | "-tsv" :: args -> output := Tsv; loop args
     | "-multi_json" :: args -> output := Multi_json; loop args
 
-    | "-grew_match_server" :: dir :: args -> grew_match_server := Some dir; loop args
     | "-force" :: args -> force := true; loop args
 
     | "-safe_commands" :: args -> Grewlib.set_safe_commands true; loop args

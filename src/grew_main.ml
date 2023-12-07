@@ -12,8 +12,10 @@ open Printf
 open Conll
 open Grewlib
 
+open Grew_cli_global
 open Grew_cli_utils
 open Grew_args
+open Grew_build
 open Grew_status
 
 (* ==================================================================================================== *)
@@ -135,29 +137,29 @@ end (* module Validation *)
 
 (* -------------------------------------------------------------------------------- *)
 let transform () =
-  let config = !Grew_args.config in
-  let grs = match !Grew_args.grs with
+  let config = !Grew_cli_global.config in
+  let grs = match !Grew_cli_global.grs with
     | None -> Grs.empty
     | Some file -> Grs.load ~config file in
 
-  let corpus = match Grew_args.parse_input () with
+  let corpus = match Input.parse () with
   | Mono c -> c
   | Multi _ -> error ~fct:"Grew.transform" "transform mode cannot be used with multi-corpora input data" in
 
   let len = Corpus.size corpus in
 
-  let out_ch = match !Grew_args.output_data with
+  let out_ch = match !Grew_cli_global.output_data with
     | Some output_file -> open_out output_file
     | None -> stdout in
 
-  let (next_graph, final) = match !Grew_args.output with
-    | Grew_args.Conll columns ->
+  let (next_graph, final) = match !Grew_cli_global.output with
+    | Conll columns ->
       fprintf out_ch "%s\n" (Conll_columns.to_string columns);
       (
         (fun graph -> fprintf out_ch "%s\n" (graph |> Graph.to_json |> Conll.of_json |> Conll.to_string ~config ~columns)),
         (fun () -> ())
       )
-    | Grew_args.Dot ->
+    | Dot ->
       let flag = ref false in
       let buff = Buffer.create 32 in
       (
@@ -167,7 +169,7 @@ let transform () =
           else (flag := true; bprintf buff "%s" (Graph.to_dot ~config graph))),
         (fun () -> fprintf out_ch "%s\n" (Buffer.contents buff))
       )
-    | Grew_args.Json ->
+    | Json ->
       let data = ref [] in
       (
         (fun graph -> data := (graph |> Graph.to_json) :: !data),
@@ -177,12 +179,12 @@ let transform () =
             | _ -> `List (List.rev !data) in
           fprintf out_ch "%s\n" (Yojson.Basic.pretty_to_string json))
       )
-    | Grew_args.Multi_json ->
+    | Multi_json ->
       let data = ref [] in
         (
           (fun graph -> data := (graph |> Graph.to_json) :: !data),
           (fun () -> 
-            match (!Grew_args.output_data, !data) with
+            match (!Grew_cli_global.output_data, !data) with
               | (None,_) -> error ~fct:"Grew.transform" "-multi_json implies -o"
               | (Some out_file, l) ->
                 let base = match Filename.chop_suffix_opt ~suffix:".json" out_file with
@@ -199,26 +201,23 @@ let transform () =
   Corpus.iteri
     (fun index sent_id gr ->
       Counter.print index len sent_id;
-      match Rewrite.simple_rewrite ~config gr grs !Grew_args.strat with
+      match Rewrite.simple_rewrite ~config gr grs !Grew_cli_global.strat with
         | [one] -> next_graph one
         | l -> List.iteri (fun i graph -> next_graph (Graph.set_meta "sent_id" (sprintf "%s_%d" sent_id i) graph)) l
     ) corpus;
     Counter.finish ();
     final ();
-    match !Grew_args.output_data with
+    match !Grew_cli_global.output_data with
       | Some _ -> close_out out_ch
       | None -> ()
 
 let dep_counter = ref 0
 let json_of_matching ~config request sent_id graph matching =
   let dep_file =
-    match !Grew_args.dep_dir with
+    match !Grew_cli_global.dep_dir with
     | None -> None
     | Some dir ->
       let deco = Matching.build_deco request matching in
-      (* let id = sprintf "%s__%s"
-          name
-          (String.concat "_" (List.map2 (sprintf "%s:%s") pattern_ids graph_node_names)) in *)
     incr dep_counter;
       let id = sprintf "g_%05d" !dep_counter in
       let dep = Graph.to_dep ~config ~deco graph in
@@ -233,7 +232,7 @@ let json_of_matching ~config request sent_id graph matching =
       Some ("sent_id", `String sent_id);
       Some ("matching", Matching.to_json request graph matching);
       (
-        if !Grew_args.html
+        if !Grew_cli_global.html
         then 
           let deco = Matching.build_deco request matching in
           Some ("html", `String (Graph.to_sentence ~deco graph))
@@ -244,15 +243,15 @@ let json_of_matching ~config request sent_id graph matching =
   
 (* -------------------------------------------------------------------------------- *)
 let grep () =
-  match !Grew_args.requests with
+  match !Grew_cli_global.requests with
   | [request_file] ->
-    (match !Grew_args.dep_dir with
+    (match !Grew_cli_global.dep_dir with
     | None -> ()
     | Some d -> ignore (Sys.command (sprintf "mkdir -p %s" d)));
 
     let clustered_corpus ~config corpus =
       let request = Request.load ~config request_file in
-      let clustert_item2_list = List.map (Request.parse_cluster_item ~config request) !Grew_args.clustering in
+      let clustert_item2_list = List.map (Request.parse_cluster_item ~config request) !Grew_cli_global.clustering in
       Corpus.search
         ~config 
         [] 
@@ -263,8 +262,8 @@ let grep () =
         clustert_item2_list
         corpus in
 
-    let clustered = match Grew_args.parse_input () with
-      | Mono corpus -> clustered_corpus ~config:!Grew_args.config corpus
+    let clustered = match Input.parse () with
+      | Mono corpus -> clustered_corpus ~config:!Grew_cli_global.config corpus
       | Multi corpus_desc_list -> 
         Clustered.build_layer
         (fun corpus_desc ->
@@ -288,19 +287,19 @@ let grep () =
 
 (* -------------------------------------------------------------------------------- *)
 let compile () =
-  let corpus_desc_list = match Grew_args.parse_input () with
+  let corpus_desc_list = match Input.parse () with
   | Mono _ -> error ~fct:"Grew.compile" "compile mode requires multi-corpora input data"
   | Multi l -> l in
   List.iter
     (fun corpus_desc ->
       try
-      Corpus_desc.compile ~force:!Grew_args.force (* ?grew_match:!Grew_args.grew_match_server*) corpus_desc
+      Corpus_desc.compile ~force:!Grew_cli_global.force corpus_desc
       with Grewlib.Error msg -> Log.warning "--> %s skipped (%s)" (Corpus_desc.get_id corpus_desc) msg
     ) corpus_desc_list
 
 (* -------------------------------------------------------------------------------- *)
 let clean () =
-  let corpus_desc_list = match Grew_args.parse_input () with
+  let corpus_desc_list = match Input.parse () with
   | Mono _ -> error ~fct:"Grew.clean" "clean mode requires multi-corpora input data"
   | Multi l -> l in
   List.iter
@@ -315,15 +314,15 @@ let count () =
     Clustered.build_layer
     (fun file_request -> 
       let request = Request.load ~config file_request in
-      let clustert_item2_list = List.map (Request.parse_cluster_item ~config request) !Grew_args.clustering in
+      let clustert_item2_list = List.map (Request.parse_cluster_item ~config request) !Grew_cli_global.clustering in
       Corpus.search ~config 0 (fun _ _ _ x -> x+1) request clustert_item2_list corpus
     )
     (fun file_request -> Some file_request)
-    0 !Grew_args.requests in
+    0 !Grew_cli_global.requests in
 
-  let input = Grew_args.parse_input () in
+  let input = Input.parse () in
   let count_clustered = match input with
-    | Mono corpus -> clustered_corpus ~config:!Grew_args.config corpus
+    | Mono corpus -> clustered_corpus ~config:!Grew_cli_global.config corpus
     | Multi corpus_desc_list ->
     Clustered.build_layer
       (fun corpus_desc ->
@@ -334,12 +333,12 @@ let count () =
       )
       (fun corpus_desc -> Some (Corpus_desc.get_id corpus_desc))
       0 corpus_desc_list in
-  match (!Grew_args.output, input, !Grew_args.requests, !Grew_args.clustering) with
+  match (!Grew_cli_global.output, input, !Grew_cli_global.requests, !Grew_cli_global.clustering) with
 
     (* TSV + Multi + Several requests + No clustering *)
-    | (Grew_args.Tsv, Multi corpus_desc_list, _, []) ->
+    | (Tsv, Multi corpus_desc_list, _, []) ->
       printf "Corpus";
-      List.iter (fun p -> printf "\t%s" (p |> Filename.basename |> Filename.remove_extension)) !Grew_args.requests;
+      List.iter (fun p -> printf "\t%s" (p |> Filename.basename |> Filename.remove_extension)) !Grew_cli_global.requests;
       printf "\n";
       List.iter
         (fun corpus_desc -> 
@@ -348,12 +347,12 @@ let count () =
 
           List.iter
             (fun p -> printf "\t%d" (Clustered.get_opt 0 [Some corpus_id; Some p] count_clustered)
-            ) !Grew_args.requests;
+            ) !Grew_cli_global.requests;
           printf "\n";
         ) corpus_desc_list
 
     (* TSV + Multi + One request + One clustering   --> count each cluster in each corpus *)
-    | (Grew_args.Tsv, Multi corpus_desc_list, [pat], [_]) ->
+    | (Tsv, Multi corpus_desc_list, [pat], [_]) ->
       let all_keys = Clustered.get_all_keys 2 count_clustered in
         printf "Corpus";
         List.iter (fun k -> printf "\t%s" (CCOption.map_or ~default:"__undefined__" CCFun.id k)) all_keys;
@@ -370,7 +369,7 @@ let count () =
         ) corpus_desc_list;
 
      (* TSV + Mono + Several requests + No clustering *)
-     | (Grew_args.Tsv, Mono _, _, []) ->
+     | (Tsv, Mono _, _, []) ->
       let req_ids = Clustered.get_all_keys 0 count_clustered in
       List.iter 
         (fun req_id -> printf "%s\t%d\n%!"
@@ -379,7 +378,7 @@ let count () =
         ) req_ids
 
      (* TSV + Mono + Several requests + One clustering *)
-     | (Grew_args.Tsv, Mono _, _, [_]) ->
+     | (Tsv, Mono _, _, [_]) ->
       let req_ids = Clustered.get_all_keys 0 count_clustered in
       let clust_values = Clustered.get_all_keys 1 count_clustered in
       printf "Request\t%s\n" (String.concat "\t" (List.map (CCOption.get_or ~default: "__undefined__") clust_values));
@@ -390,7 +389,7 @@ let count () =
         ) req_ids
 
       (* TSV + Mono + One request + Two clusterings *)
-     | (Grew_args.Tsv, Mono _, [_], [_; _]) ->
+     | (Tsv, Mono _, [_], [_; _]) ->
       let req_id = List.hd (Clustered.get_all_keys 0 count_clustered) in
       let clust_values_1 = Clustered.get_all_keys 1 count_clustered in
       let clust_values_2 = Clustered.get_all_keys 2 count_clustered in
@@ -401,7 +400,7 @@ let count () =
           (String.concat "\t" (List.map (fun v2 -> string_of_int (Clustered.get_opt 0 [req_id; v1; v2] count_clustered)) clust_values_2))
         ) clust_values_1
 
-    | (Grew_args.Tsv, _, _, _) -> 
+    | (Tsv, _, _, _) -> 
           Log.warning 
           "The `tsv` ouput is not available with the given arguments.
          See https://grew.fr/usage/cli/#count for more details."
@@ -418,10 +417,10 @@ let count () =
 
 (* -------------------------------------------------------------------------------- *)
 let stat () =
-  let corpus_desc_list = match Grew_args.parse_input () with
+  let corpus_desc_list = match Input.parse () with
   | Mono _ -> error ~fct:"Grew.stat" "stat mode requires multi-corpora input data"
   | Multi l -> l in
-  match !Grew_args.requests with
+  match !Grew_cli_global.requests with
     | [] -> Log.warning "No request given (expected one json file with requests)"
     | _::_::_ -> Log.warning "Too much requests given (expected one json file with requests)"
     | [one] ->
@@ -466,16 +465,16 @@ let stat () =
         ("stats", stats);
         ("ratio", ratio);
       ] in
-      match !Grew_args.output_data with
+      match !Grew_cli_global.output_data with
        | None -> printf "%s\n" (Yojson.Basic.pretty_to_string final_json)
        | Some f -> Yojson.Basic.to_file f final_json
 
 (* -------------------------------------------------------------------------------- *)
 let valid () =
-  let corpus_desc_list = match Grew_args.parse_input () with
+  let corpus_desc_list = match Input.parse () with
   | Mono _ -> error ~fct:"Grew.valid" "valid mode requires multi-corpora input data"
   | Multi l -> l in
-  let validator_list = List.map Validation.load_json !Grew_args.requests in
+  let validator_list = List.map Validation.load_json !Grew_cli_global.requests in
     List.iter
       (fun corpus_desc ->
         if not !quiet then printf "%s\n" (Corpus_desc.get_id corpus_desc);
@@ -489,16 +488,16 @@ let _ =
   (* parsing command line args *)
   Grew_args.parse ();
 
-  match !Grew_args.mode with
-  | Grew_args.Undefined -> ()
-  | Grew_args.Transform -> handle transform ()
-  | Grew_args.Grep -> handle grep ()
-  | Grew_args.Compile -> handle compile ()
-  | Grew_args.Clean -> handle clean ()
-  | Grew_args.Count-> handle count ()
-  | Grew_args.Stat -> handle stat ()
-  | Grew_args.Valid -> handle valid ()
-  | Grew_args.Status -> handle dump_status ()
-  | Grew_args.Build -> handle build ()
-  | Grew_args.Test -> failwith "No test defined"
+  match !Grew_cli_global.mode with
+  | Undefined -> ()
+  | Transform -> handle transform ()
+  | Grep -> handle grep ()
+  | Compile -> handle compile ()
+  | Clean -> handle clean ()
+  | Count-> handle count ()
+  | Stat -> handle stat ()
+  | Valid -> handle valid ()
+  | Status -> handle dump_status ()
+  | Build -> handle build ()
+  | Test -> failwith "No test defined"
 

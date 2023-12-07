@@ -12,8 +12,7 @@ open Printf
 open Conll
 open Grewlib
 
-let quiet = ref false
-let verbose = ref false
+open Grew_cli_global
 
 (* ==================================================================================================== *)
 module Log = struct
@@ -29,6 +28,10 @@ module Log = struct
     exit 1
 
   let fail message = Printf.ksprintf fail_ message
+
+  let green x = Printf.ksprintf (ANSITerminal.printf [ANSITerminal.green] "%s") x
+  let red x = Printf.ksprintf (ANSITerminal.printf [ANSITerminal.red] "%s") x
+  let magenta x = Printf.ksprintf (ANSITerminal.printf [ANSITerminal.magenta] "%s") x
 end
 
 (* ==================================================================================================== *)
@@ -59,16 +62,6 @@ let handle fct () =
   | Yojson.Json_error msg ->       Log.fail "%s" (sprintf "Json error: %s" msg)
   | Grewlib.Bug msg ->             Log.fail "%s" (sprintf "Grewlib.bug, please report: %s" msg)
   | exc ->                         Log.fail "%s" (sprintf "Uncaught exception, please report: %s" (Printexc.to_string exc))
-
-(* ---------------------------------------------------------------------------------------------------- *)
-let ensure_dir dir =
-  try (* catch if dir does not exist *)
-    match Unix.stat dir with
-    | { Unix.st_kind = Unix.S_DIR; _ } -> ()
-    | _ ->  error "path `%s` already exists and is not directory" dir
-  with Unix.Unix_error (Unix.ENOENT,_,_) -> (* dir does not exist -> try to create it *)
-    try Unix.mkdir dir 0o755
-    with exc -> error "cannot create dir %s (%s)" dir (Printexc.to_string exc)
 
 (* ================================================================================ *)
 module Counter = struct
@@ -111,3 +104,85 @@ module Stat = struct
     let sum = float (List.fold_left (+) 0 l) in
     List.map (fun i -> `Float ((Float.round (10000. *. float i /. sum)) /. 100.)) l
 end (* module Stat *)
+
+(* ==================================================================================================== *)
+module Input = struct
+  type t =
+    | Multi of Corpus_desc.t list
+    | Mono of Corpus.t
+
+  let parse () =
+    let config = !config in
+    match !input_data with
+    | [] -> Mono (Corpus.from_stdin ~config ())
+    | l ->
+      try Multi (CCList.flat_map Corpus_desc.load_json !input_data)
+      with Grewlib.Error _ ->
+        (* TODO add specific error for compile/ clean *)
+        match l with
+        | [one] ->
+          begin
+            try
+              match Unix.stat one with
+              | { Unix.st_kind = Unix.S_DIR; _ } -> Mono (Corpus.from_dir ~config one)
+              | _ -> Mono (Corpus.from_file ~config one)
+            with Unix.Unix_error _ -> error ~fct:"[Input.parse]" "File not found `%s`" one
+          end
+        | files ->
+          let sub_corpora =
+            List.fold_left
+              (fun acc file ->
+                 try
+                   let subcorpus = Corpus.from_file ~config file in
+                   subcorpus :: acc
+                 with Unix.Unix_error _ -> error ~fct:"[Input.parse]" "File not found `%s`" file
+              ) [] files in
+          Mono (Corpus.merge sub_corpora)
+end
+
+(* ==================================================================================================== *)
+module Corpusbank = struct
+  let desc_map = ref None
+
+  (* lazy loading of corpus desc files *)
+  let get_desc_map () =
+    match !Grew_cli_global.corpusbank with
+    | None -> error "%s" "No corpusbank defined"
+    | Some corpusbank -> 
+    match !desc_map with
+    | Some data -> data
+    | None ->
+      try
+        let all_files = Sys.readdir corpusbank in
+        let data = Array.fold_left
+          (fun acc file ->
+            if Filename.extension file = ".json"
+            then
+              begin
+                let descs = Corpus_desc.load_json (Filename.concat corpusbank file) in
+                List.fold_left
+                  (fun acc2 desc ->
+                    let id = Corpus_desc.get_id desc in
+                    if String_map.mem id acc2
+                    then failwith (sprintf "Duplicate definition of corpus_id `%s`" id)
+                    else String_map.add id desc acc2
+                  ) acc descs
+            end
+            else acc
+          ) String_map.empty all_files in
+        desc_map := Some data;
+        data
+      with Sys_error _ -> failwith (sprintf "corpusbank directory `%s` not found:" corpusbank)
+
+  let get_corpus_desc_opt corpus_id = String_map.find_opt corpus_id (get_desc_map ())
+end
+
+(* ==================================================================================================== *)
+module File = struct
+  (* get the last modif time of a [file]. Returns [min_float] if the file does not exist *)
+  let last_modif file =
+    try
+      let stat = Unix.stat file in
+      stat.Unix.st_mtime
+    with Unix.Unix_error _ -> Float.min_float
+end
