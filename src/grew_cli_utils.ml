@@ -50,6 +50,8 @@ let error_ ?file ?line ?fct ?data msg =
 
 let error ?file ?line ?fct ?data = Printf.ksprintf (error_ ?file ?line ?fct ?data)
 
+let bug_ msg = Log.fail "%s" msg 
+let bug msg = Printf.ksprintf bug_ msg
 (* -------------------------------------------------------------------------------- *)
 
 let handle fct () =
@@ -147,7 +149,7 @@ module Corpusbank = struct
   (* lazy loading of corpus desc files *)
   let get_desc_map () =
     match !Grew_cli_global.corpusbank with
-    | None -> error "%s" "No corpusbank defined"
+    | None -> error "No corpusbank defined"
     | Some corpusbank -> 
     match !desc_map with
     | Some data -> data
@@ -164,7 +166,7 @@ module Corpusbank = struct
                   (fun acc2 desc ->
                     let id = Corpus_desc.get_id desc in
                     if String_map.mem id acc2
-                    then failwith (sprintf "Duplicate definition of corpus_id `%s`" id)
+                    then error "Duplicate definition of corpus_id `%s`" id
                     else String_map.add id desc acc2
                   ) acc descs
             end
@@ -172,7 +174,7 @@ module Corpusbank = struct
           ) String_map.empty all_files in
         desc_map := Some data;
         data
-      with Sys_error _ -> failwith (sprintf "corpusbank directory `%s` not found:" corpusbank)
+      with Sys_error _ -> error "corpusbank directory `%s` not found" corpusbank
 
   let get_corpus_desc_opt corpus_id = String_map.find_opt corpus_id (get_desc_map ())
 end

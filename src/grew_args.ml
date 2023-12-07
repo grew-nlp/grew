@@ -124,7 +124,7 @@ module Grew_args = struct
 
   let parse () =
     match Array.to_list Sys.argv with
-    | [] -> failwith "bug: Empty argv"
+    | [] -> bug "Empty Sys.argv"
     | _ :: "gui" :: _ -> Printf.printf "The gui mode is not longer supported, see http://transform.grew.fr"
     | _ :: "transform" :: args -> mode := Transform; loop args
     | _ :: "grep" :: args -> mode := Grep; loop args
@@ -155,5 +155,5 @@ module Grew_args = struct
     | _ :: "help" :: "help" :: _ -> Printf.printf "Such a complex feature is still in development!\n"
     | [_] -> help ()
     | _ :: "help" :: _ -> help ()
-    | _ :: cmd :: _ -> Log.fail "Unknown command \"%s\"" cmd
+    | _ :: cmd :: _ -> error "Unknown command \"%s\"" cmd
 end

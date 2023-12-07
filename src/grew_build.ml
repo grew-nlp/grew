@@ -11,7 +11,7 @@ let transform config columns grs strat input_file out_file =
     (* Counter.print index len sent_id; *)
     match Rewrite.simple_rewrite ~config gr grs strat with
       | [graph] -> fprintf out_ch "%s\n" (graph |> Graph.to_json |> Conll.of_json |> Conll.to_string ~config ~columns)
-      | _ -> failwith "Not one output!!!"
+      | _ -> error "More than one normal form (input_file=%s)" input_file
   ) input_corpus;
   (* Counter.finish (); *)
   (* final (); *)
@@ -37,7 +37,7 @@ let rec build_derived corpus_desc =
           | true ->
             match Sys.is_directory directory with
             | true -> ()
-            | false -> failwith "a file with the same name exists!" in
+            | false -> error "Cannot build directory `%s` for corpus `%s` (a file with the same name exists!)" directory corpus_id in
 
         (* WARNING: suppose that the grs used the target corpus config!!! *)
         let config = Corpus_desc.get_config corpus_desc in

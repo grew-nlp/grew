@@ -486,18 +486,19 @@ let _ =
   Printexc.record_backtrace true;
 
   (* parsing command line args *)
-  Grew_args.parse ();
+  handle Grew_args.parse ();
 
-  match !Grew_cli_global.mode with
+  let run () = match !Grew_cli_global.mode with
   | Undefined -> ()
-  | Transform -> handle transform ()
-  | Grep -> handle grep ()
-  | Compile -> handle compile ()
-  | Clean -> handle clean ()
-  | Count-> handle count ()
-  | Stat -> handle stat ()
-  | Valid -> handle valid ()
-  | Status -> handle dump_status ()
-  | Build -> handle build ()
-  | Test -> failwith "No test defined"
+  | Transform -> transform ()
+  | Grep -> grep ()
+  | Compile -> compile ()
+  | Clean -> clean ()
+  | Count-> count ()
+  | Stat -> stat ()
+  | Valid -> valid ()
+  | Status -> dump_status ()
+  | Build -> build ()
+  | Test -> error "No test defined"
 
+  in handle run ()

@@ -35,11 +35,13 @@ let compute_status () =
     match Corpusbank.get_corpus_desc_opt corpus_id with
     | None -> String_map.add corpus_id (Error (sprintf "No desc found for `%s`" corpus_id)) acc
     | Some corpus_desc ->
-    match String_map.find_opt corpus_id acc with
-    | Some _ -> acc (* already computed in a previous recursive call *)
-    | None ->
+      match String_map.find_opt corpus_id acc with
+      | Some _ -> acc (* already computed in a previous recursive call *)
+      | None ->
         match (Corpus_desc.get_field_opt "src" corpus_desc, Corpus_desc.get_field_opt "grs" corpus_desc) with
         | (None, None) -> String_map.add corpus_id Native acc
+        | (None, Some _) -> error "corpus `%s` is described with a `grs` but without `src`" corpus_id
+        | (Some _, None) -> error "corpus `%s` is described with a `src` but without `grs`" corpus_id
         | (Some src_corpus_id, Some grs_file) ->
           let new_acc = update src_corpus_id acc in
           begin
@@ -71,7 +73,7 @@ let compute_status () =
                     String_map.add corpus_id (Need_rebuild (msg_list @ unwanted_msg_list)) acc
                 with Grewlib.Error msg -> String_map.add corpus_id (Error (sprintf "For corpus_id `%s`, %s" corpus_id msg)) acc
           end
-    | _ -> failwith "type error" in
+  in
 
     String_map.fold (
       fun corpus_id _ acc -> update corpus_id acc
