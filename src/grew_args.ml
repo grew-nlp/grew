@@ -14,9 +14,10 @@ open Grewlib
 
 open Grew_cli_utils
 
+
 module Grew_args = struct
 
-  type mode = Undefined | Transform | Grep | Count | Valid | Stat | Compile | Clean | Status | Test
+  type mode = Undefined | Transform | Grep | Count | Valid | Stat | Compile | Clean | Status | Build | Test
   let mode = ref Undefined
 
   let grs = ref None
@@ -40,6 +41,43 @@ module Grew_args = struct
 
   let grew_match_server = ref None
   let force = ref false
+
+  (* -------------------------------------------------------------------------------- *)
+  type input =
+    | Multi of Corpus_desc.t list
+    | Mono of Corpus.t
+
+  let parse_input () =
+    let config = !config in
+    match !input_data with
+    | [] -> Mono (Corpus.from_stdin ~config ())
+    | l -> 
+        try Multi (CCList.flat_map Corpus_desc.load_json !input_data)
+        with Grewlib.Error _ ->
+          (* TODO add specific error for compile/ clean *)
+          match l with
+          | [one] ->
+            begin
+              try
+                match Unix.stat one with
+                | { Unix.st_kind = Unix.S_DIR; _ } -> Mono (Corpus.from_dir ~config one)
+                | _ -> Mono (Corpus.from_file ~config one)
+              with Unix.Unix_error _ -> error ~fct:"Grew.parse_input" "File not found `%s`" one
+            end
+          | files ->
+            let sub_corpora =
+              List.fold_left
+                (fun acc file ->
+                   try
+                     let subcorpus = Corpus.from_file ~config file in
+                     subcorpus :: acc
+                   with Unix.Unix_error _ -> error ~fct:"Grew.parse_input" "File not found `%s`" file
+                ) [] files in
+            Mono (Corpus.merge sub_corpora)
+
+
+
+
 
   let help () = List.iter (fun x -> Printf.printf "%s\n%!" x) [
       "----------------------------------------------------------";
@@ -113,6 +151,7 @@ module Grew_args = struct
     | "-max_rules" :: i :: args -> Rewrite.set_max_rules (int_of_string i); loop args
 
     | "-quiet" :: args -> quiet := true; loop args
+    | "-verbose" :: args -> verbose := true; loop args
 
     | "-cupt" :: args -> output := Conll (Conll_columns.cupt); loop args
     | "-semcor" :: args -> output := Conll (Conll_columns.frsemcor); loop args
@@ -150,6 +189,7 @@ module Grew_args = struct
     | _ :: "compile" :: args -> mode := Compile; loop args
     | _ :: "clean" :: args -> mode := Clean; loop args
     | _ :: "status" :: args -> mode := Status; loop args
+    | _ :: "build" :: args -> mode := Build; loop args
     | _ :: "version" :: _ ->
       begin
         match Build_info.V1.version () with

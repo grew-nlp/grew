@@ -13,6 +13,7 @@ open Conll
 open Grewlib
 
 let quiet = ref false
+let verbose = ref false
 
 (* ==================================================================================================== *)
 module Log = struct
@@ -52,7 +53,7 @@ let handle fct () =
   try fct ()
   with
   | Error json ->                  Log.fail "%s" (Yojson.Basic.pretty_to_string json)
-  | Conll_error json ->           Log.fail "%s" (Yojson.Basic.pretty_to_string json)
+  | Conll_error json ->            Log.fail "%s" (Yojson.Basic.pretty_to_string json)
   | Grewlib.Error msg ->           Log.fail "%s" msg
   | Sys_error msg ->               Log.fail "%s" (sprintf "System error: %s" msg)
   | Yojson.Json_error msg ->       Log.fail "%s" (sprintf "Json error: %s" msg)

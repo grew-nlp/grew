@@ -134,46 +134,13 @@ module Validation = struct
 end (* module Validation *)
 
 (* -------------------------------------------------------------------------------- *)
-type input =
-  | Multi of Corpus_desc.t list
-  | Mono of Corpus.t
-
-let parse_input () =
-  let config = !Grew_args.config in
-  match !Grew_args.input_data with
-  | [] -> Mono (Corpus.from_stdin ~config ())
-  | l -> 
-      try Multi (CCList.flat_map Corpus_desc.load_json !Grew_args.input_data)
-      with Grewlib.Error _ ->
-        (* TODO add specific error for compile/ clean *)
-        match l with
-        | [one] ->
-          begin
-            try
-              match Unix.stat one with
-              | { Unix.st_kind = Unix.S_DIR; _ } -> Mono (Corpus.from_dir ~config one)
-              | _ -> Mono (Corpus.from_file ~config one)
-            with Unix.Unix_error _ -> error ~fct:"Grew.parse_input" "File not found `%s`" one
-          end
-        | files ->
-          let sub_corpora =
-            List.fold_left
-              (fun acc file ->
-                 try
-                   let subcorpus = Corpus.from_file ~config file in
-                   subcorpus :: acc
-                 with Unix.Unix_error _ -> error ~fct:"Grew.parse_input" "File not found `%s`" file
-              ) [] files in
-          Mono (Corpus.merge sub_corpora)
-
-(* -------------------------------------------------------------------------------- *)
 let transform () =
   let config = !Grew_args.config in
   let grs = match !Grew_args.grs with
     | None -> Grs.empty
     | Some file -> Grs.load ~config file in
 
-  let corpus = match parse_input () with
+  let corpus = match Grew_args.parse_input () with
   | Mono c -> c
   | Multi _ -> error ~fct:"Grew.transform" "transform mode cannot be used with multi-corpora input data" in
 
@@ -296,7 +263,7 @@ let grep () =
         clustert_item2_list
         corpus in
 
-    let clustered = match parse_input () with
+    let clustered = match Grew_args.parse_input () with
       | Mono corpus -> clustered_corpus ~config:!Grew_args.config corpus
       | Multi corpus_desc_list -> 
         Clustered.build_layer
@@ -321,17 +288,19 @@ let grep () =
 
 (* -------------------------------------------------------------------------------- *)
 let compile () =
-  let corpus_desc_list = match parse_input () with
+  let corpus_desc_list = match Grew_args.parse_input () with
   | Mono _ -> error ~fct:"Grew.compile" "compile mode requires multi-corpora input data"
   | Multi l -> l in
   List.iter
     (fun corpus_desc ->
+      try
       Corpus_desc.compile ~force:!Grew_args.force (* ?grew_match:!Grew_args.grew_match_server*) corpus_desc
+      with Grewlib.Error msg -> Log.warning "--> %s skipped (%s)" (Corpus_desc.get_id corpus_desc) msg
     ) corpus_desc_list
 
 (* -------------------------------------------------------------------------------- *)
 let clean () =
-  let corpus_desc_list = match parse_input () with
+  let corpus_desc_list = match Grew_args.parse_input () with
   | Mono _ -> error ~fct:"Grew.clean" "clean mode requires multi-corpora input data"
   | Multi l -> l in
   List.iter
@@ -352,7 +321,7 @@ let count () =
     (fun file_request -> Some file_request)
     0 !Grew_args.requests in
 
-  let input = parse_input () in
+  let input = Grew_args.parse_input () in
   let count_clustered = match input with
     | Mono corpus -> clustered_corpus ~config:!Grew_args.config corpus
     | Multi corpus_desc_list ->
@@ -449,7 +418,7 @@ let count () =
 
 (* -------------------------------------------------------------------------------- *)
 let stat () =
-  let corpus_desc_list = match parse_input () with
+  let corpus_desc_list = match Grew_args.parse_input () with
   | Mono _ -> error ~fct:"Grew.stat" "stat mode requires multi-corpora input data"
   | Multi l -> l in
   match !Grew_args.requests with
@@ -503,7 +472,7 @@ let stat () =
 
 (* -------------------------------------------------------------------------------- *)
 let valid () =
-  let corpus_desc_list = match parse_input () with
+  let corpus_desc_list = match Grew_args.parse_input () with
   | Mono _ -> error ~fct:"Grew.valid" "valid mode requires multi-corpora input data"
   | Multi l -> l in
   let validator_list = List.map Validation.load_json !Grew_args.requests in
@@ -530,5 +499,6 @@ let _ =
   | Grew_args.Stat -> handle stat ()
   | Grew_args.Valid -> handle valid ()
   | Grew_args.Status -> handle dump_status ()
+  | Grew_args.Build -> handle build ()
   | Grew_args.Test -> failwith "No test defined"
 

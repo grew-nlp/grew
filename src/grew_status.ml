@@ -137,10 +137,10 @@ let dump_status () =
         red "%s --> %s\n" corpus_id msg
       | Native ->
         incr ok_cpt;
-        green "%s --> OK (native)\n" corpus_id
+        if !verbose then green "%s --> OK (native)\n" corpus_id
       | Uptodate ->
         incr ok_cpt;
-        green "%s --> OK (derived)\n" corpus_id
+        if !verbose then green "%s --> OK (derived)\n" corpus_id
   ) status;
   printf "----------------------------------\n";
   printf "total:      %d\n" (!ok_cpt + !rebuild_cpt + !error_cpt);
@@ -149,7 +149,7 @@ let dump_status () =
   red "error:      %d\n" !error_cpt;
   printf "----------------------------------\n"
 
-  let transform config columns grs strat input_file out_file = 
+  let transform config columns grs strat input_file out_file =
     let input_corpus = Corpus.from_file ~config input_file in
     let out_ch = open_out out_file in
     Corpus.iteri
@@ -163,10 +163,8 @@ let dump_status () =
     (* final (); *)
       close_out out_ch
 
-  let rec build_derived corpus_id =
-    match get_corpus_desc_opt corpus_id with
-    | None -> red "ERROR: no description for corpus_id: `%s`" corpus_id
-    | Some corpus_desc ->
+  let rec build_derived corpus_desc =
+    let corpus_id = Corpus_desc.get_id corpus_desc in
       let columns = Corpus_desc.get_field_opt "columns" corpus_desc |> CCOption.map_or Conll_columns.build ~default:Conll_columns.default in
       match (Corpus_desc.get_field_opt "src" corpus_desc, Corpus_desc.get_field_opt "grs" corpus_desc, Corpus_desc.get_field_opt "strat" corpus_desc) with
       | (None, _, _) -> () (* this is a native corpus *)
@@ -176,7 +174,7 @@ let dump_status () =
         | None -> red "ERROR: no description for src_corpus_id: `%s`" src_corpus_id
         | Some src_corpus_desc -> 
           (* first, recursively build until native corpus *)
-          let () = build_derived src_corpus_id in
+          let () = build_derived src_corpus_desc in
   
           let directory = Corpus_desc.get_directory corpus_desc in
           let () = 
@@ -217,3 +215,8 @@ let dump_status () =
               Unix.unlink f
             ) !old_tar_files in
           ()
+
+  let build () = 
+    match Grew_args.parse_input () with
+    | Mono _ -> error ~fct:"grew build" "clean mode requires multi-corpora input data"
+    | Multi l -> List.iter build_derived l
