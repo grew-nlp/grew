@@ -1,3 +1,13 @@
+(***********************************************************************)
+(*    Grew - a Graph Rewriting tool dedicated to NLP applications      *)
+(*                                                                     *)
+(*    Copyright 2011-2023 Inria, Université de Lorraine                *)
+(*                                                                     *)
+(*    Webpage: https://grew.fr                                         *)
+(*    License: CeCILL (see LICENSE folder or "http://www.cecill.info") *)
+(*    Authors: see AUTHORS file                                        *)
+(***********************************************************************)
+
 open Printf
 open Conll
 open Grewlib
@@ -37,7 +47,7 @@ let rec build_derived corpus_desc =
           | true ->
             match Sys.is_directory directory with
             | true -> ()
-            | false -> error "Cannot build directory `%s` for corpus `%s` (a file with the same name exists!)" directory corpus_id in
+            | false -> error "Cannot build directory `%s` for corpus `%s` (a file with the same name exists!)" directory corp in
 
         (* WARNING: suppose that the grs used the target corpus config!!! *)
         let config = Corpus_desc.get_config corpus_desc in

@@ -1,3 +1,13 @@
+(***********************************************************************)
+(*    Grew - a Graph Rewriting tool dedicated to NLP applications      *)
+(*                                                                     *)
+(*    Copyright 2011-2023 Inria, Université de Lorraine                *)
+(*                                                                     *)
+(*    Webpage: https://grew.fr                                         *)
+(*    License: CeCILL (see LICENSE folder or "http://www.cecill.info") *)
+(*    Authors: see AUTHORS file                                        *)
+(***********************************************************************)
+
 open Conll
 
 let quiet = ref false
