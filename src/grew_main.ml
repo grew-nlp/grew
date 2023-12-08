@@ -97,11 +97,11 @@ module Validation = struct
                       (fun item ->
                         let grew_request =
                           try Request.parse ~config (String.concat " " item.request)
-                          with Grewlib.Error _msg -> (* TODO *)
+                          with Grewlib.Error msg ->
                             error
                               ~fct:"Validation.check"
                               ~data:(`String (String.concat " " item.request))
-                              "cannot parse request associated with desc: %s" item.description in
+                              "cannot parse request associated with desc: %s (%s)" item.description msg in
                         let count =
                           Corpus.fold_left (fun acc _ graph ->
                               acc + (List.length (Matching.search_request_in_graph ~config grew_request graph))
@@ -439,11 +439,11 @@ let stat () =
                       let request = 
                         (* NB: request should be reparsed for each corpora, because config may change *)
                         try Request.parse ~config (String.concat " " pat_desc.Stat.code)
-                        with Grewlib.Error _msg -> (* TODO *)
+                        with Grewlib.Error msg ->
                           error
                             ~fct:"Grew.stat"
                             ~data:(`String (String.concat " " pat_desc.Stat.code))
-                            "cannot parse request associated with desc: %s" pat_desc.Stat.desc in
+                            "cannot parse request associated with desc: %s (%s)" pat_desc.Stat.desc msg in
                       Corpus.fold_left 
                         (fun acc _ graph ->
                           acc + (List.length (Matching.search_request_in_graph ~config request graph))

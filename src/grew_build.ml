@@ -47,7 +47,7 @@ let rec build_derived corpus_desc =
           | true ->
             match Sys.is_directory directory with
             | true -> ()
-            | false -> error "Cannot build directory `%s` for corpus `%s` (a file with the same name exists!)" directory corp in
+            | false -> error "Cannot build directory `%s` for corpus `%s` (a file with the same name exists!)" directory corpus_id in
 
         (* WARNING: suppose that the grs used the target corpus config!!! *)
         let config = Corpus_desc.get_config corpus_desc in
