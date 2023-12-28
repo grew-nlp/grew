@@ -16,9 +16,9 @@ open Grew_cli_global
 
 (* ==================================================================================================== *)
 module Log = struct
-  let time_stamp () =
+  let now () =
     let gm = Unix.localtime (Unix.time ()) in
-    Printf.sprintf "%02d/%02d/%02d at %02d:%02d"
+    Printf.sprintf "%02d/%02d/%02d - %02d:%02d"
       (gm.Unix.tm_year - 100)
       (gm.Unix.tm_mon + 1)
       gm.Unix.tm_mday
@@ -196,4 +196,6 @@ module File = struct
       let stat = Unix.stat file in
       stat.Unix.st_mtime
     with Unix.Unix_error _ -> Float.min_float
+  
+  let concat_names l = List.fold_left Filename.concat "" l
 end

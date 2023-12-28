@@ -13,7 +13,7 @@ open Conll
 let quiet = ref false
 let verbose = ref false
 
-type mode = Undefined | Transform | Grep | Count | Valid | Valid_ud | Stat | Compile | Clean | Status | Build | Test
+type mode = Undefined | Transform | Grep | Count | Valid_sud | Valid_ud | Stat | Compile | Clean | Status | Build | Test
 let mode = ref Undefined
 
 let (grs: string option ref) = ref None

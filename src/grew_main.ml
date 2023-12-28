@@ -77,12 +77,7 @@ module Validation = struct
   let check modul_list (corpus_desc:Corpus_desc.t) =
     let corpus = Corpus_desc.build_corpus corpus_desc in
     let config = Corpus_desc.get_config corpus_desc in
-
-    let date =
-      let tm = Unix.localtime (Unix.time ()) in
-      sprintf "%d/%02d/%02d - %02d:%02d"
-        (tm.Unix.tm_year + 1900) (tm.Unix.tm_mon + 1) tm.Unix.tm_mday
-        tm.Unix.tm_hour tm.Unix.tm_min in
+    let corpus_id = Corpus_desc.get_id corpus_desc in
 
     let modules =
       `List
@@ -119,18 +114,12 @@ module Validation = struct
         ) in
 
     let json = `Assoc [
-        "corpus", `String (Corpus_desc.get_id corpus_desc);
-        "date", `String date;
+        "corpus", `String corpus_id;
+        "date", `String (Log.now ());
         "modules", modules
       ] in
 
-    let out_file = 
-      List.fold_left Filename.concat "" [
-        Corpus_desc.get_directory corpus_desc;
-        "_build_grew";
-        Corpus_desc.get_id corpus_desc;
-        "validation.json"
-      ] in
+    let out_file = File.concat_names [Corpus_desc.get_directory corpus_desc; "_build_grew"; corpus_id; "valid_sud.json"] in
       CCIO.with_out out_file 
         (fun out_ch -> fprintf out_ch "%s\n" (Yojson.Basic.pretty_to_string json))
 end (* module Validation *)
@@ -470,7 +459,7 @@ let stat () =
        | Some f -> Yojson.Basic.to_file f final_json
 
 (* -------------------------------------------------------------------------------- *)
-let valid () =
+let valid_sud () =
   let corpus_desc_list = match Input.parse () with
   | Mono _ -> error ~fct:"Grew.valid" "valid mode requires multi-corpora input data"
   | Multi l -> l in
@@ -495,7 +484,7 @@ let valid_ud () =
       | (_, None) -> Log.warning "No lang defined for corpus %s " corpus_id
       | (None, _) -> Log.warning "No config defined for corpus %s " corpus_id
       | (Some "ud", Some lang) ->
-        let valid_file = List.fold_left Filename.concat "" 
+        let valid_file = File.concat_names 
           [ Corpus_desc.get_directory corpus_desc; "_build_grew"; corpus_id; "valid_ud.txt"] in
         let valid_time = File.last_modif valid_file in
         let files = Corpus_desc.get_files corpus_desc in
@@ -505,7 +494,7 @@ let valid_ud () =
         else
           begin
             let out_ch = open_out valid_file in
-            Printf.fprintf out_ch "%s\n" (Log.time_stamp ());
+            Printf.fprintf out_ch "%s\n" (Log.now ());
             close_out out_ch;
             List.iter (fun file ->
               if not !quiet then printf "validate %s file of %s\n%!" (Filename.basename file) corpus_id;
@@ -534,7 +523,7 @@ let _ =
   | Clean -> clean ()
   | Count-> count ()
   | Stat -> stat ()
-  | Valid -> valid ()
+  | Valid_sud -> valid_sud ()
   | Valid_ud -> valid_ud ()
   | Status -> dump_status ()
   | Build -> build ()

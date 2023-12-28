@@ -129,13 +129,14 @@ module Grew_args = struct
     | _ :: "transform" :: args -> mode := Transform; loop args
     | _ :: "grep" :: args -> mode := Grep; loop args
     | _ :: "count" :: args -> mode := Count; loop args
-    | _ :: "valid" :: args -> mode := Valid; loop args
+    | _ :: "valid_sud" :: args -> mode := Valid_sud; loop args
     | _ :: "valid_ud" :: args -> mode := Valid_ud; loop args
     | _ :: "stat" :: args -> mode := Stat; loop args
     | _ :: "compile" :: args -> mode := Compile; loop args
     | _ :: "clean" :: args -> mode := Clean; loop args
     | _ :: "status" :: args -> mode := Status; loop args
     | _ :: "build" :: args -> mode := Build; loop args
+    | _ :: "valid" :: _ -> Printf.printf "The valid mode is deprecated. It is replaced by valid_sud"
     | _ :: "version" :: _ ->
       begin
         match Build_info.V1.version () with
