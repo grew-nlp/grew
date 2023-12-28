@@ -405,60 +405,6 @@ let count () =
       Printf.printf "%s\n" (Yojson.Basic.pretty_to_string json)
 
 (* -------------------------------------------------------------------------------- *)
-let stat () =
-  let corpus_desc_list = match Input.parse () with
-  | Mono _ -> error ~fct:"Grew.stat" "stat mode requires multi-corpora input data"
-  | Multi l -> l in
-  match !Grew_cli_global.requests with
-    | [] -> Log.warning "No request given (expected one json file with requests)"
-    | _::_::_ -> Log.warning "Too much requests given (expected one json file with requests)"
-    | [one] ->
-      let (pat_descs, json) = Stat.load_json one in
-      let bare_lines =
-        List.map
-          (fun corpus_desc ->
-            match Corpus_desc.load_corpus_opt corpus_desc with
-              | None -> error ~fct:"Grew.stat" "The corpus %s is not compiled" (Corpus_desc.get_id corpus_desc)
-              | Some corpus -> 
-                let config = Corpus_desc.get_config corpus_desc in
-                (
-                  Corpus_desc.get_id corpus_desc,
-                  List.map (
-                    fun pat_desc ->
-                      let request = 
-                        (* NB: request should be reparsed for each corpora, because config may change *)
-                        try Request.parse ~config (String.concat " " pat_desc.Stat.code)
-                        with Grewlib.Error msg ->
-                          error
-                            ~fct:"Grew.stat"
-                            ~data:(`String (String.concat " " pat_desc.Stat.code))
-                            "cannot parse request associated with desc: %s (%s)" pat_desc.Stat.desc msg in
-                      Corpus.fold_left 
-                        (fun acc _ graph ->
-                          acc + (List.length (Matching.search_request_in_graph ~config request graph))
-                        ) 0 corpus
-                  ) pat_descs
-                )
-          ) corpus_desc_list in
-
-      let stats = `List (
-         List.map (fun (desc, occs) -> `List (`String desc :: (List.map (fun i -> `Int i) occs))) bare_lines
-      ) in
-
-      let ratio = `List (
-        List.map (fun (desc, occs) -> `List (`String desc :: (Stat.compute_ratios occs))) bare_lines
-        ) in
-
-     let final_json = `Assoc [
-        ("requests", json);
-        ("stats", stats);
-        ("ratio", ratio);
-      ] in
-      match !Grew_cli_global.output_data with
-       | None -> printf "%s\n" (Yojson.Basic.pretty_to_string final_json)
-       | Some f -> Yojson.Basic.to_file f final_json
-
-(* -------------------------------------------------------------------------------- *)
 let valid_sud () =
   let corpus_desc_list = match Input.parse () with
   | Mono _ -> error ~fct:"Grew.valid" "valid mode requires multi-corpora input data"
@@ -522,7 +468,6 @@ let _ =
   | Compile -> compile ()
   | Clean -> clean ()
   | Count-> count ()
-  | Stat -> stat ()
   | Valid_sud -> valid_sud ()
   | Valid_ud -> valid_ud ()
   | Status -> dump_status ()

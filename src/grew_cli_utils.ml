@@ -86,37 +86,6 @@ module Counter = struct
 end (* module Counter *)
 
 (* ==================================================================================================== *)
-module Stat = struct
-  type pat_desc = {
-    id: string;
-    desc: string;
-    code: string list;
-  }
-
-  type t = pat_desc list
-
-  let load_json json_file =
-    let open Yojson.Basic.Util in
-
-    let json =
-      try Yojson.Basic.from_file json_file
-      with Yojson.Json_error msg -> error ~fct:"Stat.load_json" ~file:json_file "%s" msg in
-
-    let parse_request (id, json) =
-      let assoc = json |> to_assoc in
-      { id;
-        desc = List.assoc "desc" assoc |> to_string;
-        code = List.assoc "code" assoc |> to_list |> List.map to_string;
-      } in
-
-    (json |> to_assoc |> List.map parse_request, json)
-
-  let compute_ratios l =  
-    let sum = float (List.fold_left (+) 0 l) in
-    List.map (fun i -> `Float ((Float.round (10000. *. float i /. sum)) /. 100.)) l
-end (* module Stat *)
-
-(* ==================================================================================================== *)
 module Input = struct
   type t =
     | Multi of Corpus_desc.t list

@@ -66,7 +66,7 @@ module Grew_args = struct
       "  -o <file>      The output file";
       "";
       "Optionnal arguments:";
-      "  -strat <name>  The stategy used in transformation (default=\"main\")";
+      "  -strat <name>  The strategy used in transformation (default=\"main\")";
       "  -cupt          If the option is present, a 11-column CoNLL format is produced";
       "  -gr            If the option is present, the gr output format is produced";
       "  -track_rules   If the option is present, data about the rules applied are given in output";
@@ -131,7 +131,6 @@ module Grew_args = struct
     | _ :: "count" :: args -> mode := Count; loop args
     | _ :: "valid_sud" :: args -> mode := Valid_sud; loop args
     | _ :: "valid_ud" :: args -> mode := Valid_ud; loop args
-    | _ :: "stat" :: args -> mode := Stat; loop args
     | _ :: "compile" :: args -> mode := Compile; loop args
     | _ :: "clean" :: args -> mode := Clean; loop args
     | _ :: "status" :: args -> mode := Status; loop args
