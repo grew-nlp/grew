@@ -16,6 +16,15 @@ open Grew_cli_global
 
 (* ==================================================================================================== *)
 module Log = struct
+  let time_stamp () =
+    let gm = Unix.localtime (Unix.time ()) in
+    Printf.sprintf "%02d/%02d/%02d at %02d:%02d"
+      (gm.Unix.tm_year - 100)
+      (gm.Unix.tm_mon + 1)
+      gm.Unix.tm_mday
+      gm.Unix.tm_hour
+      gm.Unix.tm_min
+
   let warning_ message =
     ANSITerminal.eprintf [ANSITerminal.blue] "WARNING: %s\n" message;
     Printf.eprintf "%!" (* force synchronous printing *)

@@ -482,6 +482,44 @@ let valid () =
       ) corpus_desc_list
 
 (* -------------------------------------------------------------------------------- *)
+let valid_ud () =
+  let validate_script = match !udtools with
+  | Some dir -> Filename.concat dir "validate.py" 
+  | None -> error "env UDTOOLS undefined" in
+  let corpus_desc_list = match Input.parse () with
+  | Mono _ -> error ~fct:"Grew.valid_ud" "valid_ud mode requires multi-corpora input data"
+  | Multi l -> l in
+    List.iter (fun corpus_desc ->
+      let corpus_id = Corpus_desc.get_id corpus_desc in
+      match (Corpus_desc.get_field_opt "config" corpus_desc, Corpus_desc.get_field_opt "lang" corpus_desc) with
+      | (_, None) -> Log.warning "No lang defined for corpus %s " corpus_id
+      | (None, _) -> Log.warning "No config defined for corpus %s " corpus_id
+      | (Some "ud", Some lang) ->
+        let valid_file = List.fold_left Filename.concat "" 
+          [ Corpus_desc.get_directory corpus_desc; "_build_grew"; corpus_id; "valid_ud.txt"] in
+        let valid_time = File.last_modif valid_file in
+        let files = Corpus_desc.get_files corpus_desc in
+        let files_time = List.fold_left (fun acc file -> max acc (File.last_modif file)) Float.min_float files in
+        if valid_time > files_time
+        then Log.green "%s --> UD validation is uptodate\n" corpus_id
+        else
+          begin
+            let out_ch = open_out valid_file in
+            Printf.fprintf out_ch "%s\n" (Log.time_stamp ());
+            close_out out_ch;
+            List.iter (fun file ->
+              if not !quiet then printf "validate %s file of %s\n%!" (Filename.basename file) corpus_id;
+              let out_ch = open_out_gen [Open_append] 0o644 valid_file in
+              Printf.fprintf out_ch "================================ %s ================================\n" (Filename.basename file);
+              close_out out_ch;  
+              let command = sprintf "%s --lang=%s --max-err 0 %s 2>>  %s || true" validate_script lang file valid_file in
+              ignore (Sys.command command)
+            ) files
+          end
+      | (Some c, _) -> Log.magenta "%s has config %s and not ud, cannot be UD validated\n" corpus_id c
+    ) corpus_desc_list
+
+(* -------------------------------------------------------------------------------- *)
 let _ =
   Printexc.record_backtrace true;
 
@@ -497,6 +535,7 @@ let _ =
   | Count-> count ()
   | Stat -> stat ()
   | Valid -> valid ()
+  | Valid_ud -> valid_ud ()
   | Status -> dump_status ()
   | Build -> build ()
   | Test -> error "No test defined"

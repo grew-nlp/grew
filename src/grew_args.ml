@@ -130,6 +130,7 @@ module Grew_args = struct
     | _ :: "grep" :: args -> mode := Grep; loop args
     | _ :: "count" :: args -> mode := Count; loop args
     | _ :: "valid" :: args -> mode := Valid; loop args
+    | _ :: "valid_ud" :: args -> mode := Valid_ud; loop args
     | _ :: "stat" :: args -> mode := Stat; loop args
     | _ :: "compile" :: args -> mode := Compile; loop args
     | _ :: "clean" :: args -> mode := Clean; loop args

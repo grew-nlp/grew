@@ -13,7 +13,7 @@ open Conll
 let quiet = ref false
 let verbose = ref false
 
-type mode = Undefined | Transform | Grep | Count | Valid | Stat | Compile | Clean | Status | Build | Test
+type mode = Undefined | Transform | Grep | Count | Valid | Valid_ud | Stat | Compile | Clean | Status | Build | Test
 let mode = ref Undefined
 
 let (grs: string option ref) = ref None
@@ -32,6 +32,7 @@ let (requests : string list ref) = ref []
 let html = ref false
 
 let corpusbank = ref (Sys.getenv_opt "CORPUSBANK")
+let udtools = ref (Sys.getenv_opt "UDTOOLS")
 
 let (clustering : string list ref) = ref []
 
