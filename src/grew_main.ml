@@ -74,7 +74,7 @@ module Validation = struct
     { title; items; languages }
 
   (* -------------------------------------------------------------------------------- *)
-  let check modul_list (corpus_desc:Corpus_desc.t) =
+  let check modul_list out_file (corpus_desc:Corpus_desc.t) =
     let corpus = Corpus_desc.build_corpus corpus_desc in
     let config = Corpus_desc.get_config corpus_desc in
     let corpus_id = Corpus_desc.get_id corpus_desc in
@@ -119,9 +119,7 @@ module Validation = struct
         "modules", modules
       ] in
 
-    let out_file = File.concat_names [Corpus_desc.get_directory corpus_desc; "_build_grew"; corpus_id; "valid_sud.json"] in
-      CCIO.with_out out_file 
-        (fun out_ch -> fprintf out_ch "%s\n" (Yojson.Basic.pretty_to_string json))
+    CCIO.with_out out_file (fun out_ch -> fprintf out_ch "%s\n" (Yojson.Basic.pretty_to_string json))
 end (* module Validation *)
 
 (* -------------------------------------------------------------------------------- *)
@@ -409,11 +407,33 @@ let valid_sud () =
   let corpus_desc_list = match Input.parse () with
   | Mono _ -> error ~fct:"Grew.valid" "valid mode requires multi-corpora input data"
   | Multi l -> l in
-  let validator_list = List.map Validation.load_json !Grew_cli_global.requests in
+
+  match !Grew_cli_global.valid_dir with
+  | None -> error ~fct:"valid_sud" "No directory set for validator"
+  | Some dir -> 
+  let all_files = Sys.readdir dir |> Array.to_list in
+  let json_files = List.filter (fun file -> Filename.extension file = ".json") all_files in
+  let full_files = List.map (fun file -> Filename.concat dir file) json_files in
+  let modules_time = List.fold_left (fun acc file -> max acc (File.last_modif file)) Float.min_float full_files in
+  let validator_list = List.map Validation.load_json full_files in
     List.iter
       (fun corpus_desc ->
-        if not !quiet then printf "%s\n" (Corpus_desc.get_id corpus_desc);
-        Validation.check validator_list corpus_desc
+        let corpus_id = Corpus_desc.get_id corpus_desc in
+        match Corpus_desc.get_field_opt "config" corpus_desc with
+        | None -> Log.warning "No config defined for corpus %s " corpus_id
+        | Some "sud" ->
+          let valid_file = File.concat_names [Corpus_desc.get_directory corpus_desc; "_build_grew"; corpus_id; "valid_sud.json"] in
+          let valid_time = File.last_modif valid_file in
+          let files = Corpus_desc.get_files corpus_desc in
+          let files_time = List.fold_left (fun acc file -> max acc (File.last_modif file)) Float.min_float files in
+          if valid_time > files_time && valid_time > modules_time
+          then Log.green "%s --> SUD validation is uptodate\n" corpus_id
+          else
+            begin
+              if not !quiet then Log.blue "SUD validation of %s%!\n" (Corpus_desc.get_id corpus_desc);
+              Validation.check validator_list valid_file corpus_desc
+            end
+        | Some c -> Log.magenta "%s has config %s and not sud, cannot be SUD validated\n" corpus_id c
       ) corpus_desc_list
 
 (* -------------------------------------------------------------------------------- *)
@@ -430,8 +450,7 @@ let valid_ud () =
       | (_, None) -> Log.warning "No lang defined for corpus %s " corpus_id
       | (None, _) -> Log.warning "No config defined for corpus %s " corpus_id
       | (Some "ud", Some lang) ->
-        let valid_file = File.concat_names 
-          [ Corpus_desc.get_directory corpus_desc; "_build_grew"; corpus_id; "valid_ud.txt"] in
+        let valid_file = File.concat_names [ Corpus_desc.get_directory corpus_desc; "_build_grew"; corpus_id; "valid_ud.txt"] in
         let valid_time = File.last_modif valid_file in
         let files = Corpus_desc.get_files corpus_desc in
         let files_time = List.fold_left (fun acc file -> max acc (File.last_modif file)) Float.min_float files in

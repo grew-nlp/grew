@@ -34,6 +34,11 @@ let html = ref false
 let corpusbank = ref (Sys.getenv_opt "CORPUSBANK")
 let udtools = ref (Sys.getenv_opt "UDTOOLS")
 
+let valid_dir =
+  match Sys.getenv_opt "SUDTOOLS" with
+  | None -> ref None
+  | Some sudtools -> ref (Some (List.fold_left Filename.concat "" [sudtools; "validator"; "modules"]))
+
 let (clustering : string list ref) = ref []
 
 let config = ref (Conll_config.build "ud")  (* "ud" is used as default value. *)

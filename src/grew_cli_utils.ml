@@ -27,20 +27,21 @@ module Log = struct
 
   let warning_ message =
     ANSITerminal.eprintf [ANSITerminal.blue] "WARNING: %s\n" message;
-    Printf.eprintf "%!" (* force synchronous printing *)
+    eprintf "%!" (* force synchronous printing *)
 
   let warning message = Printf.ksprintf warning_ message
 
   let fail_ message =
     ANSITerminal.eprintf [ANSITerminal.red] "FAIL: %s\n" message;
-    Printf.eprintf "%!" (* force synchronous printing *);
+    eprintf "%!" (* force synchronous printing *);
     exit 1
 
   let fail message = Printf.ksprintf fail_ message
 
-  let green x = Printf.ksprintf (ANSITerminal.printf [ANSITerminal.green] "%s") x
-  let red x = Printf.ksprintf (ANSITerminal.printf [ANSITerminal.red] "%s") x
-  let magenta x = Printf.ksprintf (ANSITerminal.printf [ANSITerminal.magenta] "%s") x
+  let green x = Printf.ksprintf (fun s -> ANSITerminal.eprintf [ANSITerminal.green] "%s" s; eprintf "%!") x
+  let blue x = Printf.ksprintf (fun s -> ANSITerminal.eprintf [ANSITerminal.blue] "%s" s; eprintf "%!") x
+  let red x = Printf.ksprintf (fun s -> ANSITerminal.eprintf [ANSITerminal.red] "%s" s; eprintf "%!") x
+  let magenta x = Printf.ksprintf (fun s -> ANSITerminal.eprintf [ANSITerminal.magenta] "%s" s; eprintf "%!") x
 end
 
 (* ==================================================================================================== *)

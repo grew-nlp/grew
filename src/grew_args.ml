@@ -17,14 +17,6 @@ open Grew_cli_utils
 
 
 module Grew_args = struct
-
-
-
-
-
-
-
-
   let help () = List.iter (fun x -> Printf.printf "%s\n%!" x) [
       "----------------------------------------------------------";
       "usage: grew <subcommand> [<args>]";
@@ -81,17 +73,21 @@ module Grew_args = struct
     | "-i" :: files :: args -> input_data := !input_data @ (Str.split (Str.regexp " ") files); loop args
     | "-o" :: file :: args -> output_data := Some file; loop args
     | "-strat" :: s :: args -> strat := s; loop args
+
     | "-request" :: files :: args
     | "-requests" :: files :: args -> requests := !requests @ (Str.split (Str.regexp " ") files); loop args
     | "-pattern" :: files :: args
     | "-patterns" :: files :: args -> 
         Log.warning "-pattern and -patterns comman line args are deprecated, replaced by -request and -requests"; 
         requests := !requests @ (Str.split (Str.regexp " ") files); loop args
+
     | "-key" :: s :: args -> clustering := !clustering @ [s]; loop args
     | "-whether" :: s :: args ->
         Log.warning "Whether argument is deprecated, see https://grew.fr/usage/cli/#with-clustering";
         clustering := !clustering @ [Printf.sprintf "{%s}" s]; loop args
     | "-html" :: args -> html := true; loop args
+
+    | "-valid_dir" :: dir :: args -> valid_dir := Some dir; loop args
 
     | "-timeout" :: f :: args -> timeout := Some (float_of_string f); Rewrite.set_timeout (Some (float_of_string f)); loop args
     | "-max_rules" :: i :: args -> Rewrite.set_max_rules (int_of_string i); loop args
@@ -135,7 +131,7 @@ module Grew_args = struct
     | _ :: "clean" :: args -> mode := Clean; loop args
     | _ :: "status" :: args -> mode := Status; loop args
     | _ :: "build" :: args -> mode := Build; loop args
-    | _ :: "valid" :: _ -> Printf.printf "The valid mode is deprecated. It is replaced by valid_sud"
+    | _ :: "valid" :: _ -> error "The valid mode is deprecated. It is replaced by valid_sud"
     | _ :: "version" :: _ ->
       begin
         match Build_info.V1.version () with
