@@ -1,7 +1,7 @@
 {
-  "nodes": { "0": "A", "1": "B" },
+  "nodes": { "1": "A", "2": "B" },
   "edges": [
-    { "src": "0", "label": "Y", "tar": "1" },
-    { "src": "0", "label": "X", "tar": "1" }
+    { "src": "1", "label": "Y", "tar": "2" },
+    { "src": "1", "label": "X", "tar": "2" }
   ]
 }
