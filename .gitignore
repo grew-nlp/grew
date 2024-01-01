@@ -1,8 +1,16 @@
+# ignore files related to dune
 _build
-src/grew_glade.ml
-grew_main.native
-DATA_DIR
-LOCAL
-install_dev
-__pycache__
+
+# Text editor and system
 .vscode
+.DS_Store
+
+# ignore Python cached files
+__pycache__
+
+# ignore files related to grew compilation
+_build_grew
+
+# related to local dev
+DEV_NOTES.md
+install_dev.sh

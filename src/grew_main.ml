@@ -1,7 +1,7 @@
 (***********************************************************************)
 (*    Grew - a Graph Rewriting tool dedicated to NLP applications      *)
 (*                                                                     *)
-(*    Copyright 2011-2021 Inria, Université de Lorraine                *)
+(*    Copyright 2011-2024 Inria, Université de Lorraine                *)
 (*                                                                     *)
 (*    Webpage: https://grew.fr                                         *)
 (*    License: CeCILL (see LICENSE folder or "http://www.cecill.info") *)
