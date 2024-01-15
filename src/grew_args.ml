@@ -122,17 +122,7 @@ module Grew_args = struct
   let parse () =
     match Array.to_list Sys.argv with
     | [] -> bug "Empty Sys.argv"
-    | _ :: "gui" :: _ -> Printf.printf "The gui mode is not longer supported, see http://transform.grew.fr"
-    | _ :: "transform" :: args -> mode := Transform; loop args
-    | _ :: "grep" :: args -> mode := Grep; loop args
-    | _ :: "count" :: args -> mode := Count; loop args
-    | _ :: "valid_sud" :: args -> mode := Valid_sud; loop args
-    | _ :: "valid_ud" :: args -> mode := Valid_ud; loop args
-    | _ :: "compile" :: args -> mode := Compile; loop args
-    | _ :: "clean" :: args -> mode := Clean; loop args
-    | _ :: "status" :: args -> mode := Status; loop args
-    | _ :: "build" :: args -> mode := Build; loop args
-    | _ :: "valid" :: _ -> error "The valid mode is deprecated. It is replaced by valid_sud"
+    | [_] -> help ()
     | _ :: "version" :: _ ->
       begin
         match Build_info.V1.version () with
@@ -147,11 +137,8 @@ module Grew_args = struct
           (Build_info.V1.Version.to_string v)
         | None -> ()
         ) (Build_info.V1.Statically_linked_libraries.to_list ())
-    | _ :: "test" :: args -> mode := Test; loop args
     | _ :: "help" :: "transform" :: _ -> help_transform ()
     | _ :: "help" :: "grep" :: _ -> help_grep ()
-    | _ :: "help" :: "help" :: _ -> Printf.printf "Such a complex feature is still in development!\n"
-    | [_] -> help ()
     | _ :: "help" :: _ -> help ()
-    | _ :: cmd :: _ -> error "Unknown command \"%s\"" cmd
+    | _ :: sub :: args -> subcommand := Some sub; loop args
 end

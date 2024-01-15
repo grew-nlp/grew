@@ -273,35 +273,6 @@ let grep () =
   | l -> error ~fct:"Grew.grep" "1 request expected for grep mode (%d given)" (List.length l)
 
 (* -------------------------------------------------------------------------------- *)
-let compile () =
-  let corpus_desc_map = Corpusbank.get_desc_map () in
-  String_map.iter
-    (fun corpus_id corpus_desc ->
-      try
-      Corpus_desc.compile ~force:!Grew_cli_global.force corpus_desc
-      with Grewlib.Error msg -> Log.warning "--> %s skipped (%s)" corpus_id msg
-    ) corpus_desc_map
-
-(* -------------------------------------------------------------------------------- *)
-let clean () =
-  let corpus_desc_map = Corpusbank.get_desc_map () in
-  let really_clean () = 
-    String_map.iter
-    (fun _ corpus_desc -> Corpus_desc.clean corpus_desc)
-    corpus_desc_map in
-  if !Grew_cli_global.force
-  then really_clean ()
-  else
-    let nb = String_map.cardinal corpus_desc_map in
-    if nb > 10
-    then
-      let _ = Printf.printf "This will clean %d corpora, are you sure [y/N]?\n%!" nb in 
-      let answer = read_line () in
-      if answer = "y" || answer = "Y" 
-      then really_clean ()
-      else printf "Aborted\n"
-
-(* -------------------------------------------------------------------------------- *)
 let count () =
 
   let clustered_corpus ~config corpus = 
@@ -487,17 +458,18 @@ let _ =
   (* parsing command line args *)
   handle Grew_args.parse ();
 
-  let run () = match !Grew_cli_global.mode with
-  | Undefined -> ()
-  | Transform -> transform ()
-  | Grep -> grep ()
-  | Compile -> compile ()
-  | Clean -> clean ()
-  | Count-> count ()
-  | Valid_sud -> valid_sud ()
-  | Valid_ud -> valid_ud ()
-  | Status -> dump_status ()
-  | Build -> build ()
-  | Test -> error "No test defined"
+  let run () = match !Grew_cli_global.subcommand with
+  | Some "transform" -> transform ()
+  | Some "grep" -> grep ()
+  | Some "compile" -> compile ()
+  | Some "clean" -> clean ()
+  | Some "count" -> count ()
+  | Some "valid_sud" -> valid_sud ()
+  | Some "valid_ud" -> valid_ud ()
+  | Some "status" -> status ()
+  | Some "build" -> build ()
+
+  | Some cmd -> error "Unknown command \"%s\"" cmd
+  | None -> error "Missing subcommand"
 
   in handle run ()

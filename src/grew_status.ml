@@ -84,7 +84,7 @@ let compute_status () =
       fun corpus_id _ acc -> update corpus_id acc
     ) all String_map.empty
 
-let dump_status () =
+let status () =
   let status = compute_status () in
   let ok_cpt = ref 0 and rebuild_cpt = ref 0 and error_cpt = ref 0 in 
   String_map.iter (
@@ -110,4 +110,33 @@ let dump_status () =
   Log.magenta "to rebuild: %d\n" !rebuild_cpt;
   Log.red "error:      %d\n" !error_cpt;
   printf "----------------------------------\n"
+
+(* -------------------------------------------------------------------------------- *)
+let compile () =
+  let corpus_desc_map = Corpusbank.get_desc_map () in
+  String_map.iter
+    (fun corpus_id corpus_desc ->
+      try
+      Corpus_desc.compile ~force:!Grew_cli_global.force corpus_desc
+      with Grewlib.Error msg -> Log.warning "--> %s skipped (%s)" corpus_id msg
+    ) corpus_desc_map
+
+(* -------------------------------------------------------------------------------- *)
+let clean () =
+  let corpus_desc_map = Corpusbank.get_desc_map () in
+  let really_clean () = 
+    String_map.iter
+    (fun _ corpus_desc -> Corpus_desc.clean corpus_desc)
+    corpus_desc_map in
+  if !Grew_cli_global.force
+  then really_clean ()
+  else
+    let nb = String_map.cardinal corpus_desc_map in
+    if nb > 10
+    then
+      let _ = Printf.printf "This will clean %d corpora, are you sure [y/N]?\n%!" nb in 
+      let answer = read_line () in
+      if answer = "y" || answer = "Y" 
+      then really_clean ()
+      else printf "Aborted\n"
 
