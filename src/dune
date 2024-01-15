@@ -3,6 +3,7 @@
  (name grew_main)
  (libraries 
    str
+   re
    unix
    dune-build-info
    ANSITerminal 

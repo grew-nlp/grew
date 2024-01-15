@@ -468,6 +468,7 @@ let _ =
   | Some "valid_ud" -> valid_ud ()
   | Some "status" -> status ()
   | Some "build" -> build ()
+  | Some "search" -> search ()
 
   | Some cmd -> error "Unknown command \"%s\"" cmd
   | None -> error "Missing subcommand"

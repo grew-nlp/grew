@@ -140,3 +140,10 @@ let clean () =
       then really_clean ()
       else printf "Aborted\n"
 
+(* -------------------------------------------------------------------------------- *)
+let search () =
+  let corpus_desc_map = Corpusbank.get_desc_map () in
+    String_map.iter
+    (fun corpus_id _ -> Printf.printf "%s\n%!" corpus_id)
+    corpus_desc_map
+
