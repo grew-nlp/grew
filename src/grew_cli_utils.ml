@@ -125,35 +125,55 @@ end
 module Corpusbank = struct
   let desc_map = ref None
 
+  let read_files ?dir files = 
+    let data = List.fold_left
+      (fun acc file ->
+        if Filename.extension file = ".json"
+        then
+          begin
+            let full_file = match dir with Some d -> Filename.concat d file | None -> file in
+            let descs = Corpus_desc.load_json full_file in
+            List.fold_left
+              (fun acc2 desc ->
+                let id = Corpus_desc.get_id desc in
+                if String_map.mem id acc2
+                then error "Duplicate definition of corpus_id `%s`" id
+                else String_map.add id desc acc2
+              ) acc descs
+        end
+        else acc
+      ) String_map.empty files in
+    data
+
+  let read_directory dir = 
+    let all_files = 
+      try Array.to_list (Sys.readdir dir) 
+      with Sys_error _ -> error "corpusbank directory `%s` not found" dir in
+    read_files ~dir all_files
+
   (* lazy loading of corpus desc files *)
   let get_desc_map () =
-    match !Grew_cli_global.corpusbank with
-    | None -> error "No corpusbank defined"
-    | Some corpusbank -> 
     match !desc_map with
     | Some data -> data
     | None ->
-      try
-        let all_files = Sys.readdir corpusbank in
-        let data = Array.fold_left
-          (fun acc file ->
-            if Filename.extension file = ".json"
-            then
-              begin
-                let descs = Corpus_desc.load_json (Filename.concat corpusbank file) in
-                List.fold_left
-                  (fun acc2 desc ->
-                    let id = Corpus_desc.get_id desc in
-                    if String_map.mem id acc2
-                    then error "Duplicate definition of corpus_id `%s`" id
-                    else String_map.add id desc acc2
-                  ) acc descs
-            end
-            else acc
-          ) String_map.empty all_files in
+      match !Grew_cli_global.input_data with
+      | [] ->
+        begin
+          match !Grew_cli_global.corpusbank with
+          | None -> error "No corpusbank defined"
+          | Some corpusbank -> 
+            let data = read_directory corpusbank in
+            desc_map := Some data;
+            data
+        end
+      | [one] when Sys.is_directory one ->
+        let data = read_directory one in
         desc_map := Some data;
         data
-      with Sys_error _ -> error "corpusbank directory `%s` not found" corpusbank
+      | files_list -> 
+        let data = read_files files_list in
+        desc_map := Some data;
+        data
 
   let get_corpus_desc_opt corpus_id = String_map.find_opt corpus_id (get_desc_map ())
 end

@@ -44,3 +44,5 @@ let (clustering : string list ref) = ref []
 let config = ref (Conll_config.build "ud")  (* "ud" is used as default value. *)
 
 let force = ref false
+
+let (anonymous_args : string list ref) = ref []

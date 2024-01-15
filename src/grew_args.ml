@@ -116,7 +116,8 @@ module Grew_args = struct
     | "-rff" :: value :: args -> config := Conll_config.remove_from_feats value !config; loop args
 
     | "-gr" :: args -> Log.warning "The GR file is no longer supported, please use JSON format"; loop args
-    | x :: args -> Log.warning "Invalid argument: %s, it is ignored!" x; loop args
+    | x :: args when String.length x > 0 && x.[0] = '-' -> Log.warning "Invalid option: %s, it is ignored!" x; loop args
+    | x :: args -> anonymous_args := x :: !anonymous_args; loop args
 
   let parse () =
     match Array.to_list Sys.argv with
