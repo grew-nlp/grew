@@ -274,25 +274,32 @@ let grep () =
 
 (* -------------------------------------------------------------------------------- *)
 let compile () =
-  let corpus_desc_list = match Input.parse () with
-  | Mono _ -> error ~fct:"Grew.compile" "compile mode requires multi-corpora input data"
-  | Multi l -> l in
-  List.iter
-    (fun corpus_desc ->
+  let corpus_desc_map = Corpusbank.get_desc_map () in
+  String_map.iter
+    (fun corpus_id corpus_desc ->
       try
       Corpus_desc.compile ~force:!Grew_cli_global.force corpus_desc
-      with Grewlib.Error msg -> Log.warning "--> %s skipped (%s)" (Corpus_desc.get_id corpus_desc) msg
-    ) corpus_desc_list
+      with Grewlib.Error msg -> Log.warning "--> %s skipped (%s)" corpus_id msg
+    ) corpus_desc_map
 
 (* -------------------------------------------------------------------------------- *)
 let clean () =
-  let corpus_desc_list = match Input.parse () with
-  | Mono _ -> error ~fct:"Grew.clean" "clean mode requires multi-corpora input data"
-  | Multi l -> l in
-  List.iter
-    (fun corpus_desc ->
-      Corpus_desc.clean corpus_desc
-    ) corpus_desc_list
+  let corpus_desc_map = Corpusbank.get_desc_map () in
+  let really_clean () = 
+    String_map.iter
+    (fun _ corpus_desc -> Corpus_desc.clean corpus_desc)
+    corpus_desc_map in
+  if !Grew_cli_global.force
+  then really_clean ()
+  else
+    let nb = String_map.cardinal corpus_desc_map in
+    if nb > 10
+    then
+      let _ = Printf.printf "This will clean %d corpora, are you sure [y/N]?\n%!" nb in 
+      let answer = read_line () in
+      if answer = "y" || answer = "Y" 
+      then really_clean ()
+      else printf "Aborted\n"
 
 (* -------------------------------------------------------------------------------- *)
 let count () =
