@@ -138,8 +138,10 @@ let clean () =
   then really_clean ()
   else
     let nb = List.length filtered in
-    if nb > 10
+    if nb <= 10
     then
+      really_clean ()
+    else
       let _ = Printf.printf "This will clean %d corpora, are you sure [y/N]?\n%!" nb in 
       let answer = read_line () in
       if answer = "y" || answer = "Y" 
