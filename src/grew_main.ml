@@ -15,7 +15,6 @@ open Grewlib
 open Grew_cli_global
 open Grew_cli_utils
 open Grew_args
-open Grew_build
 open Grew_status
 
 (* ==================================================================================================== *)
@@ -469,6 +468,7 @@ let _ =
   | Some "status" -> status ()
   | Some "build" -> build ()
   | Some "search" -> search ()
+  | Some "show" -> show ()
 
   | Some cmd -> error "Unknown command \"%s\"" cmd
   | None -> error "Missing subcommand"

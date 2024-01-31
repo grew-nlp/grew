@@ -125,7 +125,7 @@ end
 module Corpusbank = struct
   let desc_map = ref None
 
-  let read_files ?(filter=fun _ -> true) ?dir files = 
+  let read_files ?dir files = 
     let data = List.fold_left
       (fun acc file ->
         if Filename.extension file = ".json"
@@ -136,51 +136,51 @@ module Corpusbank = struct
             List.fold_left
               (fun acc2 desc ->
                 let id = Corpus_desc.get_id desc in
-                if filter id
-                then
                   if String_map.mem id acc2
                   then error "Duplicate definition of corpus_id `%s`" id
                   else String_map.add id desc acc2
-                else acc2
               ) acc descs
         end
         else acc
       ) String_map.empty files in
     data
 
-  let read_directory ?(filter=fun _ -> true) dir = 
+  let read_directory dir = 
     let all_files = 
       try Array.to_list (Sys.readdir dir) 
       with Sys_error _ -> error "corpusbank directory `%s` not found" dir in
-    read_files ~filter ~dir all_files
+    read_files ~dir all_files
 
   (* lazy loading of corpus desc files *)
   let get_desc_map () =
     match !desc_map with
     | Some data -> data
     | None ->
-      let anon_regexp = List.map (fun s -> Re.compile (Re.Glob.glob ~anchored:true s)) !Grew_cli_global.anonymous_args in
-      let filter id = match anon_regexp with
-      | [] -> true
-      | l -> List.exists (fun re -> Re.execp re id) l in
       match !Grew_cli_global.input_data with
       | [] ->
         begin
           match !Grew_cli_global.corpusbank with
           | None -> error "No corpusbank defined"
           | Some corpusbank -> 
-            let data = read_directory ~filter corpusbank in
+            let data = read_directory corpusbank in
             desc_map := Some data;
             data
         end
       | [one] when Sys.is_directory one ->
-        let data = read_directory ~filter one in
+        let data = read_directory one in
         desc_map := Some data;
         data
       | files_list -> 
-        let data = read_files ~filter files_list in
+        let data = read_files files_list in
         desc_map := Some data;
         data
+
+  let build_filter () =
+    let anon_regexp = List.map (fun s -> Re.compile (Re.Glob.glob ~anchored:true s)) !Grew_cli_global.anonymous_args in
+    let filter id = match anon_regexp with
+    | [] -> true
+    | l -> List.exists (fun re -> Re.execp re id) l in
+    filter
 
   let get_corpus_desc_opt corpus_id = String_map.find_opt corpus_id (get_desc_map ())
 end

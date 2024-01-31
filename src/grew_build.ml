@@ -79,8 +79,3 @@ let rec build_derived corpus_desc =
             Unix.unlink f
           ) !old_tar_files in
         ()
-
-let build () = 
-  match Input.parse () with
-  | Mono _ -> error ~fct:"grew build" "clean mode requires multi-corpora input data"
-  | Multi l -> List.iter build_derived l

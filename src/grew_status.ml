@@ -11,8 +11,10 @@
 open Printf
 open Conll
 open Grewlib
+
 open Grew_cli_global
 open Grew_cli_utils
+open Grew_build
 
 let grs_timestamps = ref String_map.empty
 
@@ -93,7 +95,7 @@ let status () =
       | Need_rebuild msg_list -> 
           incr rebuild_cpt;
           Log.magenta "%s need rebuild\n" corpus_id;
-          List.iter (fun msg -> printf "  • %s\n" msg) msg_list
+          List.iter (fun msg -> printf "  • %s\n%!" msg) msg_list
       | Error msg ->
         incr error_cpt;
         Log.red "%s --> %s\n" corpus_id msg
@@ -114,24 +116,28 @@ let status () =
 (* -------------------------------------------------------------------------------- *)
 let compile () =
   let corpus_desc_map = Corpusbank.get_desc_map () in
+  let filter = Corpusbank.build_filter () in
   String_map.iter
     (fun corpus_id corpus_desc ->
-      try
-      Corpus_desc.compile ~force:!Grew_cli_global.force corpus_desc
-      with Grewlib.Error msg -> Log.warning "--> %s skipped (%s)" corpus_id msg
+      if filter corpus_id
+      then
+        try Corpus_desc.compile ~force:!Grew_cli_global.force corpus_desc
+        with Grewlib.Error msg -> Log.warning "--> %s skipped (%s)" corpus_id msg
     ) corpus_desc_map
 
 (* -------------------------------------------------------------------------------- *)
 let clean () =
   let corpus_desc_map = Corpusbank.get_desc_map () in
-  let really_clean () = 
-    String_map.iter
-    (fun _ corpus_desc -> Corpus_desc.clean corpus_desc)
-    corpus_desc_map in
+  let filter = Corpusbank.build_filter () in
+  let filtered =
+     String_map.fold 
+     (fun corpus_id corpus_desc acc -> if filter corpus_id then corpus_desc::acc else acc) 
+     corpus_desc_map [] in
+  let really_clean () = List.iter Corpus_desc.clean filtered in
   if !Grew_cli_global.force
   then really_clean ()
   else
-    let nb = String_map.cardinal corpus_desc_map in
+    let nb = List.length filtered in
     if nb > 10
     then
       let _ = Printf.printf "This will clean %d corpora, are you sure [y/N]?\n%!" nb in 
@@ -143,7 +149,38 @@ let clean () =
 (* -------------------------------------------------------------------------------- *)
 let search () =
   let corpus_desc_map = Corpusbank.get_desc_map () in
+  let filter = Corpusbank.build_filter () in
     String_map.iter
-    (fun corpus_id _ -> Printf.printf "%s\n%!" corpus_id)
+    (fun corpus_id _ -> 
+      if filter corpus_id then Printf.printf "%s\n%!" corpus_id)
     corpus_desc_map
 
+(* -------------------------------------------------------------------------------- *)
+let build () = 
+  let corpus_desc_map = Corpusbank.get_desc_map () in
+  let filter = Corpusbank.build_filter () in
+    String_map.iter
+    (fun corpus_id corpus_desc -> 
+      if filter corpus_id then build_derived corpus_desc)
+    corpus_desc_map
+
+(* -------------------------------------------------------------------------------- *)
+let show () = 
+  let corpus_desc_map = Corpusbank.get_desc_map () in
+  let filter = Corpusbank.build_filter () in
+    String_map.iter
+    (fun corpus_id corpus_desc -> 
+      if filter corpus_id 
+      then
+        begin
+          Log.green "%s\n" corpus_id;
+          match Corpus_desc.to_json corpus_desc with
+          | `Assoc l ->
+            List.iter 
+            (fun (k,v) -> 
+              Printf.printf "%s --> %s\n%!" k (Yojson.Basic.pretty_to_string v)
+            ) l
+          | _ -> assert false
+        end
+    )
+    corpus_desc_map
