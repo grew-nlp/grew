@@ -13,16 +13,16 @@ open Conll
 open Grewlib
 open Grew_cli_utils
 
-let transform config columns grs strat input_file out_file =
-  let input_corpus = Corpus.from_file ~config input_file in
-  let out_ch = open_out out_file in
+let transform grs_config columns grs strat (src_config, src_file) (tar_config, tar_file) =
+  let src_corpus = Corpus.from_file ~config:src_config src_file in
+  let out_ch = open_out tar_file in
   Corpus.iteri
   (fun _ _ gr ->
     (* Counter.print index len sent_id; *)
-    match Rewrite.simple_rewrite ~config gr grs strat with
-      | [graph] -> fprintf out_ch "%s\n" (graph |> Graph.to_json |> Conll.of_json |> Conll.to_string ~config ~columns)
-      | _ -> error "More than one normal form (input_file=%s)" input_file
-  ) input_corpus;
+    match Rewrite.simple_rewrite ~config:grs_config gr grs strat with
+      | [graph] -> fprintf out_ch "%s\n" (graph |> Graph.to_json |> Conll.of_json |> Conll.to_string ~config:tar_config ~columns)
+      | _ -> error "More than one normal form (src_file=%s)" src_file
+  ) src_corpus;
   (* Counter.finish (); *)
   (* final (); *)
     close_out out_ch
@@ -49,14 +49,19 @@ let rec build_derived corpus_desc =
             | true -> ()
             | false -> error "Cannot build directory `%s` for corpus `%s` (a file with the same name exists!)" directory corpus_id in
 
-        (* WARNING: suppose that the grs used the target corpus config!!! *)
-        let config = Corpus_desc.get_config corpus_desc in
+        let grs_config = match Corpus_desc.get_field_opt "grs_config" corpus_desc with
+        | Some c -> Conll_config.build c
+        | None -> Corpus_desc.get_config corpus_desc in (* If no grs_config is defined, tar_config is used *)
 
-        let grs = Grs.load ~config grs_file in
+        let grs = Grs.load ~config:grs_config grs_file in
         let grs_timestamp = grs |> Grs.get_timestamp_opt |> CCOption.get_exn_or "Bug grs_timestamp" in
         let strat = strat_opt |> CCOption.get_or ~default:"main" in
 
         let src_files = Corpus_desc.get_files src_corpus_desc in
+        let src_config = Corpus_desc.get_config src_corpus_desc in
+
+        let tar_config = Corpus_desc.get_config corpus_desc in
+
         let old_tar_files = ref (String_set.of_list (Corpus_desc.get_files corpus_desc)) in
         let () = List.iter
           (fun src ->
@@ -67,7 +72,7 @@ let rec build_derived corpus_desc =
             then
               begin
                 eprintf "update %s from %s\n%!" tar src;
-                transform config columns grs strat src tar
+                transform grs_config columns grs strat (src_config,src) (tar_config,tar)
               end
             else
               eprintf "%s is uptodate\n%!" tar
