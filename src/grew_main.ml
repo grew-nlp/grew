@@ -460,12 +460,22 @@ let _ =
   let run () = match !Grew_cli_global.subcommand with
   | Some "transform" -> transform ()
   | Some "grep" -> grep ()
-  | Some "compile" -> compile ()
-  | Some "clean" -> clean ()
   | Some "count" -> count ()
   | Some "valid_sud" -> valid_sud ()
   | Some "valid_ud" -> valid_ud ()
+
+  | Some "compile" -> compile ()
+  | Some "clean" -> clean ()
   | Some "status" -> status ()
+
+  | Some "stat" -> 
+    begin
+      match !Grew_cli_global.corpusbank with
+      | None -> error "No corpusbank defined"
+      | Some corpusbank -> 
+        let cb = CorpusbankGL.load corpusbank in
+        CorpusbankGL.dump_status cb
+      end
   | Some "build" -> build ()
   | Some "search" -> search ()
   | Some "show" -> show ()
