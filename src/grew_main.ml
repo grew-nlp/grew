@@ -90,7 +90,7 @@ module Validation = struct
                     (List.map
                       (fun item ->
                         let grew_request =
-                          try Request.parse ~config (String.concat " " item.request)
+                          try Request.parse ~config (String.concat "\n" item.request)
                           with Grewlib.Error msg ->
                             error
                               ~fct:"Validation.check"
