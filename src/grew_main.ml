@@ -15,7 +15,6 @@ open Grewlib
 open Grew_cli_global
 open Grew_cli_utils
 open Grew_args
-open Grew_status
 
 (* ==================================================================================================== *)
 module Validation = struct
@@ -450,6 +449,15 @@ let valid_ud () =
       | (Some c, _) -> Log.magenta "%s has config %s and not ud, cannot be UD validated\n" corpus_id c
     ) corpus_desc_list
 
+
+let load_corpusbank () =
+  match !Grew_cli_global.corpusbank with
+  | None -> error "No corpusbank defined"
+  | Some dir -> Corpusbank.load dir
+
+let build_filter () =
+  Corpusbank.build_filter (!Grew_cli_global.anonymous_args)
+
 (* -------------------------------------------------------------------------------- *)
 let _ =
   Printexc.record_backtrace true;
@@ -464,21 +472,71 @@ let _ =
   | Some "valid_sud" -> valid_sud ()
   | Some "valid_ud" -> valid_ud ()
 
-  | Some "compile" -> compile ()
-  | Some "clean" -> clean ()
-  | Some "status" -> status ()
+  | Some "compile" ->
+    let corpusbank = load_corpusbank () in
+    let filter = build_filter () in
+    Corpusbank.iter
+      (fun corpus_id corpus_desc ->
+        if filter corpus_id
+        then
+          try Corpus_desc.compile ~force:!Grew_cli_global.force corpus_desc
+          with Grewlib.Error msg -> Log.warning "--> %s skipped (%s)" corpus_id msg
+      ) corpusbank
+  
+  | Some "clean" ->
+    let corpusbank = load_corpusbank () in
+    let filter = build_filter () in
+    let filtered =
+      Corpusbank.fold ~filter
+       (fun _ corpus_desc acc -> corpus_desc::acc) 
+       corpusbank [] in
+    let really_clean () = List.iter Corpus_desc.clean filtered in
+    if !Grew_cli_global.force
+    then really_clean ()
+    else
+      let nb = List.length filtered in
+      if nb <= 10
+      then
+        really_clean ()
+      else
+        let _ = Printf.printf "This will clean %d corpora, are you sure [y/N]?\n%!" nb in 
+        let answer = read_line () in
+        if answer = "y" || answer = "Y" 
+        then really_clean ()
+        else printf "Aborted\n"
 
-  | Some "stat" -> 
-    begin
-      match !Grew_cli_global.corpusbank with
-      | None -> error "No corpusbank defined"
-      | Some corpusbank -> 
-        let cb = CorpusbankGL.load corpusbank in
-        CorpusbankGL.dump_status cb
-      end
-  | Some "build" -> build ()
-  | Some "search" -> search ()
-  | Some "show" -> show ()
+  | Some "status" -> 
+    let corpusbank = load_corpusbank () in
+    Corpusbank.dump_status corpusbank
+
+  | Some "build" -> 
+    let corpusbank = load_corpusbank () in
+    let filter = build_filter () in
+    Corpusbank.iter ~filter
+      (fun _ corpus_desc -> Corpusbank.build_derived corpusbank corpus_desc)
+      corpusbank
+
+  | Some "search" ->
+    let corpusbank = load_corpusbank () in
+    let filter = build_filter () in
+    Corpusbank.iter ~filter
+      (fun corpus_id _ -> Printf.printf "%s\n%!" corpus_id)
+      corpusbank
+
+  | Some "show" ->
+    let corpusbank = load_corpusbank () in
+    let filter = build_filter () in
+    Corpusbank.iter ~filter
+      (fun corpus_id corpus_desc -> 
+            Log.green "%s\n" corpus_id;
+            match Corpus_desc.to_json corpus_desc with
+            | `Assoc l ->
+              List.iter 
+              (fun (k,v) -> 
+                Printf.printf "%s --> %s\n%!" k (Yojson.Basic.pretty_to_string v)
+              ) l
+            | _ -> assert false
+      ) corpusbank
 
   | Some cmd -> error "Unknown command \"%s\"" cmd
   | None -> error "Missing subcommand"
