@@ -16,15 +16,6 @@ open Grew_cli_global
 
 (* ==================================================================================================== *)
 module Log = struct
-  let now () =
-    let gm = Unix.localtime (Unix.time ()) in
-    Printf.sprintf "%02d/%02d/%02d - %02d:%02d"
-      (gm.Unix.tm_year - 100)
-      (gm.Unix.tm_mon + 1)
-      gm.Unix.tm_mday
-      gm.Unix.tm_hour
-      gm.Unix.tm_min
-
   let warning_ message =
     ANSITerminal.eprintf [ANSITerminal.blue] "WARNING: %s\n" message;
     eprintf "%!" (* force synchronous printing *)
@@ -37,11 +28,6 @@ module Log = struct
     exit 1
 
   let fail message = Printf.ksprintf fail_ message
-
-  let green x = Printf.ksprintf (fun s -> ANSITerminal.eprintf [ANSITerminal.green] "%s" s; eprintf "%!") x
-  let blue x = Printf.ksprintf (fun s -> ANSITerminal.eprintf [ANSITerminal.blue] "%s" s; eprintf "%!") x
-  let red x = Printf.ksprintf (fun s -> ANSITerminal.eprintf [ANSITerminal.red] "%s" s; eprintf "%!") x
-  let magenta x = Printf.ksprintf (fun s -> ANSITerminal.eprintf [ANSITerminal.magenta] "%s" s; eprintf "%!") x
 end
 
 (* ==================================================================================================== *)

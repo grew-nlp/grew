@@ -11,7 +11,6 @@
 open Conll
 
 let quiet = ref false
-let verbose = ref false
 
 let (subcommand: string option ref) = ref None
 

@@ -91,7 +91,6 @@ module Grew_args = struct
     | "-max_rules" :: i :: args -> Rewrite.set_max_rules (int_of_string i); loop args
 
     | "-quiet" :: args -> quiet := true; loop args
-    | "-verbose" :: args -> verbose := true; loop args
 
     | "-cupt" :: args -> output := Conll (Conll_columns.cupt); loop args
     | "-semcor" :: args -> output := Conll (Conll_columns.frsemcor); loop args

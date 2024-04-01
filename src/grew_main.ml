@@ -306,11 +306,7 @@ let _ =
   | Some "compile" ->
     let corpusbank = load_corpusbank () in
     let filter = build_filter () in
-    Corpusbank.iter ~filter
-      (fun corpus_id corpus_desc ->
-        try Corpus_desc.compile ~force:!Grew_cli_global.force corpus_desc
-        with Grewlib.Error msg -> Log.warning "--> %s skipped (%s)" corpus_id msg
-      ) corpusbank
+    Corpusbank.compile ~filter corpusbank
   
   | Some "clean" ->
     let corpusbank = load_corpusbank () in
@@ -336,14 +332,13 @@ let _ =
 
   | Some "status" -> 
     let corpusbank = load_corpusbank () in
-    Corpusbank.dump_status corpusbank
+    let filter = build_filter () in
+    Corpusbank.print_status ~filter corpusbank
 
   | Some "build" -> 
     let corpusbank = load_corpusbank () in
     let filter = build_filter () in
-    Corpusbank.iter ~filter
-      (fun _ corpus_desc -> Corpusbank.build_derived corpusbank corpus_desc)
-      corpusbank
+    Corpusbank.build ~filter corpusbank
 
   | Some "search" ->
     let corpusbank = load_corpusbank () in
@@ -356,16 +351,8 @@ let _ =
     let corpusbank = load_corpusbank () in
     let filter = build_filter () in
     Corpusbank.iter ~filter
-      (fun corpus_id corpus_desc -> 
-            Log.green "%s\n" corpus_id;
-            match Corpus_desc.to_json corpus_desc with
-            | `Assoc l ->
-              List.iter 
-              (fun (k,v) -> 
-                Printf.printf "%s --> %s\n%!" k (Yojson.Basic.pretty_to_string v)
-              ) l
-            | _ -> assert false
-      ) corpusbank
+      (fun _ corpus_desc -> Corpus_desc.show corpus_desc)
+      corpusbank
 
   | Some cmd -> error "Unknown command \"%s\"" cmd
   | None -> error "Missing subcommand"
