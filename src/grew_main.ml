@@ -16,110 +16,6 @@ open Grew_cli_global
 open Grew_cli_utils
 open Grew_args
 
-(* ==================================================================================================== *)
-module Validation = struct
-  type item = {
-    request: string list; (* JSON does not support multi line strings *)
-    description: string;
-    level: string;
-  }
-
-  type modul = {
-    title: string;
-    items: item list;
-    languages: string list option; (* list of the languages codes restriction, None for all lang *)
-  }
-
-  (* -------------------------------------------------------------------------------- *)
-  let load_json json_file =
-    let open Yojson.Basic.Util in
-
-    let json =
-      try Yojson.Basic.from_file json_file
-      with Yojson.Json_error msg -> error ~fct:"Validation.load_json" ~file:json_file "%s" msg in
-
-    let parse_one json =
-      let request =
-        try json |> member "request" |> to_string |> (fun x -> [x])
-        with Type_error _ ->
-        try json
-            |> member "request"
-            |> to_list
-            |> (List.map to_string)
-        with Type_error (json_error,_) ->
-          error
-            ~fct:"Validation.load_json"
-            ~file: json_file
-            "\"request\" field is mandatory and must be a string or a list of strings (%s)" json_error in
-      let description =
-        try json |> member "description" |> to_string
-        with Type_error _ -> "No description" in
-      let level =
-        try json |> member "level" |> to_string
-        with Type_error _ -> "No level" in
-
-      { request; description; level } in
-
-    let title =
-      try json |> member "title" |> to_string
-      with Type_error (json_error,_) ->
-        error
-          ~fct:"Validation.load_json"
-          ~file: json_file
-          "\"title\" field is mandatory and must be a string or a list of strings (%s)" json_error in
-    let items = List.map parse_one (json |> member "items" |> to_list) in
-    let languages = try Some (json |> member "languages" |> to_list |> List.map to_string) with Type_error _ -> None in
-    { title; items; languages }
-
-  (* -------------------------------------------------------------------------------- *)
-  let check modul_list out_file (corpus_desc:Corpus_desc.t) =
-    let corpus = Corpus_desc.build_corpus corpus_desc in
-    let config = Corpus_desc.get_config corpus_desc in
-    let corpus_id = Corpus_desc.get_id corpus_desc in
-
-    let modules =
-      `List
-        (CCList.filter_map
-          (fun modul ->
-            match (Corpus_desc.get_field_opt "lang" corpus_desc, modul.languages) with
-              | (Some lang, Some lang_list) when not (List.mem lang lang_list) -> None
-              | _ ->
-                let (out_items : Yojson.Basic.t) =
-                  `List
-                    (List.map
-                      (fun item ->
-                        let grew_request =
-                          try Request.parse ~config (String.concat "\n" item.request)
-                          with Grewlib.Error msg ->
-                            error
-                              ~fct:"Validation.check"
-                              ~data:(`String (String.concat " " item.request))
-                              "cannot parse request associated with desc: %s (%s)" item.description msg in
-                        let count =
-                          Corpus.fold_left (fun acc _ graph ->
-                              acc + (List.length (Matching.search_request_in_graph ~config grew_request graph))
-                            ) 0 corpus in
-                        `Assoc [
-                          "count", `Int count;
-                          "request", `List (List.map (fun x -> `String x) item.request);
-                          "description", `String item.description;
-                          "level", `String item.level
-                        ]
-                      ) modul.items
-                    ) in
-              Some (`Assoc ["title", `String modul.title; "items", out_items])
-          ) modul_list
-        ) in
-
-    let json = `Assoc [
-        "corpus", `String corpus_id;
-        "date", `String (Log.now ());
-        "modules", modules
-      ] in
-
-    CCIO.with_out out_file (fun out_ch -> fprintf out_ch "%s\n" (Yojson.Basic.pretty_to_string json))
-end (* module Validation *)
-
 (* -------------------------------------------------------------------------------- *)
 let transform () =
   let config = !Grew_cli_global.config in
@@ -378,81 +274,9 @@ let count () =
         count_clustered in
       Printf.printf "%s\n" (Yojson.Basic.pretty_to_string json)
 
-(* -------------------------------------------------------------------------------- *)
-let valid_sud () =
-  let corpus_desc_list = match Input.parse () with
-  | Mono _ -> error ~fct:"Grew.valid" "valid mode requires multi-corpora input data"
-  | Multi l -> l in
-
-  match !Grew_cli_global.valid_dir with
-  | None -> error ~fct:"valid_sud" "No directory set for validator"
-  | Some dir -> 
-  let all_files = Sys.readdir dir |> Array.to_list in
-  let json_files = List.filter (fun file -> Filename.extension file = ".json") all_files in
-  let full_files = List.map (fun file -> Filename.concat dir file) json_files in
-  let modules_time = List.fold_left (fun acc file -> max acc (File.last_modif file)) Float.min_float full_files in
-  let validator_list = List.map Validation.load_json full_files in
-    List.iter
-      (fun corpus_desc ->
-        let corpus_id = Corpus_desc.get_id corpus_desc in
-        match Corpus_desc.get_field_opt "config" corpus_desc with
-        | None -> Log.warning "No config defined for corpus %s " corpus_id
-        | Some "sud" ->
-          let valid_file = File.concat_names [Corpus_desc.get_directory corpus_desc; "_build_grew"; corpus_id; "valid_sud.json"] in
-          let valid_time = File.last_modif valid_file in
-          let files = Corpus_desc.get_files corpus_desc in
-          let files_time = List.fold_left (fun acc file -> max acc (File.last_modif file)) Float.min_float files in
-          if valid_time > files_time && valid_time > modules_time
-          then Log.green "%s --> SUD validation is uptodate\n" corpus_id
-          else
-            begin
-              if not !quiet then Log.blue "SUD validation of %s%!\n" (Corpus_desc.get_id corpus_desc);
-              Validation.check validator_list valid_file corpus_desc
-            end
-        | Some c -> Log.magenta "%s has config %s and not sud, cannot be SUD validated\n" corpus_id c
-      ) corpus_desc_list
-
-(* -------------------------------------------------------------------------------- *)
-let valid_ud () =
-  let validate_script = match !udtools with
-  | Some dir -> Filename.concat dir "validate.py" 
-  | None -> error "env UDTOOLS undefined" in
-  let corpus_desc_list = match Input.parse () with
-  | Mono _ -> error ~fct:"Grew.valid_ud" "valid_ud mode requires multi-corpora input data"
-  | Multi l -> l in
-    List.iter (fun corpus_desc ->
-      let corpus_id = Corpus_desc.get_id corpus_desc in
-      match (Corpus_desc.get_field_opt "config" corpus_desc, Corpus_desc.get_field_opt "lang" corpus_desc) with
-      | (_, None) -> Log.warning "No lang defined for corpus %s " corpus_id
-      | (None, _) -> Log.warning "No config defined for corpus %s " corpus_id
-      | (Some "ud", Some lang) ->
-        let valid_file = File.concat_names [ Corpus_desc.get_directory corpus_desc; "_build_grew"; corpus_id; "valid_ud.txt"] in
-        let valid_time = File.last_modif valid_file in
-        let files = Corpus_desc.get_files corpus_desc in
-        let files_time = List.fold_left (fun acc file -> max acc (File.last_modif file)) Float.min_float files in
-        if valid_time > files_time
-        then Log.green "%s --> UD validation is uptodate\n" corpus_id
-        else
-          begin
-            let out_ch = open_out valid_file in
-            Printf.fprintf out_ch "%s\n" (Log.now ());
-            close_out out_ch;
-            List.iter (fun file ->
-              if not !quiet then printf "validate %s file of %s\n%!" (Filename.basename file) corpus_id;
-              let out_ch = open_out_gen [Open_append] 0o644 valid_file in
-              Printf.fprintf out_ch "================================ %s ================================\n" (Filename.basename file);
-              close_out out_ch;  
-              let command = sprintf "%s --lang=%s --max-err 0 %s 2>>  %s || true" validate_script lang file valid_file in
-              ignore (Sys.command command)
-            ) files
-          end
-      | (Some c, _) -> Log.magenta "%s has config %s and not ud, cannot be UD validated\n" corpus_id c
-    ) corpus_desc_list
-
-
 let load_corpusbank () =
-  match !Grew_cli_global.corpusbank with
-  | None -> error "No corpusbank defined"
+  match getenv_opt "CORPUSBANK" with
+  | None -> error "No CORPUSBANK defined"
   | Some dir -> Corpusbank.load dir
 
 let build_filter () =
@@ -469,18 +293,23 @@ let _ =
   | Some "transform" -> transform ()
   | Some "grep" -> grep ()
   | Some "count" -> count ()
-  | Some "valid_sud" -> valid_sud ()
-  | Some "valid_ud" -> valid_ud ()
+
+  | Some "validate" ->
+    let corpusbank = load_corpusbank () in
+    let filter = build_filter () in
+    Corpusbank.iter ~filter
+      (fun corpus_id corpus_desc ->
+        try Corpus_desc.validate ~env:!env corpus_desc
+        with Grewlib.Error msg -> Log.warning "--> %s skipped (%s)" corpus_id msg
+      ) corpusbank
 
   | Some "compile" ->
     let corpusbank = load_corpusbank () in
     let filter = build_filter () in
-    Corpusbank.iter
+    Corpusbank.iter ~filter
       (fun corpus_id corpus_desc ->
-        if filter corpus_id
-        then
-          try Corpus_desc.compile ~force:!Grew_cli_global.force corpus_desc
-          with Grewlib.Error msg -> Log.warning "--> %s skipped (%s)" corpus_id msg
+        try Corpus_desc.compile ~force:!Grew_cli_global.force corpus_desc
+        with Grewlib.Error msg -> Log.warning "--> %s skipped (%s)" corpus_id msg
       ) corpusbank
   
   | Some "clean" ->

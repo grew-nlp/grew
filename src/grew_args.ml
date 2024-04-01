@@ -87,8 +87,6 @@ module Grew_args = struct
         clustering := !clustering @ [Printf.sprintf "{%s}" s]; loop args
     | "-html" :: args -> html := true; loop args
 
-    | "-valid_dir" :: dir :: args -> valid_dir := Some dir; loop args
-
     | "-timeout" :: f :: args -> timeout := Some (float_of_string f); Rewrite.set_timeout (Some (float_of_string f)); loop args
     | "-max_rules" :: i :: args -> Rewrite.set_max_rules (int_of_string i); loop args
 
@@ -111,7 +109,11 @@ module Grew_args = struct
     | "-dep_dir" :: dir :: args -> dep_dir := Some dir; loop args
 
     | "-config" :: value :: args -> config := handle (fun () -> Conll_config.build value) (); loop args
-    | "-corpusbank" :: value :: args -> corpusbank := Some value; loop args
+
+    | "-CORPUSBANK" :: value :: args -> setenv "CORPUSBANK" value; loop args
+    | "-UDTOOLS" :: value :: args -> setenv "UDTOOLS" value; loop args
+    | "-SUDTOOLS" :: value :: args -> setenv "SUDTOOLS" value; loop args
+    | "-SUDVALIDATION" :: value :: args -> setenv "SUDVALIDATION" value; loop args
 
     | "-rff" :: value :: args -> config := Conll_config.remove_from_feats value !config; loop args
 

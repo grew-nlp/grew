@@ -31,14 +31,6 @@ let (timeout : float option ref) = ref None
 let (requests : string list ref) = ref []
 let html = ref false
 
-let corpusbank = ref (Sys.getenv_opt "CORPUSBANK")
-let udtools = ref (Sys.getenv_opt "UDTOOLS")
-
-let valid_dir =
-  match Sys.getenv_opt "SUDTOOLS" with
-  | None -> ref None
-  | Some sudtools -> ref (Some (List.fold_left Filename.concat "" [sudtools; "validator"; "modules"]))
-
 let (clustering : string list ref) = ref []
 
 let config = ref (Conll_config.build "ud")  (* "ud" is used as default value. *)
@@ -46,3 +38,17 @@ let config = ref (Conll_config.build "ud")  (* "ud" is used as default value. *)
 let force = ref false
 
 let (anonymous_args : string list ref) = ref []
+
+
+let vars = ["CORPUSBANK"; "UDTOOLS"; "SUDTOOLS"; "SUDVALIDATION"] 
+let (env: (string * string) list ref) =
+  let init_env =
+    List.fold_left
+      (fun acc k ->
+        match Sys.getenv_opt k with
+        | None -> acc
+        | Some v -> (k,v)::acc
+      ) [] vars in
+  ref (init_env)
+let setenv  k v = env := (k,v) :: List.remove_assoc k !env
+let getenv_opt k = List.assoc_opt k !env
