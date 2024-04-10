@@ -19,6 +19,7 @@ open Grew_args
 (* -------------------------------------------------------------------------------- *)
 let transform () =
   let config = !Grew_cli_global.config in
+  let fix = if !text_from_tokens then Conll.text_from_tokens else CCFun.id in
   let grs = match !Grew_cli_global.grs with
     | None -> Grs.empty
     | Some file -> Grs.load ~config file in
@@ -37,7 +38,7 @@ let transform () =
     | Conll columns ->
       fprintf out_ch "%s\n" (Conll_columns.to_string columns);
       (
-        (fun graph -> fprintf out_ch "%s\n" (graph |> Graph.to_json |> Conll.of_json |> Conll.to_string ~config ~columns)),
+        (fun graph -> fprintf out_ch "%s\n" (graph |> Graph.to_json |> Conll.of_json |> fix |> Conll.to_string ~config ~columns)),
         (fun () -> ())
       )
     | Dot ->

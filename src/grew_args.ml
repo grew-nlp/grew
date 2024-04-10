@@ -100,6 +100,7 @@ module Grew_args = struct
     | "-tsv" :: args -> output := Tsv; loop args
     | "-multi_json" :: args -> output := Multi_json; loop args
 
+    | "-text_from_tokens" :: args -> text_from_tokens := true; loop args
     | "-force" :: args -> force := true; loop args
 
     | "-safe_commands" :: args -> Grewlib.set_safe_commands true; loop args

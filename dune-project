@@ -27,7 +27,7 @@
   dune-build-info
   (containers ( >= "3.6" ))
   amr 
-  conll 
+  (conll ( >= "1.18" ))
   (grewlib ( >= "1.15.0" ))
  )
  (tags
