@@ -334,7 +334,7 @@ let _ =
   | Some "status" -> 
     let corpusbank = load_corpusbank () in
     let filter = build_filter () in
-    Corpusbank.print_status ~filter corpusbank
+    Corpusbank.print_status ~verbose:!verbose ~filter corpusbank
 
   | Some "build" -> 
     let corpusbank = load_corpusbank () in
@@ -344,10 +344,14 @@ let _ =
   | Some "search" ->
     let corpusbank = load_corpusbank () in
     let filter = build_filter () in
-    Corpusbank.iter ~filter
-      (fun corpus_id _ -> Printf.printf "%s\n%!" corpus_id)
-      corpusbank
-
+    let filtered =
+      Corpusbank.fold ~filter
+       (fun _ corpus_desc acc -> corpus_desc::acc) 
+       corpusbank [] in
+    Printf.printf "TOTAL: %d corpora found\n" (List.length filtered);
+    List.iter
+    (fun corpus_desc-> Printf.printf " ➔ %s\n%!" (Corpus_desc.get_id corpus_desc))
+      filtered
   | Some "show" ->
     let corpusbank = load_corpusbank () in
     let filter = build_filter () in
