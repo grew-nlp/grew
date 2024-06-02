@@ -348,9 +348,10 @@ let _ =
       Corpusbank.fold ~filter
        (fun _ corpus_desc acc -> corpus_desc::acc) 
        corpusbank [] in
-    Printf.printf "TOTAL: %d corpora found\n" (List.length filtered);
+    let num = List.length filtered in
+    Printf.printf "TOTAL: %d corp%s found\n" num (if num > 1 then "ora" else "us");
     List.iter
-    (fun corpus_desc-> Printf.printf " ➔ %s\n%!" (Corpus_desc.get_id corpus_desc))
+      (fun corpus_desc-> Printf.printf " ➔ %s\n%!" (Corpus_desc.get_id corpus_desc))
       filtered
   | Some "show" ->
     let corpusbank = load_corpusbank () in
@@ -359,7 +360,7 @@ let _ =
       (fun _ corpus_desc -> Corpus_desc.show corpus_desc)
       corpusbank
 
-  | Some cmd -> error "Unknown command \"%s\"" cmd
+  | Some cmd -> error "Unknown command: \"%s\"" cmd
   | None -> error "Missing subcommand"
 
   in handle run ()
