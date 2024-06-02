@@ -1,3 +1,7 @@
+# 1.16.0 (2024/06/02)
+  - follow grewlib version
+  - add corpusbank handling (WIP)
+
 # 1.15.0 (2024/01/02)
   - follow grewlib version
   - remove ocaml version constraint "< 5"
