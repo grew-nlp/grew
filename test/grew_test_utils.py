@@ -35,3 +35,8 @@ def success (cmd, expected):
             print ("============ Obtained ============")
             print (obt)
 
+def run (cmd):
+    exe = subprocess.run (cmd, shell=True, capture_output=True)
+    if exe.returncode != 0:
+        print (colored('FAILED ', 'red'), cmd)
+        print (' --> the command failed with error ' % exe.stderr)
