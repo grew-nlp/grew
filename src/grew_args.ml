@@ -95,7 +95,7 @@ module Grew_args = struct
 
     | "-cupt" :: args -> output := Conll (Conll_columns.cupt); loop args
     | "-semcor" :: args -> output := Conll (Conll_columns.frsemcor); loop args
-    | "-columns" :: desc :: args -> output := Conll (Conll_columns.build desc); loop args
+    | "-columns" :: desc :: args -> output := Conll (desc |> CCString.split_on_char ' ' |> Conll_columns.of_list); loop args
     | "-dot" :: args -> output := Dot; loop args
     | "-json" :: args -> output := Json; loop args
     | "-tsv" :: args -> output := Tsv; loop args
