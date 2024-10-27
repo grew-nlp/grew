@@ -78,7 +78,7 @@ module Grew_args = struct
     | "-requests" :: files :: args -> requests := !requests @ (Str.split (Str.regexp " ") files); loop args
     | "-pattern" :: files :: args
     | "-patterns" :: files :: args -> 
-        Log.warning "-pattern and -patterns comman line args are deprecated, replaced by -request and -requests"; 
+        Log.warning "-pattern and -patterns command line args are deprecated, replaced by -request and -requests"; 
         requests := !requests @ (Str.split (Str.regexp " ") files); loop args
 
     | "-key" :: s :: args -> clustering := !clustering @ [s]; loop args

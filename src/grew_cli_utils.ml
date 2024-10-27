@@ -93,7 +93,8 @@ module Input = struct
               match Unix.stat one with
               | { Unix.st_kind = Unix.S_DIR; _ } -> Mono (Corpus.from_dir ~config one)
               | _ -> Mono (Corpus.from_file ~config one)
-            with Unix.Unix_error _ -> error ~fct:"[Input.parse]" "File not found `%s`" one
+            with 
+            | Unix.Unix_error _ -> error ~fct:"[Input.parse]" "File not found `%s`" one
           end
         | files ->
           let sub_corpora =
