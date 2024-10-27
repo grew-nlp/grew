@@ -1,3 +1,6 @@
+## 1.16.1 (2024/10/27)
+  - new Conll interface
+
 # 1.16.0 (2024/06/02)
   - follow grewlib version
   - add corpusbank handling (WIP)
