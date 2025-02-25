@@ -155,9 +155,10 @@ let grep () =
             | Some corpus -> clustered_corpus ~config corpus
         )
         (fun corpus_desc -> Some (Corpus_desc.get_id corpus_desc))
-        [] corpus_desc_list in
+        corpus_desc_list in
 
     let final_json = Clustered.fold_layer
+      []
       (fun json_list -> `List json_list)
       []
       (fun string_opt sub acc -> (CCOption.get_or ~default:"__undefined__" string_opt, sub) :: acc)
@@ -178,7 +179,7 @@ let count () =
       Corpus.search ~config 0 (fun _ _ _ x -> x+1) request clustert_item2_list corpus
     )
     (fun file_request -> Some file_request)
-    0 !Grew_cli_global.requests in
+    !Grew_cli_global.requests in
 
   let input = Input.parse () in
   let count_clustered = match input with
@@ -192,7 +193,7 @@ let count () =
           | Some corpus -> clustered_corpus ~config corpus
       )
       (fun corpus_desc -> Some (Corpus_desc.get_id corpus_desc))
-      0 corpus_desc_list in
+      corpus_desc_list in
   match (!Grew_cli_global.output, input, !Grew_cli_global.requests, !Grew_cli_global.clustering) with
 
     (* TSV + Multi + Several requests + No clustering *)
@@ -268,6 +269,7 @@ let count () =
     (* JSON output *)
     | _ ->
       let json = Clustered.fold_layer
+        0
         (fun x -> `Int x)
         []
         (fun string_opt sub acc -> (CCOption.get_or ~default:"__undefined__" string_opt, sub) :: acc)
