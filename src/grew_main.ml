@@ -305,12 +305,18 @@ let _ =
       ) corpusbank
 
   | Some "compile" ->
-    let corpusbank = load_corpusbank () in
+    let corpusbank =
+      match !input_data with
+      | [] -> load_corpusbank ()
+      | l -> Corpusbank.read_files l in
     let filter = build_filter () in
     Corpusbank.compile ~filter corpusbank
   
   | Some "clean" ->
-    let corpusbank = load_corpusbank () in
+    let corpusbank =
+      match !input_data with
+      | [] -> load_corpusbank ()
+      | l -> Corpusbank.read_files l in
     let filter = build_filter () in
     let filtered =
       Corpusbank.fold ~filter
