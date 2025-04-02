@@ -2,7 +2,7 @@
 
 (name grew)
 
-(version 1.16.1)
+(version 1.17.0)
 
 (generate_opam_files true)
 
@@ -28,7 +28,7 @@
   (containers ( >= "3.6" ))
   amr 
   (conll ( >= "1.19.0" ))
-  (grewlib ( >= "1.16.3" ))
+  (grewlib ( >= "1.17.0" ))
  )
  (tags
   (nlp "graph rewriting")

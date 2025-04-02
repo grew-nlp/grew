@@ -1,3 +1,6 @@
+# 1.17.0 (2025/04/02)
+  - follow grewlib version (Review Clustered code for multi-corpus grew-match)
+
 ## 1.16.1 (2024/10/27)
   - new Conll interface
 
