@@ -14,8 +14,22 @@ open Grewlib
 
 open Grew_cli_global
 
+let rec json_to_string = function
+  | `Assoc list ->
+      list |> List.map (fun (k,v) -> sprintf "%s --> %s" k (json_to_string v)) |> String.concat "\n"
+  | `String s -> s
+  | x -> Yojson.Basic.pretty_to_string x
+
+let from_json json =
+  let open Yojson.Basic.Util in
+  if !Grew_cli_global.verbose
+  then json_to_string json
+  else sprintf "%s" (json |> member "message" |> to_string)
+
+
 (* ==================================================================================================== *)
 module Log = struct
+
   let warning_ message =
     ANSITerminal.eprintf [ANSITerminal.blue] "WARNING: %s\n" message;
     eprintf "%!" (* force synchronous printing *)
@@ -23,7 +37,7 @@ module Log = struct
   let warning message = Printf.ksprintf warning_ message
 
   let fail_ message =
-    ANSITerminal.eprintf [ANSITerminal.red] "FAIL: %s\n" message;
+    ANSITerminal.eprintf [ANSITerminal.red] "%s\n" message;
     eprintf "%!" (* force synchronous printing *);
     exit 1
 
@@ -35,7 +49,7 @@ exception Error of Yojson.Basic.t
 
 let error_ ?file ?line ?fct ?data msg =
   let opt_list = [
-    Some ("error", `String msg);
+    Some ("message", `String msg);
     (CCOption.map (fun x -> ("file", `String x)) file);
     (CCOption.map (fun x -> ("line", `Int x)) line);
     (CCOption.map (fun x -> ("function", `String x)) fct);
@@ -45,31 +59,27 @@ let error_ ?file ?line ?fct ?data msg =
   raise (Error json)
 
 let error ?file ?line ?fct ?data = Printf.ksprintf (error_ ?file ?line ?fct ?data)
-
-let bug_ msg = Log.fail "%s" msg 
-let bug msg = Printf.ksprintf bug_ msg
 (* -------------------------------------------------------------------------------- *)
 
 let handle fct () =
   try fct ()
   with
-  | Error json ->                  Log.fail "%s" (Yojson.Basic.pretty_to_string json)
-  | Conll_error json ->            Log.fail "%s" (Yojson.Basic.pretty_to_string json)
-  | Grewlib.Error msg ->           Log.fail "%s" msg
-  | Sys_error msg ->               Log.fail "%s" (sprintf "System error: %s" msg)
-  | Yojson.Json_error msg ->       Log.fail "%s" (sprintf "Json error: %s" msg)
-  | Grewlib.Bug msg ->             Log.fail "%s" (sprintf "Grewlib.bug, please report: %s" msg)
-  | exc ->                         Log.fail "%s" (sprintf "Uncaught exception, please report: %s" (Printexc.to_string exc))
+  | Error json ->                  Log.fail "Error: %s" (from_json json)
+  | Conll_error json ->            Log.fail "Conll error: %s" (from_json json)
+  | Grewlib.Error msg ->           Log.fail "Grewlib error: %s" msg
+  | Sys_error msg ->               Log.fail "System error: %s" msg
+  | Yojson.Json_error msg ->       Log.fail "Json error: %s" msg
+  | Grewlib.Bug msg ->             Log.fail "Grewlib.bug, please report:\n%s" msg
+  | exc ->                         Log.fail "Uncaught exception, please report: %s" (Printexc.to_string exc)
 
 (* ================================================================================ *)
 module Counter = struct
-  let back = sprintf "\r%s\r" (String.make 100 ' ')
 
   let print value total text =
     if not !quiet
-    then eprintf "%s%.2f%% (%s)%!" back (((float value) /. (float total))*. 100. ) text
+    then eprintf "\r\027[K%.2f%% (%s)%!" (((float value) /. (float total))*. 100. ) text
 
-  let finish () = if not !quiet then eprintf "%s100.00%%\n%!" back
+  let finish () = if not !quiet then eprintf "\r\027[K100.00%%\n%!"
 end (* module Counter *)
 
 (* ==================================================================================================== *)

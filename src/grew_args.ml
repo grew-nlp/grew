@@ -18,53 +18,20 @@ open Grew_cli_utils
 
 module Grew_args = struct
   let help () = List.iter (fun x -> Printf.printf "%s\n%!" x) [
-      "----------------------------------------------------------";
-      "usage: grew <subcommand> [<args>]";
+      "-----------------------------------------------------------------";
+      " See https://grew.fr/usage/cli/ for a comprehensive documentation";
+      "-----------------------------------------------------------------";
+      "Usage: grew <subcommand> [<args>]";
       "";
-      "subcommands are:";
+      "Main subcommands:";
       "  transform  Apply a GRS on a corpus";
-      "  grep       Search for a request in a corpus";
+      "  grep       Search request(s) in corpora";
+      "  count      Count request(s) in corpora";
+      "";
+      "Other subcommands:";
       "  version    Print current version number";
-      "  help <sub> Print help for the given subcommand";
-      "";
-      "see subcommands help for args";
-      "For additional information, see https://grew.fr";
-      "----------------------------------------------------------";
-    ]
-
-  let help_grep () = List.iter (fun x -> Printf.printf "%s\n" x) [
-      "----------------------------------------------------------";
-      "usage: grew grep [<args>]";
-      "";
-      "This subcommand searches for a request in a corpus.";
-      "";
-      "args are optionnal and can be change in the GUI:";
-      "  -request <req>   The request to search for";
-      "  -i <corp>        The input data";
-      "";
-      "For additional information, see https://grew.fr";
-      "----------------------------------------------------------";
-    ]
-
-  let help_transform () = List.iter (fun x -> Printf.printf "%s\n" x) [
-      "----------------------------------------------------------";
-      "usage: grew transform [<args>]";
-      "";
-      "This subcommand applies a grs to a graph or a corpus.";
-      "";
-      "Required arguments:";
-      "  -grs <file>    The Graph Rewriting System to load";
-      "  -i <file>      The input data (a graph or a corpus)";
-      "  -o <file>      The output file";
-      "";
-      "Optionnal arguments:";
-      "  -strat <name>  The strategy used in transformation (default=\"main\")";
-      "  -cupt          If the option is present, a 11-column CoNLL format is produced";
-      "  -gr            If the option is present, the gr output format is produced";
-      "  -track_rules   If the option is present, data about the rules applied are given in output";
-      "";
-      "For additional information, see https://grew.fr";
-      "----------------------------------------------------------";
+      "  libraries  Print versions of Ocaml libraries used";
+      "-----------------------------------------------------------------";
     ]
 
   let rec loop = function
@@ -124,14 +91,14 @@ module Grew_args = struct
 
   let parse () =
     match Array.to_list Sys.argv with
-    | [] -> bug "Empty Sys.argv"
-    | [_] -> help ()
+    | [] -> assert false
+    | [_] -> help (); exit 0
     | _ :: "version" :: _ ->
       begin
         match Build_info.V1.version () with
         | Some v -> Printf.printf "%s\n" (Build_info.V1.Version.to_string v)
         | None -> Printf.printf "dev\n%!"
-      end
+      end; exit 0
     | _ :: "libraries" :: _ ->
         List.iter
         (fun lib -> match Build_info.V1.Statically_linked_library.version lib with
@@ -139,9 +106,7 @@ module Grew_args = struct
           (Build_info.V1.Statically_linked_library.name lib)
           (Build_info.V1.Version.to_string v)
         | None -> ()
-        ) (Build_info.V1.Statically_linked_libraries.to_list ())
-    | _ :: "help" :: "transform" :: _ -> help_transform ()
-    | _ :: "help" :: "grep" :: _ -> help_grep ()
-    | _ :: "help" :: _ -> help ()
+        ) (Build_info.V1.Statically_linked_libraries.to_list ()); exit 0
+    | _ :: "help" :: _ -> help (); exit 0
     | _ :: sub :: args -> subcommand := Some sub; loop args
 end
