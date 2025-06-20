@@ -15,12 +15,11 @@ open Grewlib
 open Grew_cli_global
 open Grew_cli_utils
 
-
 module Grew_args = struct
-  let help () = List.iter (fun x -> Printf.printf "%s\n%!" x) [
-      "-----------------------------------------------------------------";
-      " See https://grew.fr/usage/cli/ for a comprehensive documentation";
-      "-----------------------------------------------------------------";
+  let help () = List.iter (fun x -> ANSITerminal.printf [ANSITerminal.blue] "%s\n%!" x) [
+      "----------------------------------------------------------------";
+      "See https://grew.fr/usage/cli/ for a comprehensive documentation";
+      "----------------------------------------------------------------";
       "Usage: grew <subcommand> [<args>]";
       "";
       "Main subcommands:";
@@ -29,6 +28,7 @@ module Grew_args = struct
       "  count      Count request(s) in corpora";
       "";
       "Other subcommands:";
+      "  help       Print this message";
       "  version    Print current version number";
       "  libraries  Print versions of Ocaml libraries used";
       "-----------------------------------------------------------------";

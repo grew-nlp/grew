@@ -66,7 +66,7 @@ let handle fct () =
   with
   | Error json ->                  Log.fail "Error: %s" (from_json json)
   | Conll_error json ->            Log.fail "Conll error: %s" (from_json json)
-  | Grewlib.Error msg ->           Log.fail "Grewlib error: %s" msg
+  | Grewlib.Error msg ->           Log.fail "Grewlib error:\n  %s" msg
   | Sys_error msg ->               Log.fail "System error: %s" msg
   | Yojson.Json_error msg ->       Log.fail "Json error: %s" msg
   | Grewlib.Bug msg ->             Log.fail "Grewlib.bug, please report:\n%s" msg

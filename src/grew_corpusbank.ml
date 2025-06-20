@@ -15,12 +15,26 @@ open Grew_cli_global
 open Grew_cli_utils
 
 let load_corpusbank () =
-  match getenv_opt "CORPUSBANK" with
-  | None -> error "No CORPUSBANK defined"
-  | Some dir -> Corpusbank.load dir
-
+  match !input_data with
+  | [] ->
+    begin
+      match getenv_opt "CORPUSBANK" with
+      | None -> error "No CORPUSBANK defined"
+      | Some dir -> Corpusbank.load dir
+     end
+  | l -> Corpusbank.read_files l
 let build_filter () =
   Corpusbank.build_filter (!Grew_cli_global.anonymous_args)
+
+let filtered_list filter corpusbank =
+  Corpusbank.fold ~filter
+  (fun _ corpus_desc acc -> corpus_desc::acc) 
+  corpusbank []
+
+let filtered_count filter corpusbank =
+  Corpusbank.fold ~filter
+  (fun _ _ acc -> acc + 1) 
+  corpusbank 0
 
 let validate () = 
   let corpusbank = load_corpusbank () in
@@ -32,23 +46,14 @@ let validate () =
     ) corpusbank
 
 let compile () =
-  let corpusbank =
-    match !input_data with
-    | [] -> load_corpusbank ()
-    | l -> Corpusbank.read_files l in
+  let corpusbank = load_corpusbank () in
   let filter = build_filter () in
   Corpusbank.compile ~force:!Grew_cli_global.force ~filter corpusbank
 
 let clean () =
-  let corpusbank =
-    match !input_data with
-    | [] -> load_corpusbank ()
-    | l -> Corpusbank.read_files l in
+  let corpusbank = load_corpusbank () in
   let filter = build_filter () in
-  let filtered =
-    Corpusbank.fold ~filter
-     (fun _ corpus_desc acc -> corpus_desc::acc) 
-     corpusbank [] in
+  let filtered = filtered_list filter corpusbank in
   let really_clean () = List.iter Corpus_desc.clean filtered in
   if !Grew_cli_global.force
   then really_clean ()
@@ -58,7 +63,7 @@ let clean () =
     then
       really_clean ()
     else
-      let _ = Printf.printf "This will clean %d corpora, are you sure [y/N]?\n%!" nb in 
+      let _ = printf "This will clean %d corpora, are you sure [y/N]?\n%!" nb in 
       let answer = read_line () in
       if answer = "y" || answer = "Y" 
       then really_clean ()
@@ -77,14 +82,11 @@ let build () =
 let search () =
   let corpusbank = load_corpusbank () in
   let filter = build_filter () in
-  let filtered =
-    Corpusbank.fold ~filter
-     (fun _ corpus_desc acc -> corpus_desc::acc) 
-     corpusbank [] in
+  let filtered = filtered_list filter corpusbank in
   let num = List.length filtered in
-  Printf.printf "TOTAL: %d corp%s found\n" num (if num > 1 then "ora" else "us");
+  printf "TOTAL: %d corp%s found\n" num (if num > 1 then "ora" else "us");
   List.iter
-    (fun corpus_desc-> Printf.printf " ➔ %s\n%!" (Corpus_desc.get_id corpus_desc))
+    (fun corpus_desc-> printf " ➔ %s\n%!" (Corpus_desc.get_id corpus_desc))
     filtered
 
 let show () =
