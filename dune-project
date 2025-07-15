@@ -2,7 +2,7 @@
 
 (name grew)
 
-(version 1.17.0)
+(version 1.18.0)
 
 (generate_opam_files true)
 
@@ -27,8 +27,8 @@
   dune-build-info
   (containers ( >= "3.6" ))
   amr 
-  (conll ( >= "1.19.0" ))
-  (grewlib ( >= "1.17.0" ))
+  conll
+  (grewlib ( >= "1.18.0" ))
  )
  (tags
   (nlp "graph rewriting")

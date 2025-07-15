@@ -1,3 +1,7 @@
+# 1.18.0 (2025/07/15)
+  - follow grewlib 1.18.0
+  - review and simplify `grew help` output
+
 # 1.17.0 (2025/04/02)
   - follow grewlib version (Review Clustered code for multi-corpus grew-match)
 
