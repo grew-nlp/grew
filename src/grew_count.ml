@@ -16,7 +16,12 @@ open Grew_cli_utils
 
 (* -------------------------------------------------------------------------------- *)
 let count () =
-  let clustered_corpus ~config corpus = 
+  match !Grew_cli_global.requests with
+  | [] -> Printf.printf "%s\n" (Yojson.Basic.pretty_to_string (`Assoc []))
+  | request_list -> 
+
+  let clustered_corpus ~config corpus =
+
     Clustered.build_layer
     (fun file_request -> 
       let request = request_load_or_parse ~config file_request in
@@ -24,7 +29,7 @@ let count () =
       Corpus.search ~config 0 (fun _ _ _ x -> x+1) request clustert_item2_list corpus
     )
     (fun file_request -> Some file_request)
-    !Grew_cli_global.requests in
+    request_list in
 
   let input = Input.parse () in
   let count_clustered = match input with
