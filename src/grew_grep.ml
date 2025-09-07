@@ -53,7 +53,7 @@ let grep () =
     | Some d -> ignore (Sys.command (sprintf "mkdir -p %s" d)));
 
     let clustered_corpus ~config corpus =
-      let request = Request.load ~config request_file in
+      let request = request_load_or_parse ~config request_file in
       let clustert_item2_list = List.map (Request.parse_cluster_item ~config request) !Grew_cli_global.clustering in
       Corpus.search
         ~config 

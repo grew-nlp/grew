@@ -34,6 +34,13 @@ module Grew_args = struct
       "-----------------------------------------------------------------";
     ]
 
+
+  let push_request string_request =
+    requests := !requests @ [string_request]
+
+  let push_request_list string_request_list = 
+    requests := !requests @ string_request_list
+
   let rec loop = function
     | [] -> ()
     | "-grs" :: file :: args -> grs := Some file; loop args
@@ -41,12 +48,15 @@ module Grew_args = struct
     | "-o" :: file :: args -> output_data := Some file; loop args
     | "-strat" :: s :: args -> strat := s; loop args
 
-    | "-request" :: files :: args
-    | "-requests" :: files :: args -> requests := !requests @ (Str.split (Str.regexp " ") files); loop args
-    | "-pattern" :: files :: args
-    | "-patterns" :: files :: args -> 
-        Log.warning "-pattern and -patterns command line args are deprecated, replaced by -request and -requests"; 
-        requests := !requests @ (Str.split (Str.regexp " ") files); loop args
+    | "-request" :: string :: args -> push_request string; loop args
+    | "-requests" :: multi_string :: args -> push_request_list (Str.split (Str.regexp " ") multi_string); loop args
+
+    | "-pattern" :: string :: args ->
+        Log.warning "-pattern command line args are deprecated, please use -request instead" ; 
+        push_request string; loop args
+    | "-patterns" :: multi_string :: args ->
+        Log.warning "-patterns command line args are deprecated, please use -requests instead" ; 
+        push_request_list (Str.split (Str.regexp " ") multi_string); loop args
 
     | "-key" :: s :: args -> clustering := !clustering @ [s]; loop args
     | "-whether" :: s :: args ->

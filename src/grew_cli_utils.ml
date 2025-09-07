@@ -64,13 +64,13 @@ let error ?file ?line ?fct ?data = Printf.ksprintf (error_ ?file ?line ?fct ?dat
 let handle fct () =
   try fct ()
   with
-  | Error json ->                  Log.fail "Error: %s" (from_json json)
-  | Conll_error json ->            Log.fail "Conll error: %s" (from_json json)
+  | Error json ->          Log.fail "Error: %s" (from_json json)
+  | Conll_error json ->    Log.fail "Conll error: %s" (from_json json)
   | Grewlib.Error msg ->           Log.fail "Grewlib error:\n  %s" msg
   | Sys_error msg ->               Log.fail "System error: %s" msg
   | Yojson.Json_error msg ->       Log.fail "Json error: %s" msg
   | Grewlib.Bug msg ->             Log.fail "Grewlib.bug, please report:\n%s" msg
-  | exc ->                         Log.fail "Uncaught exception, please report: %s" (Printexc.to_string exc)
+  | exc ->                            Log.fail "Uncaught exception, please report: %s" (Printexc.to_string exc)
 
 (* ================================================================================ *)
 module Counter = struct
@@ -129,3 +129,20 @@ module File = struct
   
   let concat_names l = List.fold_left Filename.concat "" l
 end
+
+(* This function tries to turn a string from the command line into a request
+   The input [string_request] can be a file or a request code.
+   Error reporting is tricky: reporting the file loading error of the parsing error.
+*)
+let request_load_or_parse ~config string_request =
+  if Sys.file_exists string_request
+  then 
+    try Request.load ~config string_request
+    with Grewlib.Error e -> 
+      error "Cannot load the request file `%s`:\n - %s" string_request e
+  else 
+    try Request.parse ~config string_request
+    with Grewlib.Error e -> 
+      if CCString.ends_with ~suffix:".req" string_request (* we guess that the user try to use a file! *)
+      then error "Cannot find the request file `%s`" string_request
+      else error "Cannot parse the request string `%s`:\n - %s" string_request e

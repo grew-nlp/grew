@@ -19,7 +19,7 @@ let count () =
   let clustered_corpus ~config corpus = 
     Clustered.build_layer
     (fun file_request -> 
-      let request = Request.load ~config file_request in
+      let request = request_load_or_parse ~config file_request in
       let clustert_item2_list = List.map (Request.parse_cluster_item ~config request) !Grew_cli_global.clustering in
       Corpus.search ~config 0 (fun _ _ _ x -> x+1) request clustert_item2_list corpus
     )
