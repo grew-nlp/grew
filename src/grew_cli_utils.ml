@@ -26,10 +26,80 @@ let from_json json =
   then json_to_string json
   else sprintf "%s" (json |> member "message" |> to_string)
 
+let help () = List.iter (fun x -> ANSITerminal.printf [ANSITerminal.blue] "%s\n%!" x) [
+    "----------------------------------------------------------------";
+    "Usage: grew <subcommand> [<args>]";
+    "";
+    "Main subcommands:";
+    "  transform  Apply a GRS on a corpus";
+    "  grep       Search request(s) in corpora";
+    "  count      Count request(s) in corpora";
+    "";
+    "Other subcommands:";
+    "  help       Print this message";
+    "  version    Print current version number";
+    "  libraries  Print versions of Ocaml libraries used";
+    "";
+    "-----------------------------------------------------------------";
+    "See https://grew.fr/usage/cli/ for a comprehensive documentation";
+    "----------------------------------------------------------------";
+  ]
+
+  let transform_help () = List.iter (fun x -> ANSITerminal.printf [ANSITerminal.blue] "%s\n%!" x) [
+    "----------------------------------------------------------------";
+    "Description: Apply a Graph Rewriting System to a set of graphs"; 
+    "";
+    "Usage: grew transform [<args>]";
+    "";
+    "Optional args:";
+    "  -grs <file>            select the GRS to apply (default is an empty GRS)";
+    "  -strat <string>        select the strategy from the GRS to apply (default is 'main')";
+    "  -i <file>|<directory>  select the input data (default is reading from stdin)";
+    "";
+    "-------------------------------------------------------------------------";
+    "See https://grew.fr/usage/cli#transform for a comprehensive documentation";
+    "-------------------------------------------------------------------------";
+  ]
+
+  let grep_help () = List.iter (fun x -> ANSITerminal.printf [ANSITerminal.blue] "%s\n%!" x) [
+    "----------------------------------------------------------------";
+    "Description: Search for request(s) in corpora";
+    "";
+    "Usage: grew grep [<args>]";
+    "";
+    "Required args:";
+    "  -request <file>|<code>    describe the request to search for";
+    "";
+    "Optional args:";
+    "  -i <file/directory>       select the input data (default is reading from stdin)";
+    "  -key <clutering_item>     make a clustering of search output (the option can appear multiple times)";
+    "";
+    "--------------------------------------------------------------------";
+    "See https://grew.fr/usage/cli#grep for a comprehensive documentation";
+    "--------------------------------------------------------------------";
+  ]
+  let count_help () = List.iter (fun x -> ANSITerminal.printf [ANSITerminal.blue] "%s\n%!" x) [
+    "----------------------------------------------------------------";
+    "Description: Count for request(s) in corpora";
+    "";
+    "Usage: grew count [<args>]";
+    "";
+    "Required args:";
+    "  -request <file>|<code>    describe request to count for (the option can appear multiple times)";
+    "";
+    "Optional args:";
+    "  -i <file/directory>       select the input data (default is reading from stdin)";
+    "  -key <clutering_item>     make a clustering of count output (the option can appear multiple times)";
+    "";
+    "---------------------------------------------------------------------";
+    "See https://grew.fr/usage/cli#count for a comprehensive documentation";
+    "---------------------------------------------------------------------";
+  ]
 
 (* ==================================================================================================== *)
 module Log = struct
 
+  let echo_help = ref false
   let warning_ message =
     ANSITerminal.eprintf [ANSITerminal.blue] "WARNING: %s\n" message;
     eprintf "%!" (* force synchronous printing *)
@@ -39,6 +109,14 @@ module Log = struct
   let fail_ message =
     ANSITerminal.eprintf [ANSITerminal.red] "%s\n" message;
     eprintf "%!" (* force synchronous printing *);
+    begin
+      match (!echo_help, !subcommand) with
+      | (false, _ ) -> ()
+      | (_, Some "grep") -> grep_help ()
+      | (_, Some "count") -> count_help ()
+      | (_, Some "transform") -> transform_help ()
+      | _ -> help ()
+    end;
     exit 1
 
   let fail message = Printf.ksprintf fail_ message

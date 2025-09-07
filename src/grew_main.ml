@@ -26,8 +26,8 @@ let main () =
   | Some "search" -> search ()
   | Some "show" -> show ()
 
-  | Some cmd -> error "Unknown command: \"%s\"" cmd
-  | None -> error "Missing subcommand"
+  | Some cmd -> Log.echo_help := true; error "Unknown command: \"%s\"" cmd
+  | None -> Log.echo_help := true; error "No subcommand provided"
 
 (* -------------------------------------------------------------------------------- *)
 let _ =

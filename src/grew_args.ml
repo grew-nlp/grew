@@ -16,25 +16,6 @@ open Grew_cli_global
 open Grew_cli_utils
 
 module Grew_args = struct
-  let help () = List.iter (fun x -> ANSITerminal.printf [ANSITerminal.blue] "%s\n%!" x) [
-      "----------------------------------------------------------------";
-      "See https://grew.fr/usage/cli/ for a comprehensive documentation";
-      "----------------------------------------------------------------";
-      "Usage: grew <subcommand> [<args>]";
-      "";
-      "Main subcommands:";
-      "  transform  Apply a GRS on a corpus";
-      "  grep       Search request(s) in corpora";
-      "  count      Count request(s) in corpora";
-      "";
-      "Other subcommands:";
-      "  help       Print this message";
-      "  version    Print current version number";
-      "  libraries  Print versions of Ocaml libraries used";
-      "-----------------------------------------------------------------";
-    ]
-
-
   let push_request string_request =
     requests := !requests @ [string_request]
 
@@ -96,27 +77,30 @@ module Grew_args = struct
     | "-rff" :: value :: args -> config := Conll_config.remove_from_feats value !config; loop args
 
     | "-gr" :: args -> Log.warning "The GR file is no longer supported, please use JSON format"; loop args
-    | x :: args when String.length x > 0 && x.[0] = '-' -> Log.warning "Invalid option: %s, it is ignored!" x; loop args
+    | x :: _ when CCString.starts_with ~prefix:"-" x -> Log.echo_help := true; error "Invalid option: `%s`" x
     | x :: args -> anonymous_args := x :: !anonymous_args; loop args
 
   let parse () =
     match Array.to_list Sys.argv with
     | [] -> assert false
-    | [_] -> help (); exit 0
-    | _ :: "version" :: _ ->
+    | [_] -> ()
+    | _ :: "version" :: _ | _ :: "-v" :: _ | _ :: "--version" :: _ ->
       begin
         match Build_info.V1.version () with
         | Some v -> Printf.printf "%s\n" (Build_info.V1.Version.to_string v)
         | None -> Printf.printf "dev\n%!"
       end; exit 0
-    | _ :: "libraries" :: _ ->
-        List.iter
+    | _ :: "libraries" :: _ | _ :: "-l" :: _| _ :: "--libraries" :: _  ->
+      List.iter
         (fun lib -> match Build_info.V1.Statically_linked_library.version lib with
         | Some v -> Printf.printf " - %s: %s\n" 
           (Build_info.V1.Statically_linked_library.name lib)
           (Build_info.V1.Version.to_string v)
         | None -> ()
         ) (Build_info.V1.Statically_linked_libraries.to_list ()); exit 0
-    | _ :: "help" :: _ -> help (); exit 0
+    | _ :: "help" :: _ | _ :: "-h" :: _ | _ :: "--help" :: _ -> help (); exit 0
+    | _ :: "transform" :: "help" :: _ | _  :: "transform" :: "-h" :: _ | _ :: "transform" :: "--help" :: _ -> transform_help (); exit 0
+    | _ :: "grep" :: "help" :: _ | _  :: "grep" :: "-h" :: _ | _ :: "grep" :: "--help" :: _ -> grep_help (); exit 0
+    | _ :: "count" :: "help" :: _ | _  :: "count" :: "-h" :: _ | _ :: "count" :: "--help" :: _ -> count_help (); exit 0
     | _ :: sub :: args -> subcommand := Some sub; loop args
 end
