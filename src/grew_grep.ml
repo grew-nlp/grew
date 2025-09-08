@@ -87,4 +87,4 @@ let grep () =
       clustered in
     Printf.printf "%s\n" (Yojson.Basic.pretty_to_string final_json)
 
-  | l -> error ~fct:"Grew.grep" "exactly one request required for grep mode (%d given)" (List.length l)
+  | l -> Log.echo_help := true; error ~fct:"Grew.grep" "exactly one request required for grep mode (%d given)" (List.length l)

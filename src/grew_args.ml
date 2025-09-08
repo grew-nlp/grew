@@ -78,7 +78,11 @@ module Grew_args = struct
 
     | "-gr" :: args -> Log.warning "The GR file is no longer supported, please use JSON format"; loop args
     | x :: _ when CCString.starts_with ~prefix:"-" x -> Log.echo_help := true; error "Invalid option: `%s`" x
-    | x :: args -> anonymous_args := x :: !anonymous_args; loop args
+    | x :: args ->
+      match !subcommand with
+      | Some sub when List.mem sub ["transform"; "grep"; "count"] ->
+        Log.echo_help := true; error "No anonymous argument expected with subcommand '%s'\nDon't know what to do with: '%s'" sub x
+      | _ -> anonymous_args := x :: !anonymous_args; loop args
 
   let parse () =
     match Array.to_list Sys.argv with

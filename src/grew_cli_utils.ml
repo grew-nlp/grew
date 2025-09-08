@@ -55,6 +55,7 @@ let help () = List.iter (fun x -> ANSITerminal.printf [ANSITerminal.blue] "%s\n%
     "  -grs <file>            select the GRS to apply (default is an empty GRS)";
     "  -strat <string>        select the strategy from the GRS to apply (default is 'main')";
     "  -i <file>|<directory>  select the input data (default is reading from stdin)";
+    "  -config <config>       select the config to used to parse request (default is 'ud')";
     "";
     "-------------------------------------------------------------------------";
     "See https://grew.fr/usage/cli#transform for a comprehensive documentation";
@@ -73,6 +74,7 @@ let help () = List.iter (fun x -> ANSITerminal.printf [ANSITerminal.blue] "%s\n%
     "Optional args:";
     "  -i <file/directory>       select the input data (default is reading from stdin)";
     "  -key <clutering_item>     make a clustering of search output (the option can appear multiple times)";
+    "  -config <config>          select the config to used to parse request (default is 'ud')";
     "";
     "--------------------------------------------------------------------";
     "See https://grew.fr/usage/cli#grep for a comprehensive documentation";
@@ -90,6 +92,7 @@ let help () = List.iter (fun x -> ANSITerminal.printf [ANSITerminal.blue] "%s\n%
     "Optional args:";
     "  -i <file/directory>       select the input data (default is reading from stdin)";
     "  -key <clutering_item>     make a clustering of count output (the option can appear multiple times)";
+    "  -config <config>          select the config to used to parse request (default is 'ud')";
     "";
     "---------------------------------------------------------------------";
     "See https://grew.fr/usage/cli#count for a comprehensive documentation";
