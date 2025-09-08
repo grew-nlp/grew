@@ -1,3 +1,7 @@
+## 1.18.1 (2025/09/08)
+  - Improve help messages (see https://github.com/grew-nlp/grew/issues/55)
+  - Implement feature request https://github.com/grew-nlp/grew/issues/58: request can be given direclty on the command line
+
 # 1.18.0 (2025/07/15)
   - follow grewlib 1.18.0
   - review and simplify `grew help` output
