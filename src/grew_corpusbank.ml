@@ -45,6 +45,15 @@ let validate () =
       with Grewlib.Error msg -> Log.warning "--> %s skipped (%s)" corpus_id msg
     ) corpusbank
 
+let build_tables () = 
+  let corpusbank = load_corpusbank () in
+  let filter = build_filter () in
+  Corpusbank.iter ~filter
+    (fun corpus_id corpus_desc ->
+      try Corpus_desc.build_tables ~env:!env corpus_desc
+      with Grewlib.Error msg -> Log.warning "--> %s skipped (%s)" corpus_id msg
+    ) corpusbank
+
 let compile () =
   let corpusbank = load_corpusbank () in
   let filter = build_filter () in

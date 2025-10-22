@@ -19,6 +19,7 @@ let main () =
   | Some "count" -> Grew_count.count ()
 
   | Some "validate" -> validate ()
+  | Some "tables" -> build_tables ()
   | Some "compile" -> compile ()
   | Some "clean" -> clean ()
   | Some "status" -> status ()
