@@ -41,7 +41,7 @@ let validate () =
   let filter = build_filter () in
   Corpusbank.iter ~filter
     (fun corpus_id corpus_desc ->
-      try Corpus_desc.validate ~env:!env corpus_desc
+      try Corpus_desc.validate ~verbose:!verbose ~env:!env corpus_desc
       with Grewlib.Error msg -> Log.warning "--> %s skipped (%s)" corpus_id msg
     ) corpusbank
 
@@ -50,21 +50,21 @@ let build_tables () =
   let filter = build_filter () in
   Corpusbank.iter ~filter
     (fun corpus_id corpus_desc ->
-      try Corpus_desc.build_tables ~env:!env corpus_desc
+      try Corpus_desc.build_tables ~verbose:!verbose ~env:!env corpus_desc
       with Grewlib.Error msg -> Log.warning "--> %s skipped (%s)" corpus_id msg
     ) corpusbank
 
 let compile () =
   let corpusbank = load_corpusbank () in
   let filter = build_filter () in
-  Corpusbank.compile ~force:!Grew_cli_global.force ~filter corpusbank
+  Corpusbank.compile ~force:!force ~filter corpusbank
 
 let clean () =
   let corpusbank = load_corpusbank () in
   let filter = build_filter () in
   let filtered = filtered_list filter corpusbank in
   let really_clean () = List.iter Corpus_desc.clean filtered in
-  if !Grew_cli_global.force
+  if !force
   then really_clean ()
   else
     let nb = List.length filtered in
@@ -86,7 +86,7 @@ let status () =
 let build () =
   let corpusbank = load_corpusbank () in
   let filter = build_filter () in
-  Corpusbank.build ~force:!Grew_cli_global.force  ~filter corpusbank
+  Corpusbank.build ~force:!force  ~filter corpusbank
 
 let search () =
   let corpusbank = load_corpusbank () in
