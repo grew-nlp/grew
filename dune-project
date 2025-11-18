@@ -2,7 +2,7 @@
 
 (name grew)
 
-(version 1.18.1)
+(version 1.19.0)
 
 (generate_opam_files true)
 
@@ -25,10 +25,10 @@
   ocaml 
   dune
   dune-build-info
-  (containers ( >= "3.6" ))
+  (containers ( >= "3.16" ))
   amr 
   conll
-  (grewlib ( >= "1.18.0" ))
+  (grewlib ( >= "1.19.0" ))
  )
  (tags
   (nlp "graph rewriting")

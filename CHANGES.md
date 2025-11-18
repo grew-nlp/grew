@@ -1,3 +1,7 @@
+# 1.19.0 (2025/11/18)
+  - follow grewlib 1.19.0
+  - add tables subcommand
+
 ## 1.18.1 (2025/09/08)
   - Improve help messages (see https://github.com/grew-nlp/grew/issues/55)
   - Implement feature request https://github.com/grew-nlp/grew/issues/58: request can be given direclty on the command line
