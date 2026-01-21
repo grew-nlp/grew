@@ -57,7 +57,7 @@ let build_tables () =
 let compile () =
   let corpusbank = load_corpusbank () in
   let filter = build_filter () in
-  Corpusbank.compile ~force:!force ~filter corpusbank
+  Corpusbank.compile ~force:!force ~verbose:!verbose ~filter corpusbank
 
 let clean () =
   let corpusbank = load_corpusbank () in
