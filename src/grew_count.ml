@@ -118,11 +118,5 @@ let count () =
     
     (* JSON output *)
     | _ ->
-      let json = Clustered.fold_layer
-        0
-        (fun x -> `Int x)
-        []
-        (fun string_opt sub acc -> (CCOption.get_or ~default:"__undefined__" string_opt, sub) :: acc)
-        (fun x -> `Assoc x)
-        count_clustered in
+      let json = Clustered.to_json (fun x -> `Int x) 0 count_clustered in
       Printf.printf "%s\n" (Yojson.Basic.pretty_to_string json)

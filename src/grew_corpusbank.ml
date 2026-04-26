@@ -104,3 +104,15 @@ let show () =
   Corpusbank.iter ~filter
     (fun _ corpus_desc -> Corpus_desc.show corpus_desc)
     corpusbank
+
+let get_dir () = 
+  let corpusbank = load_corpusbank () in
+  match !Grew_cli_global.anonymous_args with
+  | [corpus_id] ->
+    begin
+      match Corpusbank.get_corpus_desc_opt corpusbank corpus_id with
+      | Some corpus_desc -> 
+          Printf.printf "%s" (Corpus_desc.get_directory corpus_desc)
+      | None -> Log.fail "No corpus `%s`" corpus_id
+      end
+  | l -> Log.fail "get_dir expect one anonymous arg (%d given)" (List.length l)

@@ -26,6 +26,7 @@ let main () =
   | Some "build" -> build ()
   | Some "search" -> search ()
   | Some "show" -> show ()
+  | Some "get_dir" -> get_dir ()
 
   | Some cmd -> Log.echo_help := true; error "Unknown command: \"%s\"" cmd
   | None -> Log.echo_help := true; error "No subcommand provided"

@@ -36,7 +36,12 @@ let transform () =
     | Conll columns ->
       fprintf out_ch "%s\n" (Conll_columns.to_string columns);
       (
-        (fun graph -> fprintf out_ch "%s\n" (graph |> Graph.to_json |> Conll.of_json |> fix |> Conll.to_string ~config ~columns)),
+        (fun graph -> graph 
+          |> Graph.to_json 
+          |> Conll.of_json 
+          |> fix 
+          |> Conll.to_string ~config ~columns
+          |> fprintf out_ch "%s\n"),
         (fun () -> ())
       )
     | Dot ->
