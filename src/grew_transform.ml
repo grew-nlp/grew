@@ -34,7 +34,8 @@ let transform () =
 
   let (next_graph, final) = match !Grew_cli_global.output with
     | Conll columns ->
-      fprintf out_ch "%s\n" (Conll_columns.to_string columns);
+      if columns <> Conll_columns.default
+      then fprintf out_ch "%s\n" (Conll_columns.to_string columns);
       (
         (fun graph -> graph 
           |> Graph.to_json 
