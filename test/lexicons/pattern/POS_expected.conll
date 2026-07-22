@@ -1,4 +1,3 @@
-# global.columns = ID FORM LEMMA UPOS XPOS FEATS HEAD DEPREL DEPS MISC
 # sent_id = la_porte_0
 1	la	_	DET	_	_	_	_	_	_
 2	porte	_	NOUN	_	_	_	_	_	_
