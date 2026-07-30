@@ -1,3 +1,6 @@
+# 1.21.0 (2026/07/30)
+  - companion release to grewlib 1.21.0
+
 # 1.20.0 (2026/04/26)
   - companion release to grewlib 1.20.0
   - new subcommand `get_dir`
